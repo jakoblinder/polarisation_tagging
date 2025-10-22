@@ -41,9 +41,10 @@ The dataset expects ML events files with the following structure:
 ```xml
 <MLEvents>
 <event>
- momentum_component_1  momentum_component_2  momentum_component_3  momentum_component_4
+ particle_1_momentum_component_1  particle_1_momentum_component_2  particle_1_momentum_component_3  particle_1_momentum_component_4
  particle_2_momentum_data
  particle_3_momentum_data
+ particle_4_momentum_data
 <rwgt>
 <weight id='LL'> weight_value </weight>
 <weight id='LT'> weight_value </weight>
@@ -53,6 +54,12 @@ The dataset expects ML events files with the following structure:
 </event>
 </MLEvents>
 ```
+
+**Event files:**
+The event files for this project can be downloaded from [nextcloud](https://nextcloud.mpp.mpg.de/nextcloud/public.php/dav/files/kDKfLX54EkQPaJx/?accept=zip).
+They contain a directory for LO (UU_LO), for LO including the radiation from the POWHEG Sudakov (UU_LOwS) and at NLO (UU_NLO). In each directory, there are the histograms done at lhe level (`pwgLHEF_analysis-mean-W*.top`) and after showering with only qcd radiation being activated (`pwgoutput_py8_histos-mean-W*.top`). The definition of the weights can be found in the `powheg.input-save` file.
+
+The filtered events can be found in `pwgevents-????.ml` coming from POWHEG only, i.e. after stage 4. `output_shower_events-????.ml` are the filtered events created from the showered events.
 
 ## Usage Examples
 
