@@ -125,7 +125,7 @@ dataset = MLEventsDataset(
 
 ### For Large Files (>1GB)
 - Set `cache_events=False` to avoid memory issues
-- Use `num_workers=0` in DataLoader for notebook environments
+- Use `num_workers>0` in DataLoader for loading the data in parallel.
 - Consider using `pin_memory=True` when training on GPU
 
 ### For Small Files (<100MB)
