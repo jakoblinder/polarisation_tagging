@@ -57,7 +57,7 @@ The dataset expects ML events files with the following structure:
 
 **Event files:**
 The event files for this project can be downloaded from [nextcloud](https://nextcloud.mpp.mpg.de/nextcloud/public.php/dav/files/kDKfLX54EkQPaJx/?accept=zip).
-They contain a directory for LO (UU_LO), for LO including the radiation from the POWHEG Sudakov (UU_LOwS) and at NLO (UU_NLO). In each directory, there are the histograms done at lhe level (`pwgLHEF_analysis-mean-W*.top`) and after showering with only qcd radiation being activated (`pwgoutput_py8_histos-mean-W*.top`). The definition of the weights can be found in the `powheg.input-save` file.
+They contain a directory for LO (UU_LO), for LO including the radiation from the POWHEG Sudakov (UU_LOwS) and at NLO (UU_NLO). In each directory there are the histograms done at lhe level (`pwgLHEF_analysis-mean-W*.top`) and after showering with only qcd radiation being activated (`pwgoutput_py8_histos-mean-W*.top`). The definition of the weights can be found in the `powheg.input-save` file.
 
 The filtered events can be found in `pwgevents-????.ml` coming from POWHEG only, i.e. after stage 4. `output_shower_events-????.ml` are the filtered events created from the showered events.
 
@@ -69,8 +69,8 @@ The filtered events can be found in `pwgevents-????.ml` coming from POWHEG only,
 from torch.utils.data import DataLoader
 from pathlib import Path
 
-# Load dataset
-file_path = Path("data/events.ml")
+# Load dataset (supports pattern matching)
+file_path = Path("data/*.ml")
 dataset = MLEventsDataset(file_path, cache_events=False)
 
 # Check dataset info
@@ -144,7 +144,6 @@ polarisation_tagging/
 │
 ├── README.md                   # Project documentation
 ├── requirements.txt            # Python package dependencies
-<!-- ├── setup.py                    # Installation script -->
 │
 ├── polarisation_tagging/       # Package source code
 │   ├── __init__.py
