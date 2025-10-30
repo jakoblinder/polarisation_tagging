@@ -43,8 +43,11 @@ class MLEventsDataset(Dataset):
         self.target_transform = target_transform
         self.cache_events     = cache_events
 
-        # Build index of event positions specific to each file for lazy loading
+        # Build index of event positions specific to each file for lazy loading.
         self.event_positions = self._build_event_index()
+
+        # Read and combine the means of the momentum information and weights from all files.
+        self.means, self.stddevs = self.compute_global_statistics()
 
         # Number of events per file
         self.number_of_events = {efp: len(positions) for efp, positions in self.event_positions.items()}
@@ -76,6 +79,105 @@ class MLEventsDataset(Dataset):
                         in_event = False
 
         return event_positions
+
+    def compute_global_statistics(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Compute global averages and standard deviations of features across all events.
+        At the end of each event file there is a summary block with mean and stddev values, having the following format:
+        <MLMeanValues>
+        -2.077001387E-01 +-  1.463425650E-01  6.394485253E-02 +-  1.479452802E-01 -2.874667832E-02 +-  3.920371108E-01  5.041046681E+01 +-  3.823267010E-01
+        9.483741466E-03 +-  1.460733724E-01  3.028961560E-01 +-  1.496302765E-01  3.342419872E-01 +-  4.099146738E-01  5.162742894E+01 +-  3.980614679E-01
+        1.065730963E-01 +-  1.466217781E-01 -2.128694236E-01 +-  1.447862214E-01  2.353141555E-01 +-  4.476520406E-01  5.426934380E+01 +-  4.288966689E-01
+        1.944648578E-01 +-  1.452667762E-01  9.275889689E-03 +-  1.491191414E-01 -4.540296497E-02 +-  4.668435418E-01  5.574611130E+01 +-  4.462399219E-01
+        <rwgt>
+        <weight id='LL'>  0.889999421E-03 +-  0.974267904E-05 </weight>
+        <weight id='LT'>  0.180887322E-02 +-  0.154680035E-04 </weight>
+        <weight id='TL'>  0.181805824E-02 +-  0.155071451E-04 </weight>
+        <weight id='TT'>  0.103044693E-01 +-  0.544919933E-04 </weight>
+        </rwgt>
+        </MLMeanValues>
+        For example, "-2.077001387E-01 +-  1.463425650E-01" is the mean and stddev of the first momentum component across all events.
+
+        Note: Only the training data should be normalised. Thus, if the same .ml file is used for validation/test,
+              this function cannot be used, as there wouldn't be a strict distinction anymore between training and
+              validation/test data.
+              For those cases, the means and stddevs should be computed separately on the training dataset only,
+              using for example the torch.nn.BatchNorm1d or torch.nn.BatchNorm2d layers in the model.
+              This is anyway more robust, since it allows to ignore the normalisation should it turn out to be not beneficial.
+        """
+        all_momentum_means   = []
+        all_momentum_stddevs = []
+        all_weight_means   = []
+        all_weight_stddevs = []
+        for eventfile_path in self.eventfiles:
+            with eventfile_path.open('r') as file:
+                content = file.read()
+
+            mean_block_match = re.search(r"<MLMeanValues>(.*?)</MLMeanValues>", content, re.DOTALL)
+            # Note, the re.DOTALL flag is important to make '.' match newlines as well.
+
+            if mean_block_match:
+                mean_block = mean_block_match.group(1)
+
+                # Extract momentum means and stddevs
+                momentum_lines = []
+                rwgt_lines = []
+                in_rwgt = False
+
+                for line in mean_block.strip().split('\n'):
+                    line = line.strip()
+                    if '<rwgt>' in line:
+                        in_rwgt = True
+                        continue
+                    elif '</rwgt>' in line:
+                        in_rwgt = False
+                        continue
+                    elif in_rwgt:
+                        rwgt_lines.append(line)
+                    elif line and not line.startswith('<'):
+                        momentum_lines.append(line)
+
+                momentum_means = []
+                momentum_stddevs = []
+                for line in momentum_lines:
+                    mom_means = re.findall(r"([\d\.\-ED\+]+\s*\+-\s*[\d\.\-ED\+]+)", line)
+                    for mom_mean in mom_means:
+                        mean_val, stddev_val = map(float, mom_mean.split(' +- '))
+                        momentum_means.append(mean_val)
+                        momentum_stddevs.append(stddev_val)
+
+                # Extract weight means and stddevs
+                weight_means = []
+                weight_stddevs = []
+                weight_pattern = r"<(?:weight|rwgt) id='(\w+)'>\s*([\d\.\-E\+]+)\s*\+-\s*([\d\.\-E\+]+)\s*</(?:weight|rwgt)>"
+                for wweight_line in rwgt_lines:
+                    weights = re.search(weight_pattern, wweight_line)
+                    if weights:
+                        weight_id, mean_val, stddev_val = weights.groups()
+                        weight_means.append(float(mean_val))
+                        weight_stddevs.append(float(stddev_val))
+
+                # Combine momentum and weight statistics
+                momentum_means   = np.array(momentum_means)
+                momentum_stddevs = np.array(momentum_stddevs)
+                weight_means     = np.array(weight_means)
+                weight_stddevs   = np.array(weight_stddevs)
+
+                all_momentum_means.append(momentum_means)
+                all_momentum_stddevs.append(momentum_stddevs)
+                all_weight_means.append(weight_means)
+                all_weight_stddevs.append(weight_stddevs)
+
+        # Compute global averages and stddevs across all files
+        total_momentum_means   = np.mean(np.array(all_momentum_means), axis=0)
+        total_momentum_stddevs = np.sqrt(np.sum(np.array(all_momentum_stddevs)**2, axis=0)) / len(all_momentum_stddevs)
+        total_weight_means     = np.mean(np.array(all_weight_means), axis=0)
+        total_weight_stddevs   = np.sqrt(np.sum(np.array(all_weight_stddevs)**2, axis=0)) / len(all_weight_stddevs)
+
+        mean = {'features': total_momentum_means, 'labels': total_weight_means}
+        stddev = {'features': total_momentum_stddevs, 'labels': total_weight_stddevs}
+
+        return mean, stddev
+
 
     def _parse_single_event(self, event_content: str) -> Tuple[List[List[float]], List[float]]:
         """Parse a single event string and extract features and labels."""
