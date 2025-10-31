@@ -47,7 +47,7 @@ class MLEventsDataset(Dataset):
         self.event_positions = self._build_event_index()
 
         # Read and combine the means of the momentum information and weights from all files.
-        self.means, self.stddevs = self.compute_global_statistics()
+        # self.means, self.stddevs = self.compute_global_statistics()
 
         # Number of events per file
         self.number_of_events = {efp: len(positions) for efp, positions in self.event_positions.items()}
