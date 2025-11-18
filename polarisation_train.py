@@ -48,7 +48,7 @@ arg = parser.parse_args()
 # Set fixed random number seed
 seed = arg.seed
 torch.manual_seed(seed)
-
+np.random.seed(seed)
 
 # %% Data Handling
 
@@ -59,7 +59,7 @@ files = arg.mlfiles
 print(f"Cache events: {arg.cache_events}")
 
 dataset = MLEventsDataset(files,
-                          labels = ["LL",],
+                          labels = ["LL/UU",],
                         #   transform=None,
                           target_transform=scale_target,  # Scale target by 1000
                           cache_events=arg.cache_events)  # Caching enabled

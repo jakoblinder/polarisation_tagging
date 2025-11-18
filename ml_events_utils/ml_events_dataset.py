@@ -84,18 +84,19 @@ class MLEventsDataset(Dataset):
         """Compute global averages and standard deviations of features across all events.
         At the end of each event file there is a summary block with mean and stddev values, having the following format:
         <MLMeanValues>
-        -2.077001387E-01 +-  1.463425650E-01  6.394485253E-02 +-  1.479452802E-01 -2.874667832E-02 +-  3.920371108E-01  5.041046681E+01 +-  3.823267010E-01
-        9.483741466E-03 +-  1.460733724E-01  3.028961560E-01 +-  1.496302765E-01  3.342419872E-01 +-  4.099146738E-01  5.162742894E+01 +-  3.980614679E-01
-        1.065730963E-01 +-  1.466217781E-01 -2.128694236E-01 +-  1.447862214E-01  2.353141555E-01 +-  4.476520406E-01  5.426934380E+01 +-  4.288966689E-01
-        1.944648578E-01 +-  1.452667762E-01  9.275889689E-03 +-  1.491191414E-01 -4.540296497E-02 +-  4.668435418E-01  5.574611130E+01 +-  4.462399219E-01
+        -1.702100676E-02 +-  9.606176686E-02 -3.408339058E-02 +-  9.600048558E-02 -5.791682997E-01 +-  2.615258801E-01  4.712723475E+01 +-  2.542308961E-01
+        -2.034589650E-01 +-  9.526494128E-02 -1.475438737E-02 +-  9.471735668E-02 -2.811466050E-01 +-  2.643637577E-01  4.779138729E+01 +-  2.551392221E-01
+        -3.598325990E-02 +-  9.504260448E-02 -3.964487896E-02 +-  9.476517172E-02 -1.927529404E-01 +-  2.911641865E-01  5.019067491E+01 +-  2.785668316E-01
+        2.564632316E-01 +-  9.584894464E-02  8.848265693E-02 +-  9.596826355E-02  1.094046139E-02 +-  3.065987580E-01  5.173959160E+01 +-  2.926270836E-01
         <rwgt>
-        <weight id='LL'>  0.889999421E-03 +-  0.974267904E-05 </weight>
-        <weight id='LT'>  0.180887322E-02 +-  0.154680035E-04 </weight>
-        <weight id='TL'>  0.181805824E-02 +-  0.155071451E-04 </weight>
-        <weight id='TT'>  0.103044693E-01 +-  0.544919933E-04 </weight>
+        <weight id='UU'>  0.112086574E-01 +-  0.376359522E-04 </weight>
+        <weight id='LL'>  0.647128843E-03 +-  0.495244735E-05 </weight>
+        <weight id='LT'>  0.132310008E-02 +-  0.802026938E-05 </weight>
+        <weight id='TL'>  0.133214637E-02 +-  0.805506687E-05 </weight>
+        <weight id='TT'>  0.778457063E-02 +-  0.290583370E-04 </weight>
         </rwgt>
         </MLMeanValues>
-        For example, "-2.077001387E-01 +-  1.463425650E-01" is the mean and stddev of the first momentum component across all events.
+        For example, "-1.702100676E-02 +-  9.606176686E-02" is the mean and stddev of the first momentum component across all events.
 
         Note: Only the training data should be normalised. Thus, if the same .ml file is used for validation/test,
               this function cannot be used, as there wouldn't be a strict distinction anymore between training and
@@ -207,7 +208,7 @@ class MLEventsDataset(Dataset):
                 momenta_information += numbers
 
         # Extract reweight values
-        weight_pattern = r"<(?:weight|rwgt) id='(\w+)'>\s*([\d\.\-E\+]+)\s*</(?:weight|rwgt)>"
+        weight_pattern = r"<(?:weight|rwgt) id='(.+)'>\s*([\d\.\-E\+]+)\s*</(?:weight|rwgt)>"
         weights = re.findall(weight_pattern, rwgt_content)
 
         # Convert to ordered list [LL, LT, TL, TT]
@@ -215,7 +216,13 @@ class MLEventsDataset(Dataset):
 
         weight_labels = []
         for label in self.labels:
-            weight_labels.append(weight_dict.get(label, 0.0))
+            label_list = label.split('/')
+            if len(label_list) > 1:
+                assert len(label_list) == 2, f"Invalid label format: {label}"
+                label_list = [ll.strip() for ll in label_list]
+                weight_labels.append(weight_dict.get(label_list[0], 0.0) / weight_dict[label_list[1]])
+            else:
+                weight_labels.append(weight_dict.get(label, 0.0))
 
         return np.array(momenta_information), np.array(weight_labels)
 
