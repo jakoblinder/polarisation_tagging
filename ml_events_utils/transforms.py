@@ -53,3 +53,16 @@ def boost_into_four_lepton_cm_frame(features):
 def scale_target(x):
     # Utility function to scale target values
     return x * 1000  # Scale target by 1000
+
+def find_scale_var_ratios(labels):
+    bll = labels[:7]
+    buu = labels[:14]
+    ratios_uncorrelated = bll[:,None] / buu[None,:]
+    labels_prime = torch.zeros_like(labels)
+    labels_prime[0] = labels[0]/labels[7]
+    labels_prime[1] = ratios_uncorrelated.min()
+    labels_prime[2] = ratios_uncorrelated.max()
+    for i in range(3,14):
+        labels_prime[i] = 0.0
+    return labels_prime
+
