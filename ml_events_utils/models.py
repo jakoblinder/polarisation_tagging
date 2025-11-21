@@ -23,11 +23,17 @@ class FFNN_BatchNorm(nn.Module):
   def __init__(self, input_dim, width=1000):
     super().__init__()
 
-    #torch.nn.Linear(in_features, out_features, bias=True, device=None, dtype=None)
+    # torch.nn.Linear(in_features, out_features, bias=True, device=None, dtype=None)
     # Multilayer Perceptron block:
     self.mlp_block = nn.Sequential(
       nn.BatchNorm1d(input_dim),
       nn.Linear(input_dim, width),
+      nn.ReLU(),
+      nn.BatchNorm1d(width),
+      nn.Linear(width, width),
+      nn.ReLU(),
+      nn.BatchNorm1d(width),
+      nn.Linear(width, width),
       nn.ReLU(),
       nn.BatchNorm1d(width),
       nn.Linear(width, width),
@@ -55,11 +61,17 @@ class FFNN_BatchNorm_no_output(nn.Module):
   def __init__(self, input_dim, width=1000):
     super().__init__()
 
-    #torch.nn.Linear(in_features, out_features, bias=True, device=None, dtype=None)
+    # torch.nn.Linear(in_features, out_features, bias=True, device=None, dtype=None)
     # Multilayer Perceptron block:
     self.mlp_block = nn.Sequential(
       nn.BatchNorm1d(input_dim),
       nn.Linear(input_dim, width),
+      nn.ReLU(),
+      nn.BatchNorm1d(width),
+      nn.Linear(width, width),
+      nn.ReLU(),
+      nn.BatchNorm1d(width),
+      nn.Linear(width, width),
       nn.ReLU(),
       nn.BatchNorm1d(width),
       nn.Linear(width, width),
@@ -71,10 +83,6 @@ class FFNN_BatchNorm_no_output(nn.Module):
 
     # Output layer:
     self.out_block = nn.Sequential(nn.BatchNorm1d(width), nn.Linear(width, 1))
-
-    # Activation function for output layer:
-    # Try ELU
-    # self.activ_output = nn.ELU()
 
   def forward(self, x):
     out = self.mlp_block(x)
