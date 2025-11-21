@@ -226,7 +226,7 @@ class MLEventsDataset(Dataset):
 
         return np.array(momenta_information), np.array(weight_labels)
 
-    def _load_event(self, idx: int | list[int]) -> Dict[str, Any]:
+    def _load_event(self, idx: int) -> Dict[str, Any]:
         """Load and parse a single event by index.
         Since events are stored across multiple files, we need to determine which file to read from.
         Since the event files are stored in a list, we need to map the global index to the specific file and local index.
