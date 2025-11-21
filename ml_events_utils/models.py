@@ -83,22 +83,28 @@ class FFNN_BatchNorm_no_output(nn.Module):
 
 
 class FFNN_paper(nn.Module):
-  def __init__(self, input_dim, width=1000):
+  def __init__(self, input_dim, output_dim = 1, emb_dim = [1000] * 3):
     super().__init__()
+    self.input_dim = input_dim
+    self.output_dim = output_dim
+    self.emb_dim = emb_dim
 
-    #torch.nn.Linear(in_features, out_features, bias=True, device=None, dtype=None)
     # Multilayer Perceptron block:
     self.mlp_block = nn.Sequential(
-      nn.Linear(input_dim, width),
+      nn.Linear(self.input_dim, self.emb_dim[0]),
       nn.ReLU(),
-      nn.Linear(width, width),
+      nn.Linear(self.emb_dim[0], self.emb_dim[1]),
       nn.ReLU(),
-      nn.Linear(width, width),
-      nn.ReLU()
+      nn.Linear(self.emb_dim[1], self.emb_dim[2]),
+      nn.ReLU(),
+      nn.Linear(self.emb_dim[2], self.emb_dim[1]),
+      nn.ReLU(),
+      nn.Linear(self.emb_dim[1], self.emb_dim[0]),
+      nn.ReLU(),
     )
 
     # Output layer:
-    self.out_block = nn.Sequential(nn.Linear(width, 1))
+    self.out_block = nn.Linear(self.emb_dim[0], self.output_dim)
 
     # Activation function for output layer:
     self.activ_output = nn.ReLU()
