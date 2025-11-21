@@ -4,6 +4,7 @@ import os
 import time
 import torch
 import copy
+import sys
 
 import numpy as np
 import pandas as pd
@@ -16,7 +17,7 @@ from torchsummary import summary
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from ml_events_utils import MLEventsDataset, scale_target, train_loop, valid_loop
+from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepton_cm_frame, train_loop, valid_loop
 from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output, FFNN_paper
 import argparse
 
@@ -40,7 +41,8 @@ parser.add_argument("-l", "--learning_rate", type=float, action="store", default
 parser.add_argument("-p", "--patience",      type=int,   action="store", default=25,      help="Early stopping patience.")
 parser.add_argument("-s", "--seed",          type=int,   action="store", default=42,      help="Random seed for reproducibility.")
 parser.add_argument("-n", "--nworkers",      type=int,   action="store", default=4,       help="Number of workers for DataLoader.")
-parser.add_argument("--no-cache-events",     dest="cache_events", action="store_false",   help="Disable caching of events in the dataset.")
+parser.add_argument("-t", "--test_mode",     dest="test_mode",    action="store_true",    help="Run in test mode (only one data point to test implementation of the model).")
+parser.add_argument("--no-cache-events",     dest="cache_events", action="store_false",   help="Disable caching of events in the dataset (defaul: Cache the events.).")
 parser.add_argument("--outputdir",           type=Path,  action='store', default=None, help='Specify name of output directory.')
 
 arg = parser.parse_args()
@@ -60,8 +62,8 @@ print(f"Cache events: {arg.cache_events}")
 
 dataset = MLEventsDataset(files,
                           labels = ["LL/UU",],
-                        #   transform=None,
-                          target_transform=scale_target,  # Scale target by 1000
+                          transform=boost_into_four_lepton_cm_frame,
+                        #   target_transform=scale_target,  # Scale target by 1000
                           cache_events=arg.cache_events)  # Caching enabled
 print(f"Dataset info: {dataset.get_file_info()}")
 
@@ -154,20 +156,13 @@ model_dir.mkdir(exist_ok=True)
 print(f"Created directory: {model_dir}")
 
 optimizers = {
-    "SGD":     torch.optim.SGD( model.parameters(), lr=learning_rate),
-    "Adam":    torch.optim.Adam(model.parameters(), lr=learning_rate),
+    "SGD":     torch.optim.SGD(    model.parameters(), lr=learning_rate),
+    "Adam":    torch.optim.Adam(   model.parameters(), lr=learning_rate),
     "RMSprop": torch.optim.RMSprop(model.parameters(), lr=learning_rate),
-    "paper":   torch.optim.RMSprop(model.parameters(), lr=0.001, alpha=0.99, weight_decay=0.0, momentum=0.0)
+    "paper":   torch.optim.RMSprop(model.parameters(), lr=0.001, alpha=0.99, eps=1e-08, weight_decay=0.0, momentum=0.0)
 }
+
 # Initialize the optimizer
-# optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
-
-# Alternative
-# optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
-# RMSprop optimizer, set to the parameters Giovanni and Mathieu used in their studies
-# optimizer = torch.optim.RMSprop(model.parameters(), lr=0.001, alpha=0.99, weight_decay=0.0, momentum=0.0)
-
 optimizer = optimizers[arg.optimizer]
 print(f"Using optimizer: {optimizer}")
 
@@ -199,6 +194,10 @@ loss = loss_fn(pred, yb)
 
 print('loss: ', loss.item())
 # print('metric: ', metric.item())
+
+if arg.test_mode:
+    print("Exiting script now after testing implementation of the model on one point.")
+    sys.exit(0)
 
 
 
@@ -248,7 +247,7 @@ for epoch in range(epochs):
     hist_lr.append(current_lr)
 
     # Validation phase
-    valid_loss = valid_loop(val_dataloader,   model, loss_fn, device)
+    valid_loss = valid_loop(val_dataloader, model, loss_fn, device)
     hist_val_loss.append(valid_loss)
 
     # Learning rate scheduling
