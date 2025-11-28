@@ -28,7 +28,7 @@ def boostinv(qx, pboost):
 
     qprime = torch.zeros_like(qx)
 
-    rmboost = torch.sqrt(torch.maximum(pboost[...,3]**2 - (pboost[...,0:3]**2).sum(dim=-1), torch.tensor(0.0)))
+    rmboost = torch.sqrt(torch.clamp(pboost[...,3]**2 - (pboost[...,0:3]**2).sum(dim=-1), min=0.0))
 
     aux  = (qx[...,3]*pboost[...,3] - (qx[...,0:3] * pboost[...,0:3]).sum(dim=-1)) / rmboost
     aaux = (aux + qx[...,3]) / (pboost[...,3] + rmboost)

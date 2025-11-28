@@ -29,7 +29,7 @@ def boostinv(qx, pboost):
 
     qprime = torch.zeros_like(qx)
 
-    rmboost = torch.sqrt(torch.maximum(pboost[...,3]**2 - (pboost[...,0:3]**2).sum(dim=-1), torch.tensor(0.0)))
+    rmboost = torch.sqrt(torch.clamp(pboost[...,3]**2 - (pboost[...,0:3]**2).sum(dim=-1), min=0.0))
 
     aux  = (qx[...,3]*pboost[...,3] - (qx[...,0:3] * pboost[...,0:3]).sum(dim=-1)) / rmboost
     aaux = (aux + qx[...,3]) / (pboost[...,3] + rmboost)
@@ -55,14 +55,16 @@ def scale_target(x):
     return x * 1000  # Scale target by 1000
 
 def find_scale_var_ratios(labels):
-    bll = labels[:7]
-    buu = labels[:14]
-    ratios_uncorrelated = bll[:,None] / buu[None,:]
-    labels_prime = torch.zeros_like(labels)
-    labels_prime[0] = labels[0]/labels[7]
-    labels_prime[1] = ratios_uncorrelated.min()
-    labels_prime[2] = ratios_uncorrelated.max()
-    for i in range(3,14):
-        labels_prime[i] = 0.0
+    bll = labels[...,  : 7]
+    buu = labels[..., 7:14]
+    ratios_uncorrelated = bll.unsqueeze(-1) / buu.unsqueeze(0)
+
+    new_shape    = labels.shape[:-1] + (3,)
+    labels_prime = labels.new_zeros(*new_shape)
+
+    labels_prime[..., 0] = labels[..., 0] / torch.clamp(labels[..., 7], min=1e-8)
+    labels_prime[..., 1] = ratios_uncorrelated.min()
+    labels_prime[..., 2] = ratios_uncorrelated.max()
+
     return labels_prime
 
