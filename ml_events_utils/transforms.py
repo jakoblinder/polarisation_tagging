@@ -24,18 +24,18 @@ def boostinv(qx, pboost):
         (px', py', pz', E'). The energy component is stored at index 3.
     """
     # basic validation and output container
-    if not (hasattr(qx, "__len__") and hasattr(pboost, "__len__")) or len(qx) != 4 or len(pboost) != 4:
-        raise ValueError("qx and pboost must be length-4 sequences (px,py,pz,E)")
+    if not (hasattr(qx, "shape") and hasattr(pboost, "shape")) or qx.shape[-1] != 4 or pboost.shape[-1] != 4:
+        raise ValueError("qx and pboost must have last dimension of size 4 (px,py,pz,E)")
 
     qprime = torch.zeros_like(qx)
 
-    rmboost = torch.sqrt(max([pboost[3]**2 - (pboost[0:3]**2).sum(), 0.0]))
+    rmboost = torch.sqrt(torch.maximum(pboost[...,3]**2 - (pboost[...,0:3]**2).sum(dim=-1), torch.tensor(0.0)))
 
-    aux  = (qx[3]*pboost[3] - qx[0:3]@pboost[0:3]) / rmboost
-    aaux = (aux + qx[3]) / (pboost[3] + rmboost)
+    aux  = (qx[...,3]*pboost[...,3] - (qx[...,0:3] * pboost[...,0:3]).sum(dim=-1)) / rmboost
+    aaux = (aux + qx[...,3]) / (pboost[...,3] + rmboost)
 
-    qprime[3] = aux
-    qprime[0:3] = qx[0:3] - aaux * pboost[0:3]
+    qprime[...,3] = aux
+    qprime[...,0:3] = qx[...,0:3] - aaux.unsqueeze(-1) * pboost[...,0:3]
     return qprime
 
 def boost_into_four_lepton_cm_frame(features):
