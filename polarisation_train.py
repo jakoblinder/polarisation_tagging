@@ -91,25 +91,16 @@ train_dataloader = DataLoader(
     batch_size=batch_size,  # Larger batch size for efficiency
     shuffle=True,
     num_workers=n_workers,  # Use multiple workers for large files
-    pin_memory=True  # Faster GPU transfer
+    pin_memory=True         # Faster GPU transfer
 )
 
 val_dataloader = DataLoader(
     val_dataset,
     batch_size=batch_size,  # Larger batch size for efficiency
-    shuffle=True,
+    shuffle=False,          # No need to shuffle validation data
     num_workers=n_workers,  # Use multiple workers for large files
-    pin_memory=True  # Faster GPU transfer
+    pin_memory=True         # Faster GPU transfer
 )
-
-test_dataloader = DataLoader(
-    test_dataset,
-    batch_size=batch_size,  # Larger batch size for efficiency
-    shuffle=True,
-    num_workers=n_workers,  # Use multiple workers for large files
-    pin_memory=True  # Faster GPU transfer
-)
-
 
 print(f"\nDataLoader created with batch_size={batch_size}, num_workers={n_workers}")
 
@@ -234,6 +225,19 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
 # Decays the learning rate of each parameter group by gamma once the number of epoch reaches one of the milestones
 # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20,40,60], gamma=0.1)
 
+# Initialize CSV files for real-time saving
+train_loss_file = model_dir / f"{model_name}_train_loss.csv"
+val_loss_file   = model_dir / f"{model_name}_val_loss.csv"
+lr_file         = model_dir / f"{model_name}_learning_rates.csv"
+
+# Write headers (optional, just the first value will be written)
+with open(train_loss_file, 'w') as f:
+    f.write("epoch,train_loss\n")
+with open(val_loss_file, 'w') as f:
+    f.write("epoch,val_loss\n")
+with open(lr_file, 'w') as f:
+    f.write("epoch,learning_rate\n")
+
 print(f"Starting training for {epochs} epochs...")
 print(f"Early stopping patience: {patience}")
 
@@ -253,6 +257,14 @@ for epoch in range(epochs):
     # Validation phase
     valid_loss = valid_loop(val_dataloader, model, loss_fn, device)
     hist_val_loss.append(valid_loss)
+
+    # Save current epoch results to CSV files immediately
+    with open(train_loss_file, 'a') as f:
+        f.write(f"{epoch+1},{train_loss:.10e}\n")
+    with open(val_loss_file, 'a') as f:
+        f.write(f"{epoch+1},{valid_loss:.10e}\n")
+    with open(lr_file, 'a') as f:
+        f.write(f"{epoch+1},{current_lr:.10e}\n")
 
     # Learning rate scheduling
     scheduler.step(valid_loss)
@@ -292,9 +304,9 @@ hist_loss     = np.array(hist_loss)
 hist_val_loss = np.array(hist_val_loss)
 hist_lr       = np.array(hist_lr)
 
-np.savetxt(model_dir / f"{model_name}_train_loss.csv",     hist_loss,     delimiter=',')
-np.savetxt(model_dir / f"{model_name}_val_loss.csv",       hist_val_loss, delimiter=',')
-np.savetxt(model_dir / f"{model_name}_learning_rates.csv", hist_lr,       delimiter=',')
+# np.savetxt(model_dir / f"{model_name}_train_loss.csv",     hist_loss,     delimiter=',')
+# np.savetxt(model_dir / f"{model_name}_val_loss.csv",       hist_val_loss, delimiter=',')
+# np.savetxt(model_dir / f"{model_name}_learning_rates.csv", hist_lr,       delimiter=',')
 
 # Save best model separately
 if best_model_state is not None:
@@ -361,8 +373,8 @@ test_tensor = torch.tensor([ 1.445418701E+01, -2.611547450E+00,  8.079240742E+01
                             -4.064316981E+01,  4.940630397E+01, -3.490849930E+01,  7.287971904E+01])
 
 res = model(test_tensor.unsqueeze(0).to(device))
-print(f"res = {res.item():.5e}")
-print(f"Expected LL/ UU weight: {0.885049987E-03 / 0.248160008E-01:.5e}")
+print(f"res = {res.item():.10e}")
+print(f"Expected LL/ UU weight: {0.885049987E-03 / 0.248160008E-01:.10e}")
 
 # %% Test the trained model
 
