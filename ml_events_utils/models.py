@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 
 # Activation function for output layer:
@@ -20,27 +21,26 @@ from torch import nn
 
 
 class FFNN_BatchNorm(nn.Module):
-  def __init__(self, input_dim, width=1000):
+  def __init__(self, input_dim, width=200):
     super().__init__()
 
-    # torch.nn.Linear(in_features, out_features, bias=True, device=None, dtype=None)
-    # Multilayer Perceptron block:
-    self.mlp_block = nn.Sequential(
+    self.input_block = nn.Sequential(
       nn.BatchNorm1d(input_dim),
       nn.Linear(input_dim, width),
-      nn.ReLU(),
-      nn.BatchNorm1d(width),
-      nn.Linear(width, width),
-      nn.ReLU(),
-      nn.BatchNorm1d(width),
-      nn.Linear(width, width),
-      nn.ReLU(),
-      nn.BatchNorm1d(width),
-      nn.Linear(width, width),
-      nn.ReLU(),
-      nn.BatchNorm1d(width),
-      nn.Linear(width, width),
       nn.ReLU()
+    )
+
+    self.linear_block = nn.Sequential(
+      nn.BatchNorm1d(width),
+      nn.Linear(width, width),
+      nn.ReLU(),
+    )
+
+    self.linear_block_drop = nn.Sequential(
+      nn.BatchNorm1d(width),
+      nn.Linear(width, width),
+      nn.ReLU(),
+      nn.Dropout(p=0.3)
     )
 
     # Output layer:
@@ -52,9 +52,24 @@ class FFNN_BatchNorm(nn.Module):
     # self.activ_output = nn.ELU()
 
   def forward(self, x):
-    out = self.mlp_block(x)
+    # out = self.mlp_block(x)
+    out = self.input_block(x)
+
+    residual = out
+    out = self.linear_block_drop(out) + residual  # Residual connection
+
+    out = self.linear_block_drop(out)
+
+    residual = out
+    out = self.linear_block_drop(out) + residual  # Residual connection
+
+    residual = out
+    out = self.linear_block_drop(out) + residual  # Residual connection
+
     out = self.out_block(out)
+
     out = self.activ_output(out)
+
     return out
 
 class FFNN_BatchNorm_no_output(nn.Module):
@@ -124,8 +139,142 @@ class FFNN_paper(nn.Module):
     return out
 
 
+def minkowski_dot(p, q):
+    """
+    Computes Minkowski inner product for batches.
+    p, q: tensors of shape [B, 4]
+    metric diag = (1, -1, -1, -1)
+    """
+    return p[:, 3] * q[:, 3] - (p[:, 0:3] * q[:, 0:3]).sum(dim=-1)
+
+
+class LorentzBaseLayer(nn.Module):
+    """
+    A layer that builds invariant and equivariant per-particle features
+    from Lorentz 4-vectors.
+
+    Takes raw 4-vectors [B, N, 4]
+    Returns learned features [B, N, hidden_dim]
+    """
+    def __init__(self, n_4vectors, hidden_dim=128):
+        super().__init__()
+        self.n_4vectors = n_4vectors
+        self.hidden_dim = hidden_dim
+
+        # project invariant features
+        self.inv_mlp = nn.Sequential(
+            nn.Linear(1 + 1 + 1, hidden_dim),  # mass^2, norm(p), sum pairwise dot
+            nn.GELU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.GELU()
+        )
+
+        self.eq_mlp = nn.Sequential(
+            nn.Linear(self.n_4vectors, hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.GELU()
+        )
+
+    def forward(self, vectors):
+        """
+        vectors: [B, N, 4]: N = # of particles, each with (px, py, pz, E)
+        returns: [B, N, hidden_dim]
+        """
+        B, N, _ = vectors.shape
+        E = vectors[..., -1   ]
+        P = vectors[...,   :-1]
+
+        # mass^2 = E^2 - |p|^2  (shape [B, N])
+        mass2 = E**2 - (P**2).sum(dim=-1)
+
+        # norm(p)
+        norm_p = torch.sqrt((P**2).sum(dim=-1) + 1e-9)
+        # pairwise Minkowski dot products (allocate on the same device as `vectors`)
+        dot_mat = vectors.new_zeros(B, N)
+        for i in range(N):
+            for j in range(N):
+                dot_mat[:, i] += minkowski_dot(vectors[:, i, :], vectors[:, j, :])
+
+        # invariant feature vector per particle
+        inv_feats = torch.stack([mass2, norm_p, dot_mat], dim=-1)  # [B, N, 3]
+        inv_feats = self.inv_mlp(inv_feats)                     # [B, N, H]
+
+        # equivariant projection of raw 4-vector
+        eq_feats = self.eq_mlp(vectors)                        # [B, N, H]
+
+        return inv_feats + eq_feats
+
+class FeatureBlock(nn.Module):
+    def __init__(self, hidden_dim=128, dropout=0.1):
+        super().__init__()
+        self.norm1 = nn.LayerNorm(hidden_dim)
+        self.fc1   = nn.Linear(hidden_dim, hidden_dim)
+        self.norm2 = nn.LayerNorm(hidden_dim)
+        self.fc2   = nn.Linear(hidden_dim, hidden_dim)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        y = self.norm1(x)
+        y = F.gelu(self.fc1(y))
+        y = self.norm2(y)
+        y = self.dropout(F.gelu(self.fc2(y)))
+        return x + y
+
+class FourVectorAwareNet(nn.Module):
+    """
+    Full four-vector-aware network for 4 final-state particles.
+    Predicts a single scalar (recommended: log(weight)).
+    """
+    def __init__(self, input_dim=16, hidden_dim=128, num_layers=3, predict_log=True):
+        super().__init__()
+        # Input dimension: 1xsqrt(input_dim)xsqrt(input_dim)
+        # Output dimension: output_dim
+        assert int(input_dim**0.5)**2 == input_dim, "Input dimension must be a perfect square."
+        self.n_4vectors = int(input_dim**0.5)
+
+        self.predict_log = predict_log
+
+        self.base = LorentzBaseLayer(self.n_4vectors, hidden_dim)
+
+        self.blocks = nn.ModuleList([
+            FeatureBlock(hidden_dim)
+            for _ in range(num_layers)
+        ])
+
+
+        # Event-level aggregator (DeepSets)
+        self.aggregator = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.GELU(),
+        )
+
+        # Output head
+        self.output = nn.Linear(hidden_dim, 1)
+
+    def forward(self, x):
+        """
+        x: [B, 16] → reshape to [B, 4, 4]
+        """
+        x = x.view(x.size(0), 4, 4)  # 4 particles, each (E, px, py, pz)
+
+        h = self.base(x)  # only applied once to 4-vectors
+
+        for block in self.blocks:
+            h = block(h)   # stackable residual layers
+
+        pooled = h.mean(dim=1)       # permutation-invariant
+        pooled = self.aggregator(pooled)
+        out = self.output(pooled)
+        # return out.squeeze(-1)
+        return out
+
+
 model_dict = {
     "FFNN_BatchNorm": FFNN_BatchNorm,
     "FFNN_BatchNorm_no_output": FFNN_BatchNorm_no_output,
-    "FFNN_paper": FFNN_paper
+    "FFNN_paper": FFNN_paper,
+    "FourVectorAwareNet": FourVectorAwareNet
 }
