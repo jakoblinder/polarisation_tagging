@@ -4,11 +4,10 @@ import torch.nn as nn
 import numpy as np
 
 def train_loop(dataloader, model, loss_fn, optimizer, device, print_freq=100):
-    size        = len(dataloader.dataset)
-    num_batches = len(dataloader)
+    size        = len(dataloader.dataset)  # Total number of samples in the dataset.
+    num_batches = len(dataloader)          # Number of batches in the dataloader.
 
     # Set the model to training mode - important for batch normalization and dropout layers
-    # Unnecessary in this situation but added for best practices
     model.train()
 
     train_loss = 0.0
@@ -46,10 +45,9 @@ def train_loop(dataloader, model, loss_fn, optimizer, device, print_freq=100):
 
 def valid_loop(dataloader, model, loss_fn, device):
     # Set the model to evaluation mode - important for batch normalization and dropout layers
-    # Unnecessary in this situation but added for best practices
     model.eval()
-    size = len(dataloader.dataset)
-    num_batches = len(dataloader)
+    size = len(dataloader.dataset)  # Total number of samples in the dataset.
+    num_batches = len(dataloader)   # Number of batches in the dataloader.
     valid_loss, l1loss = 0, 0
 
     # Evaluating the model with torch.no_grad() ensures that no gradients are computed during test mode
@@ -64,6 +62,6 @@ def valid_loop(dataloader, model, loss_fn, device):
     valid_loss /= num_batches
     l1loss /= num_batches
 
-    print(f"Validation Error: \n Avg valid loss: {valid_loss:>8f}, Avg L1 Loss: {l1loss:>8f}\n")
+    print(f"Validation Error: \n Avg (per batch) valid loss: {valid_loss:>8f}, Avg L1 Loss: {l1loss:>8f}\n")
 
     return valid_loss
