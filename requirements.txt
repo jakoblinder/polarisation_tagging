@@ -11,5 +11,5 @@ jupyter>=1.0.0
 jupyterlab>=3.6.0
 ipykernel>=6.20.0
 tqdm>=4.60.0
-
+braceexpand
 

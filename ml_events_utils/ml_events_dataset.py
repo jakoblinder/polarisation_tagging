@@ -5,6 +5,7 @@ import re
 from torch.utils.data import Dataset, DataLoader
 from typing import Tuple, List, Dict, Union, Any, Optional, Callable
 from pathlib import Path
+from braceexpand import braceexpand
 
 class MLEventsDataset(Dataset):
     """
@@ -26,11 +27,12 @@ class MLEventsDataset(Dataset):
 
         eventfiles = []
         for eventfile in self.file_path:
-            if '*' in str(eventfile) or '?' in str(eventfile):
+            if '*' in str(eventfile) or '?' in str(eventfile) or '.' in str(eventfile) or '{' in str(eventfile):
                 if eventfile.is_absolute():
                     raise NotImplementedError("Absolute paths with wildcards are not supported. Relative paths are though.")
                 else:
-                    eventfiles += Path.cwd().glob(str(eventfile))
+                    # eventfiles += Path.cwd().glob(str(eventfile))
+                    eventfiles += [Path(p).resolve() for p in braceexpand(str(eventfile))]
             else:
                 eventfiles.append(Path(eventfile).resolve())
 
