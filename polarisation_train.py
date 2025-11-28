@@ -34,7 +34,7 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("mlfiles", nargs='+',    type=Path,  action="store", help=".ml files to be used for training.")
 parser.add_argument("-m", "--model",         type=str,   action="store", default="FFNN_BatchNorm_no_output", help=f"Model architecture to use. Options: {list(model_dict.keys())}.")
-parser.add_argument("-o", "--optimizer",     type=str,   action="store", default="paper", help="Optimizer to use. Options: SGD, Adam, RMSprop, paper.")
+parser.add_argument("-o", "--optimizer",     type=str,   action="store", default="paper", help="Optimizer to use. Options: SGD, Adam, RMSprop, paper, paper_momentum.")
 parser.add_argument("-e", "--epochs",        type=int,   action="store", default=1000,    help="Number of training epochs.")
 parser.add_argument("-b", "--batch_size",    type=int,   action="store", default=128,     help="Batch size for training.")
 parser.add_argument("-l", "--learning_rate", type=float, action="store", default=1e-2,    help="Learning rate for the optimizer.")
@@ -159,7 +159,8 @@ optimizers = {
     "SGD":     torch.optim.SGD(    model.parameters(), lr=learning_rate),
     "Adam":    torch.optim.Adam(   model.parameters(), lr=learning_rate),
     "RMSprop": torch.optim.RMSprop(model.parameters(), lr=learning_rate),
-    "paper":   torch.optim.RMSprop(model.parameters(), lr=0.001, alpha=0.99, eps=1e-08, weight_decay=0.0, momentum=0.0)
+    "paper":   torch.optim.RMSprop(model.parameters(), lr=0.001, alpha=0.99, eps=1e-08, weight_decay=0.0, momentum=0.0),
+    "paper_momentum":   torch.optim.RMSprop(model.parameters(), lr=0.001, alpha=0.99, eps=1e-08, weight_decay=0.0, momentum=0.9)
 }
 
 # Initialize the optimizer
@@ -195,13 +196,6 @@ loss = loss_fn(pred, yb)
 print('loss: ', loss.item())
 # print('metric: ', metric.item())
 
-if arg.test_mode:
-    print("Exiting script now after testing implementation of the model on one point.")
-    sys.exit(0)
-
-
-
-# %% Training loop
 
 if torch.cuda.is_available():
 #   summary(model.cuda(), input_size=(1,input_dim))
@@ -211,6 +205,16 @@ else:
   summary(model, input_size=(input_dim,))
 
 
+if arg.test_mode:
+    print("Exiting script now after testing implementation of the model on one point.")
+    sys.exit(0)
+
+
+# %% Training loop
+
+# Save the seed used for this training
+with open(model_dir / "training_seed.txt", 'w') as f:
+    f.write(f"{seed}\n")
 
 hist_loss     = []
 hist_val_loss = []
