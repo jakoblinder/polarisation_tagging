@@ -328,18 +328,27 @@ print(f"Best validation loss: {best_val_loss:.6f}")
 # %% Plot loss
 
 print(f"Plotting training history, using best model weights: {best_model_state is not None}")
-plt.figure(figsize=(10, 7))
+fig, ax1 = plt.subplots(figsize=(10, 7))
+
+# Primary y-axis for loss
+ax1.set_xlabel("Epoch")
+ax1.set_ylabel("Loss", color='black')
+ax1.plot(range(1,len(hist_loss)+1),     np.array(hist_loss),     label="Avg training loss", color='blue')
+ax1.plot(range(1,len(hist_val_loss)+1), np.array(hist_val_loss), label="Avg validation loss", color='orange')
+ax1.tick_params(axis='y', labelcolor='black')
+ax1.set_ylim(ymin=0)
+ax1.grid()
+ax1.legend(loc='upper left')
+
+# Secondary y-axis for learning rate
+ax2 = ax1.twinx()
+ax2.set_ylabel("Learning Rate", color='red')
+ax2.plot(range(1,len(hist_lr)+1), np.array(hist_lr), label="Learning rate", color='red')
+ax2.tick_params(axis='y', labelcolor='red')
+ax2.legend(loc='upper right')
+
 plt.title(f"Training History for {model_name}")
-
-plt.plot(range(1,len(hist_loss)+1),     np.array(hist_loss),     label="Avg training loss")
-plt.plot(range(1,len(hist_val_loss)+1), np.array(hist_val_loss), label="Avg validation loss")
-plt.plot(range(1,len(hist_lr)+1),       np.array(hist_lr)*1000,  label="Learning rate x 1000")
-
-plt.ylim(ymin=0)
-plt.xlabel("Epoch")
-plt.ylabel("Loss")
-plt.grid()
-plt.legend()
+plt.tight_layout()
 
 # Save plot to model directory
 plt.savefig(model_dir / f"{model_name}_training_history.pdf", bbox_inches='tight')
