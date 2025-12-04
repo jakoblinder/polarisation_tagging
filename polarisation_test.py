@@ -204,8 +204,9 @@ def test_model(model, model_dir, dataloader, loss_fn, device):
 
         # Plot as step histograms
         bin_centers = (bins[:-1] + bins[1:]) / 2
-        axs.step(bin_centers, pred_sums, where='mid', label='Predicted Labels', color='red',   linewidth=2)
-        axs.step(bin_centers, true_sums, where='mid', label='True Labels',      color='green', linewidth=2)
+        axs.step(bin_centers, true_sums, where='mid', label='True Labels',      color='green', linewidth=2, alpha=0.7)
+        axs.plot(bin_centers, true_sums, 'x', color='green', markersize=8, alpha=0.7)
+        axs.step(bin_centers, pred_sums, where='mid', label='Predicted Labels', color='red',   linewidth=2, alpha=0.7)
 
 
         # plt.hist(invmass_Z1_all[:, 2], bins=50, alpha=0.6, label='True Labels',      color='red',   edgecolor='black')
@@ -237,8 +238,9 @@ def test_model(model, model_dir, dataloader, loss_fn, device):
 
         # Plot as step histograms
         bin_centers = (bins[:-1] + bins[1:]) / 2
-        axs.step(bin_centers, pred_sums, where='mid', label='Predicted Labels', color='red',   linewidth=2)
-        axs.step(bin_centers, true_sums, where='mid', label='True Labels',      color='green', linewidth=2)
+        axs.step(bin_centers, true_sums, where='mid', label='True Labels',      color='green', linewidth=2, alpha=0.7)
+        axs.plot(bin_centers, true_sums, 'x', color='green', markersize=8, alpha=0.7)
+        axs.step(bin_centers, pred_sums, where='mid', label='Predicted Labels', color='red',   linewidth=2, alpha=0.7)
 
 
         # plt.hist(invmass_Z1_all[:, 2], bins=50, alpha=0.6, label='True Labels',      color='red',   edgecolor='black')
