@@ -17,7 +17,7 @@ from torchsummary import summary
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepton_cm_frame, train_loop, valid_loop
+from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform, train_loop, valid_loop
 from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output, FFNN_paper
 import argparse
 

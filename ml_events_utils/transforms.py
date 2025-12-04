@@ -68,3 +68,16 @@ def find_scale_var_ratios(labels):
 
     return labels_prime
 
+
+# Define logarithmic target transform to reduce outlier impact
+def log_target_transform(target):
+    """Apply log transformation to target values to reduce outlier impact"""
+    # Convert to torch tensor if it's not already
+    if not isinstance(target, torch.Tensor):
+        target = torch.tensor(target, dtype=torch.float32)
+
+    # Add small epsilon to handle zero values and ensure positive input to log
+    epsilon = 1e-10
+    # Use log1p for better numerical stability: log(1 + x)
+    return torch.log1p(torch.clamp(target, min=epsilon))
+
