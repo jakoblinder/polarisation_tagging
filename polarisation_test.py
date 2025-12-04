@@ -114,7 +114,14 @@ print(f"Computation device: {device}\n")
 # %% Initialize the model and load the trained weights
 model = model_dict[arg.model](input_dim=input_dim)
 
-model.load_state_dict(torch.load(model_dir / arg.model_weight_file, map_location=device, weights_only=True))
+if arg.model_weight_file.is_absolute():
+    model_weight_file = arg.model_weight_file
+    model_run_dir     = model_weight_file.parent
+else:
+    model_weight_file = model_dir / arg.model_weight_file
+    model_run_dir     = model_dir
+
+model.load_state_dict(torch.load(model_weight_file, map_location=device, weights_only=True))
 model.to(device)
 
 # Explicitly move model to CPU and ensure all tensors are moved
@@ -174,7 +181,7 @@ def test_model(model, model_dir, dataloader, loss_fn, device):
 
     print(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
 
-    with PdfPages(f"{model_dir}/test_histograms.pdf") as pdf:
+    with PdfPages(f"{model_run_dir}/test_histograms.pdf") as pdf:
         d = pdf.infodict()
         d['Title']        = f"Test results for model {model_name}"
         d['Author']       = 'You'
@@ -254,6 +261,10 @@ def test_model(model, model_dir, dataloader, loss_fn, device):
 # %% Run the test
 
 if __name__ == "__main__":
+    start_time = time.time()
     test_loss_fn = torch.nn.MSELoss()
 
     test_loss = test_model(model, model_dir, test_dataloader, test_loss_fn, device)
+
+    end_time = time.time()
+    print(f"Testing completed in {end_time - start_time:.2f} seconds.")
