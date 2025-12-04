@@ -145,7 +145,7 @@ def minkowski_dot(p, q):
     p, q: tensors of shape [B, 4]
     metric diag = (1, -1, -1, -1)
     """
-    return p[:, 3] * q[:, 3] - (p[:, 0:3] * q[:, 0:3]).sum(dim=-1)
+    return p[..., 3] * q[..., 3] - (p[..., 0:3] * q[..., 0:3]).sum(dim=-1)
 
 
 class LorentzBaseLayer(nn.Module):
@@ -163,7 +163,7 @@ class LorentzBaseLayer(nn.Module):
 
         # project invariant features
         self.inv_mlp = nn.Sequential(
-            nn.Linear(1 + 1 + 1, hidden_dim),  # mass^2, norm(p), sum pairwise dot
+            nn.Linear(1 + 1 + self.n_4vectors, hidden_dim),  # mass^2, norm(p), sum pairwise dot
             nn.GELU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.GELU()
@@ -188,20 +188,21 @@ class LorentzBaseLayer(nn.Module):
         # mass^2 = E^2 - |p|^2  (shape [B, N])
         mass2 = E**2 - (P**2).sum(dim=-1)
 
-        # norm(p)
-        norm_p = torch.sqrt((P**2).sum(dim=-1) + 1e-9)
+        # norm(p) (shape [B, N])
+        norm_p = torch.sqrt(torch.clamp((P**2).sum(dim=-1), min=1e-9))
         # pairwise Minkowski dot products (allocate on the same device as `vectors`)
-        dot_mat = vectors.new_zeros(B, N)
+        dot_mat = vectors.new_zeros(B, N, N)
         for i in range(N):
             for j in range(N):
-                dot_mat[:, i] += minkowski_dot(vectors[:, i, :], vectors[:, j, :])
+                dot_mat[:, i, j] = minkowski_dot(vectors[:, i, :], vectors[:, j, :])
 
         # invariant feature vector per particle
-        inv_feats = torch.stack([mass2, norm_p, dot_mat], dim=-1)  # [B, N, 3]
-        inv_feats = self.inv_mlp(inv_feats)                     # [B, N, H]
+        # "*torch.moveaxis(dot_mat, -1, 0) == dot_mat[..., 0], dot_mat[..., 1], dot_mat[..., 2], dot_mat[..., 3]"
+        inv_feats = torch.stack([mass2, norm_p, *torch.moveaxis(dot_mat, -1, 0)], dim=-1)  # [B, N, 2 + N] = [B, N, 6] for N = 4
+        inv_feats = self.inv_mlp(inv_feats) # [B, N, H]
 
         # equivariant projection of raw 4-vector
-        eq_feats = self.eq_mlp(vectors)                        # [B, N, H]
+        eq_feats = self.eq_mlp(vectors)     # [B, N, H]
 
         return inv_feats + eq_feats
 
