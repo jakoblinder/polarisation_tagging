@@ -39,6 +39,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("mlfiles", nargs='*',    type=Path,  action="store", help=".ml files to be used for training. Not required when using --replot.")
 parser.add_argument("-m", "--model",         type=str,   action="store", default="FFNN_BatchNorm_no_output", help=f"Model architecture to use. Options: {list(model_dict.keys())}.")
 parser.add_argument("-o", "--optimizer",     type=str,   action="store", default="paper", help="Optimizer to use. Options: SGD, Adam, RMSprop, paper, paper_momentum.")
+parser.add_argument("-g", "--gpu",           type=int,   action="store", default=-1,      help="Specify manually which of the available gpus is supposed to be used.")
 parser.add_argument("-e", "--epochs",        type=int,   action="store", default=1000,    help="Number of training epochs.")
 parser.add_argument("-b", "--batch_size",    type=int,   action="store", default=512,     help="Batch size for training.")
 parser.add_argument("-l", "--learning_rate", type=float, action="store", default=1e-2,    help="Learning rate for the optimizer.")
@@ -168,7 +169,13 @@ if torch.cuda.is_available():
   print('Number of devices: ', torch.cuda.device_count())
   print(torch.cuda.get_device_name(0))
 
-device = ('cuda' if torch.cuda.is_available() else 'cpu')
+if torch.cuda.is_available():
+    if arg.gpu > 0:
+        device = f"cuda:{arg.gpu}"
+    else:
+        device = "cuda"
+else:
+    device = "cpu"
 print(f"Computation device: {device}\n")
 
 # %% Set the model and choose an optimizer.
@@ -181,7 +188,8 @@ model_name = model.__class__.__name__
 #   model = nn.DataParallel(model)
 
 model.to(device)
-print(f"Model {model_name} is on GPU: {next(model.parameters()).is_cuda}")
+# print(f"Model {model_name} is on GPU: {next(model.parameters()).is_cuda}")
+print(f"Model {model_name} device: {next(model.parameters()).device}")
 
 
 # Create directory for this model's outputs
