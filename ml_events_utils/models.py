@@ -27,81 +27,42 @@ class FFNN_BatchNorm(nn.Module):
     self.input_block = nn.Sequential(
       nn.BatchNorm1d(input_dim),
       nn.Linear(input_dim, width),
-      nn.ReLU()
+      nn.ELU()
     )
 
     self.linear_block = nn.Sequential(
       nn.BatchNorm1d(width),
       nn.Linear(width, width),
-      nn.ReLU(),
+      nn.ELU(),
     )
 
     self.linear_block_drop = nn.Sequential(
       nn.BatchNorm1d(width),
       nn.Linear(width, width),
-      nn.ReLU(),
-      nn.Dropout(p=0.3)
+      nn.ELU(),
+      nn.Dropout(p=0.4)
     )
 
     # Output layer:
     self.out_block = nn.Sequential(nn.BatchNorm1d(width), nn.Linear(width, 1))
 
-    # Activation function for output layer:
-    self.activ_output = nn.ReLU()
-    # Try ELU
-    # self.activ_output = nn.ELU()
+    # No/ identity activation function for output layer:
+    self.activ_output = nn.Identity()
 
   def forward(self, x):
     # out = self.mlp_block(x)
     out = self.input_block(x)
 
     residual = out
-    out = self.linear_block_drop(out) + residual  # Residual connection
-
     out = self.linear_block_drop(out)
-
-    residual = out
     out = self.linear_block_drop(out) + residual  # Residual connection
 
     residual = out
+    out = self.linear_block_drop(out)
     out = self.linear_block_drop(out) + residual  # Residual connection
 
     out = self.out_block(out)
-
     out = self.activ_output(out)
-
-    return out
-
-class FFNN_BatchNorm_no_output(nn.Module):
-  def __init__(self, input_dim, width=1000):
-    super().__init__()
-
-    # torch.nn.Linear(in_features, out_features, bias=True, device=None, dtype=None)
-    # Multilayer Perceptron block:
-    self.mlp_block = nn.Sequential(
-      nn.BatchNorm1d(input_dim),
-      nn.Linear(input_dim, width),
-      nn.ReLU(),
-      nn.BatchNorm1d(width),
-      nn.Linear(width, width),
-      nn.ReLU(),
-      nn.BatchNorm1d(width),
-      nn.Linear(width, width),
-      nn.ReLU(),
-      nn.BatchNorm1d(width),
-      nn.Linear(width, width),
-      nn.ReLU(),
-      nn.BatchNorm1d(width),
-      nn.Linear(width, width),
-      nn.ReLU()
-    )
-
-    # Output layer:
-    self.out_block = nn.Sequential(nn.BatchNorm1d(width), nn.Linear(width, 1))
-
-  def forward(self, x):
-    out = self.mlp_block(x)
-    out = self.out_block(out)
     return out
 
 
@@ -129,14 +90,18 @@ class FFNN_paper(nn.Module):
     # Output layer:
     self.out_block = nn.Linear(self.emb_dim[0], self.output_dim)
 
-    # Activation function for output layer:
-    self.activ_output = nn.ReLU()
+    # No/ identity activation function for output layer:
+    self.activ_output = nn.Identity()
 
   def forward(self, x):
     out = self.mlp_block(x)
     out = self.out_block(out)
     out = self.activ_output(out)
     return out
+
+class FFNN_paper_163264(FFNN_paper):
+    def __init__(self, input_dim, output_dim = 1):
+        super().__init__(input_dim, output_dim, emb_dim = [16, 32, 64])
 
 
 def minkowski_dot(p, q):
@@ -275,7 +240,7 @@ class FourVectorAwareNet(nn.Module):
 
 model_dict = {
     "FFNN_BatchNorm": FFNN_BatchNorm,
-    "FFNN_BatchNorm_no_output": FFNN_BatchNorm_no_output,
     "FFNN_paper": FFNN_paper,
+    "FFNN_paper_163264": FFNN_paper_163264,
     "FourVectorAwareNet": FourVectorAwareNet
 }
