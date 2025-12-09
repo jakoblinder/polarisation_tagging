@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
+from .analysis import costhetastar
 
 
 # Activation function for output layer:
@@ -151,7 +152,14 @@ class LorentzBaseLayer(nn.Module):
         P = vectors[...,   :-1]
 
         # mass^2 = E^2 - |p|^2  (shape [B, N])
-        mass2 = E**2 - (P**2).sum(dim=-1)
+        # Note: The invariant masses of the leptons are zero and thus not a meaningful feature.
+        # mass2 = E**2 - (P**2).sum(dim=-1)
+
+        if N == 4:
+            angles = torch.stack(costhetastar(vectors), dim=-1)
+        else:
+          print("Warning: costhetastar not implemented for N != 4")
+          raise NotImplementedError
 
         # norm(p) (shape [B, N])
         norm_p = torch.sqrt(torch.clamp((P**2).sum(dim=-1), min=1e-9))
@@ -163,11 +171,11 @@ class LorentzBaseLayer(nn.Module):
 
         # invariant feature vector per particle
         # "*torch.moveaxis(dot_mat, -1, 0) == dot_mat[..., 0], dot_mat[..., 1], dot_mat[..., 2], dot_mat[..., 3]"
-        inv_feats = torch.stack([mass2, norm_p, *torch.moveaxis(dot_mat, -1, 0)], dim=-1)  # [B, N, 2 + N] = [B, N, 6] for N = 4
-        inv_feats = self.inv_mlp(inv_feats) # [B, N, H]
+        inv_feats = torch.stack([angles, norm_p, *torch.moveaxis(dot_mat, -1, 0)], dim=-1)  # [B, N, 2 + N] = [B, N, 6] for N = 4
+        inv_feats = self.inv_mlp(inv_feats)  # [B, N, H]
 
         # equivariant projection of raw 4-vector
-        eq_feats = self.eq_mlp(vectors)     # [B, N, H]
+        eq_feats = self.eq_mlp(vectors)      # [B, N, H]
 
         return inv_feats + eq_feats
 
