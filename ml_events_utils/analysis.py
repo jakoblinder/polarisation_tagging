@@ -54,7 +54,7 @@ def costhetastar(momenta):
     ct1, ct2, ct3, ct4 : torch.Tensor
         Cosine of theta* angles for each particle
     """
-    v1, v2, v3, v4 = momenta[:,0,:], momenta[:,1,:], momenta[:,2,:], momenta[:,3,:]
+    v1, v2, v3, v4 = momenta[...,0,:], momenta[...,1,:], momenta[...,2,:], momenta[...,3,:]
     v12 = v1 + v2    # Momentum of 1st Vector boson
     v34 = v3 + v4    # Momentum of 2nd Vector boson
     vv  = v12 + v34  # Diboson momentum
