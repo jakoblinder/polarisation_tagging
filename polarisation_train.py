@@ -22,6 +22,7 @@ from ml_events_utils import boost_into_Zjet_cm_frame
 from ml_events_utils import train_loop, valid_loop
 from ml_events_utils import ZJetDataset
 from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output, FFNN_paper
+from plot_training_history import plot_training_history
 import argparse
 
 print('numpy', np.__version__)
@@ -35,27 +36,57 @@ parser = argparse.ArgumentParser(
     description='Train a neural network for polarisation tagging.',
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-parser.add_argument("mlfiles", nargs='+',    type=Path,  action="store", help=".ml files to be used for training.")
+parser.add_argument("mlfiles", nargs='*',    type=Path,  action="store", help=".ml files to be used for training. Not required when using --replot.")
 parser.add_argument("-m", "--model",         type=str,   action="store", default="FFNN_BatchNorm_no_output", help=f"Model architecture to use. Options: {list(model_dict.keys())}.")
 parser.add_argument("-o", "--optimizer",     type=str,   action="store", default="paper", help="Optimizer to use. Options: SGD, Adam, RMSprop, paper, paper_momentum.")
 parser.add_argument("-e", "--epochs",        type=int,   action="store", default=1000,    help="Number of training epochs.")
-parser.add_argument("-b", "--batch_size",    type=int,   action="store", default=128,     help="Batch size for training.")
+parser.add_argument("-b", "--batch_size",    type=int,   action="store", default=512,     help="Batch size for training.")
 parser.add_argument("-l", "--learning_rate", type=float, action="store", default=1e-2,    help="Learning rate for the optimizer.")
 parser.add_argument("-p", "--patience",      type=int,   action="store", default=25,      help="Early stopping patience.")
 parser.add_argument("-s", "--seed",          type=int,   action="store", default=42,      help="Random seed for reproducibility.")
 parser.add_argument("-n", "--nworkers",      type=int,   action="store", default=4,       help="Number of workers for DataLoader.")
 parser.add_argument("-t", "--test_mode",     dest="test_mode",    action="store_true",    help="Run in test mode (only one data point to test implementation of the model).")
 parser.add_argument("--no-cache-events",     dest="cache_events", action="store_false",   help="Disable caching of events in the dataset (defaul: Cache the events.).")
-parser.add_argument("--outputdir",           type=Path,  action='store', default=None, help='Specify name of output directory.')
+parser.add_argument("--outputdir",           type=Path,  action='store', default=None,    help='Specify name of output directory.')
 parser.add_argument("--replot",              dest="replot_only",  action="store_true",    help="Only regenerate the training history plot from existing CSV files. The model and potentially the output directory need to be specified.")
 parser.add_argument("--useZjet",             dest="use_zjet",     action="store_true",    help="Use Z+jet dataset instead of default.")
 
 arg = parser.parse_args()
 
+# Validate arguments
+if not arg.replot_only and len(arg.mlfiles) == 0:
+    parser.error("mlfiles are required when not using --replot")
+
 # Set fixed random number seed
 seed = arg.seed
 torch.manual_seed(seed)
 np.random.seed(seed)
+
+# %% Replot mode - load existing data and regenerate plot
+if arg.replot_only:
+    print("Running in replot mode - loading existing training history...")
+
+    # Determine model directory
+    if arg.outputdir is not None:
+        model_dir = arg.outputdir
+    else:
+        # Try to infer from model name
+        model_name = arg.model
+        model_dir = Path(model_name)
+
+    if not model_dir.exists():
+        print(f"Error: Directory {model_dir} does not exist!")
+        sys.exit(1)
+
+    # Generate plot using the plotting function
+    try:
+        plot_training_history(model_dir, arg.model, use_log_scale=True)
+        print("Replot completed!")
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+    sys.exit(0)
 
 # %% Data Handling
 
@@ -343,31 +374,12 @@ print(f"Best validation loss: {best_val_loss:.6f}")
 # %% Plot loss
 
 print(f"Plotting training history, using best model weights: {best_model_state is not None}")
-fig, ax1 = plt.subplots(figsize=(10, 7))
 
-# Primary y-axis for loss
-ax1.set_xlabel("Epoch")
-ax1.set_ylabel("Loss", color='black')
-ax1.plot(range(1,len(hist_loss)+1),     np.array(hist_loss),     label="Avg training loss", color='blue')
-ax1.plot(range(1,len(hist_val_loss)+1), np.array(hist_val_loss), label="Avg validation loss", color='orange')
-ax1.tick_params(axis='y', labelcolor='black')
-ax1.set_ylim(ymin=0)
-ax1.grid()
-ax1.legend(loc='upper left')
-
-# Secondary y-axis for learning rate
-ax2 = ax1.twinx()
-ax2.set_ylabel("Learning Rate", color='red')
-ax2.plot(range(1,len(hist_lr)+1), np.array(hist_lr), label="Learning rate", color='red')
-ax2.tick_params(axis='y', labelcolor='red')
-ax2.legend(loc='upper right')
-
-plt.title(f"Training History for {model_name}")
-plt.tight_layout()
-
-# Save plot to model directory
-plt.savefig(model_dir / f"{model_name}_training_history.pdf", bbox_inches='tight')
-# plt.show()
+# Generate plot using the plotting function
+try:
+    plot_training_history(model_dir, model_name, use_log_scale=True)
+except Exception as e:
+    print(f"Warning: Could not generate plot: {e}")
 
 # %% Check network on random event:
 # ```
