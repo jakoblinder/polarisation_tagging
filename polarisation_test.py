@@ -35,6 +35,7 @@ parser.add_argument("-b", "--batch_size", type=int,         action="store", defa
 parser.add_argument("-n", "--nworkers",   type=int,         action="store", default=4,    help="Number of workers for DataLoader.")
 parser.add_argument("-t", "--test_mode",  dest="test_mode", action="store_true",          help="Run in test mode (only one data point to test implementation of the model).")
 parser.add_argument("--inputdir",         type=Path,        action="store", default=None, help='Specify name of input directory.')
+parser.add_argument("--histogram_dir",    type=Path,        action="store", default=Path("/ptmp/mpp/jlinder/ML_Giovanni/ML_FILES/UU_LO"), help='Directory containing the .top histogram files for comparison (They are in the folder where also the events are.).')
 
 arg = parser.parse_args()
 
@@ -132,9 +133,88 @@ model.to(device)
 
 # summary(model, input_size=(input_dim,))
 
+# %% Histogram reading function
+def read_top_file_histograms(top_file_path):
+    """
+    Read histogram data from a .top file.
+
+    Args:
+        top_file_path (Path): Path to the .top file
+
+    Returns:
+        dict: Dictionary with histogram names as keys, each containing:
+            - 'bin_left': numpy array of left bin edges
+            - 'bin_right': numpy array of right bin edges
+            - 'values': numpy array of histogram values
+            - 'uncertainties': numpy array of uncertainties
+    """
+    histogram_data = {}
+
+    with open(top_file_path, 'r') as f:
+        current_histogram = None
+
+        for line in f:
+            line = line.strip()
+
+            # Skip empty lines
+            if not line:
+                continue
+
+            # Check if this is a histogram header
+            if line.startswith('#') and 'index' in line:
+                # Extract histogram name (everything before 'index')
+                hist_name = line.split('index')[0].strip('# ').strip()
+                current_histogram = hist_name
+                histogram_data[current_histogram] = {
+                    'bin_left': [],
+                    'bin_right': [],
+                    'values': [],
+                    'uncertainties': [],
+                    'edges': []
+                }
+                continue
+
+            # Skip other comment lines
+            if line.startswith('#'):
+                continue
+
+            # Parse data lines
+            if current_histogram is not None:
+                try:
+                    # Split by whitespace and convert scientific notation
+                    parts = line.split()
+                    if len(parts) >= 4:
+                        bin_left = float(parts[0].replace('D', 'E'))
+                        bin_right = float(parts[1].replace('D', 'E'))
+                        value = float(parts[2].replace('D', 'E'))
+                        uncertainty = float(parts[3].replace('D', 'E'))
+
+                        histogram_data[current_histogram]['bin_left'].append(bin_left)
+                        histogram_data[current_histogram]['bin_right'].append(bin_right)
+                        histogram_data[current_histogram]['values'].append(value)
+                        histogram_data[current_histogram]['uncertainties'].append(uncertainty)
+                except ValueError:
+                    # Skip lines that can't be parsed as numbers
+                    continue
+
+    # Convert lists to numpy arrays for easier manipulation
+    for hist_name in histogram_data:
+        for key in histogram_data[hist_name]:
+            histogram_data[hist_name][key] = np.array(histogram_data[hist_name][key])
+            histogram_data[hist_name]['edges'] = np.concatenate((
+                histogram_data[hist_name]['bin_left'],
+                histogram_data[hist_name]['bin_right'][-1:]
+            ))
+
+    return histogram_data
+
 # %% Testing loop
-def test_model(model, model_dir, dataloader, loss_fn, device):
+def test_model(model, model_dir, histogram_dir, dataloader, loss_fn, device):
     print("Starting testing...")
+
+    # Load the LL histogram for comparison plots
+    histogram_data = read_top_file_histograms(histogram_dir / "pwgLHEF_analysis-mean-W8.top")
+    print(f"Loaded {len(histogram_data)} histograms from .top file")
 
     model.eval()
 
@@ -170,6 +250,10 @@ def test_model(model, model_dir, dataloader, loss_fn, device):
 
             observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] = (pred[:,0] * y[:,1]).cpu().numpy()
             observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]] = (y[:,0] * y[:,1]).cpu().numpy()
+            # The weights are calculated as an average over the number of genereated events in POWHEG-BOX-RES:
+            observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] /= size
+            observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     /= size
+
             observable_dict["invmass_Z1"][batch * batch_size : batch * batch_size + X.shape[0]] = invmass_Z1.cpu().numpy()
             # observable_dict["invmass_Z2"][batch * batch_size : (batch + 1) * batch_size] = invmass_Z2.cpu().numpy()
 
@@ -195,18 +279,22 @@ def test_model(model, model_dir, dataloader, loss_fn, device):
         fig, axs = plt.subplots(1, 1)  # figsize=(10, 6)
 
         # Create histograms with respect to invariant mass, summing labels in each bin
-        bins = np.linspace(observable_dict["invmass_Z1"].min(), observable_dict["invmass_Z1"].max(), 51)
+        # bins = np.linspace(observable_dict["invmass_Z1"].min(), observable_dict["invmass_Z1"].max(), 51)
+        bins = histogram_data["mee"]['edges']
 
         # Sum predicted labels in each invariant mass bin
         pred_sums, _ = np.histogram(observable_dict["invmass_Z1"], bins=bins, weights=observable_dict["weights_ypred"])
         # Sum true labels in each invariant mass bin
         true_sums, _ = np.histogram(observable_dict["invmass_Z1"], bins=bins, weights=observable_dict["weights_y"])
+        # POWHEG histograms for comparison
+        powheg_sums = histogram_data["mee"]['values']
 
         # Plot as step histograms
         bin_centers = (bins[:-1] + bins[1:]) / 2
-        axs.step(bin_centers, true_sums, where='mid', label='True Labels',      color='green', linewidth=2, alpha=0.7)
+        axs.step(bin_centers, true_sums,   where='mid', label='True Labels',      color='green', linewidth=2, alpha=0.7)
         axs.plot(bin_centers, true_sums, 'x', color='green', markersize=8, alpha=0.7)
-        axs.step(bin_centers, pred_sums, where='mid', label='Predicted Labels', color='red',   linewidth=2, alpha=0.7)
+        axs.step(bin_centers, powheg_sums, where='mid', label='POWHEG Labels',    color='blue',  linewidth=2, alpha=0.7)
+        axs.step(bin_centers, pred_sums,   where='mid', label='Predicted Labels', color='red',   linewidth=2, alpha=0.7)
 
 
         # plt.hist(invmass_Z1_all[:, 2], bins=50, alpha=0.6, label='True Labels',      color='red',   edgecolor='black')
@@ -219,28 +307,87 @@ def test_model(model, model_dir, dataloader, loss_fn, device):
         axs.set_title('Predicted vs. True Labels')
         axs.legend()
         axs.grid(True, alpha=0.3)
+        axs.set_xlim(xmax=observable_dict["invmass_Z1"].max() * 1.01)
+
         fig.tight_layout()
 
         pdf.savefig(fig)
         plt.close(fig)
 
 
+        # Calculate bin widths for proper integration
+        bin_widths = bins[1:] - bins[:-1]
+
+        # Integrate the histograms (sum * bin_width)
+        pred_integral = np.sum(pred_sums * bin_widths)
+        true_integral = np.sum(true_sums * bin_widths)
+
+        print(f"Invariant mass histogram integration:")
+        print(f"  True integral:      {true_integral:.6e}")
+        print(f"  Predicted integral: {pred_integral:.6e}")
+        print(f"  xSec:               {histogram_data['totxsec']['values'][0]:.6e}")
+        print(f"  Ratio (pred/true):  {pred_integral/true_integral:.6f}")
+        print(f"  Ratio (pred/xSec):  {pred_integral/histogram_data['totxsec']['values'][0]:.6f}")
+
+        # Create a text-only plot for integration results
+        fig, ax = plt.subplots(1, 1)
+        ax.axis('off')  # Remove axes
+
+        text_content = f"""Invariant Mass Histogram Integration Results:
+
+    True integral:      {true_integral:.6e}
+    Predicted integral: {pred_integral:.6e}
+    xSec:               {histogram_data['totxsec']['values'][0]:.6e}
+    Ratio (pred/true):  {pred_integral/true_integral:.6f}
+    Ratio (pred/xSec):  {pred_integral/histogram_data['totxsec']['values'][0]:.6f}"""
+
+        ax.text(0.1, 0.5, text_content, fontsize=14, verticalalignment='center',
+            bbox=dict(boxstyle="round,pad=0.5", facecolor="lightgray", alpha=0.8))
+
+        ax.set_title('Integration Statistics', fontsize=16, fontweight='bold')
+
+        pdf.savefig(fig)
+        plt.close(fig)
+
+
+        # FIXME: For some reason the cos(theta*) histogram is scaled down by a factor of 10 everywhere...
+        #        No idea why...
         # Create a single comparison plot
         fig, axs = plt.subplots(1, 1)  # figsize=(10, 6)
 
-        # Create histograms with respect to invariant mass, summing labels in each bin
-        bins = np.linspace(-1.0, 1.0, 51)
+        # Create histograms with respect to cos(theta*), summing labels in each bin
+        # bins = np.linspace(-1.0, 1.0, 41)
+        bins = histogram_data["cthep"]['edges']
 
-        # Sum predicted labels in each invariant mass bin
+        # Sum predicted labels in each cos(theta*) bin
         pred_sums, _ = np.histogram(observable_dict["cthep"], bins=bins, weights=observable_dict["weights_ypred"])
-        # Sum true labels in each invariant mass bin
+        # Sum true labels in each cos(theta*) bin
         true_sums, _ = np.histogram(observable_dict["cthep"], bins=bins, weights=observable_dict["weights_y"])
+        # POWHEG histograms for comparison
+        powheg_sums = histogram_data["cthep"]['values']
+
+        # Calculate bin widths for proper integration
+        bin_widths = bins[1:] - bins[:-1]
+
+        # Integrate the histograms (sum * bin_width)
+        pred_integral   = np.sum(pred_sums * bin_widths)
+        true_integral   = np.sum(true_sums * bin_widths)
+        powheg_integral = np.sum(powheg_sums * bin_widths)
+
+        print(f"cos(theta*) histogram integration:")
+        print(f"  True integral:      {true_integral:.6e}")
+        print(f"  Predicted integral: {pred_integral:.6e}")
+        print(f"  POWHEG integral:    {powheg_integral:.6e}")
+        print(f"  xSec:               {histogram_data['totxsec']['values'][0]:.6e}")
+        print(f"  Ratio (pred/true):  {pred_integral/true_integral:.6f}")
+        print(f"  Ratio (pred/xSec):  {pred_integral/histogram_data['totxsec']['values'][0]:.6f}")
 
         # Plot as step histograms
         bin_centers = (bins[:-1] + bins[1:]) / 2
-        axs.step(bin_centers, true_sums, where='mid', label='True Labels',      color='green', linewidth=2, alpha=0.7)
+        axs.step(bin_centers, true_sums,   where='mid', label='True Labels',      color='green', linewidth=2, alpha=0.7)
         axs.plot(bin_centers, true_sums, 'x', color='green', markersize=8, alpha=0.7)
-        axs.step(bin_centers, pred_sums, where='mid', label='Predicted Labels', color='red',   linewidth=2, alpha=0.7)
+        axs.step(bin_centers, powheg_sums, where='mid', label='POWHEG Labels',    color='blue',  linewidth=2, alpha=0.7)
+        axs.step(bin_centers, pred_sums,   where='mid', label='Predicted Labels', color='red',   linewidth=2, alpha=0.7)
 
 
         # plt.hist(invmass_Z1_all[:, 2], bins=50, alpha=0.6, label='True Labels',      color='red',   edgecolor='black')
@@ -266,7 +413,7 @@ if __name__ == "__main__":
     start_time = time.time()
     test_loss_fn = torch.nn.MSELoss()
 
-    test_loss = test_model(model, model_dir, test_dataloader, test_loss_fn, device)
+    test_loss = test_model(model, model_dir, arg.histogram_dir, test_dataloader, test_loss_fn, device)
 
     end_time = time.time()
     print(f"Testing completed in {end_time - start_time:.2f} seconds.")
