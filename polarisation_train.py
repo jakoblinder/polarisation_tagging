@@ -17,7 +17,10 @@ from torchsummary import summary
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform, train_loop, valid_loop
+from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform
+from ml_events_utils import boost_into_Zjet_cm_frame
+from ml_events_utils import train_loop, valid_loop
+from ml_events_utils import ZJetDataset
 from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output, FFNN_paper
 import argparse
 
@@ -44,6 +47,8 @@ parser.add_argument("-n", "--nworkers",      type=int,   action="store", default
 parser.add_argument("-t", "--test_mode",     dest="test_mode",    action="store_true",    help="Run in test mode (only one data point to test implementation of the model).")
 parser.add_argument("--no-cache-events",     dest="cache_events", action="store_false",   help="Disable caching of events in the dataset (defaul: Cache the events.).")
 parser.add_argument("--outputdir",           type=Path,  action='store', default=None, help='Specify name of output directory.')
+parser.add_argument("--replot",              dest="replot_only",  action="store_true",    help="Only regenerate the training history plot from existing CSV files. The model and potentially the output directory need to be specified.")
+parser.add_argument("--useZjet",             dest="use_zjet",     action="store_true",    help="Use Z+jet dataset instead of default.")
 
 arg = parser.parse_args()
 
@@ -60,11 +65,17 @@ files = arg.mlfiles
 
 print(f"Cache events: {arg.cache_events}")
 
-dataset = MLEventsDataset(files,
-                          labels = ["LL/UU",],
-                          transform=boost_into_four_lepton_cm_frame,
-                        #   target_transform=scale_target,  # Scale target by 1000
-                          cache_events=arg.cache_events)  # Caching enabled
+if not arg.use_zjet:
+    dataset = MLEventsDataset(files,
+                            labels = ["LL/UU",],
+                            transform=boost_into_four_lepton_cm_frame,
+                            #   target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
+                            cache_events=arg.cache_events)  # Caching enabled
+else:
+    dataset = ZJetDataset(files[0],
+                          transform=boost_into_Zjet_cm_frame,
+                          target_transform=None,
+                          max_events=None)  # Maximum number of events to load (useful for testing). Max = 10^6.
 print(f"Dataset info: {dataset.get_file_info()}")
 
 # %% Hyperparameters
@@ -376,20 +387,21 @@ plt.savefig(model_dir / f"{model_name}_training_history.pdf", bbox_inches='tight
 
 model.eval()
 
-test_tensor = torch.tensor([ 1.445418701E+01, -2.611547450E+00,  8.079240742E+01,  8.211672667E+01,
-                             4.121475591E+00, -3.706903553E+01, -1.028783725E+01,  3.869030307E+01,
-                             2.206750721E+01, -9.725720987E+00,  1.263696046E+01,  2.722604071E+01,
-                            -4.064316981E+01,  4.940630397E+01, -3.490849930E+01,  7.287971904E+01])
+if not arg.use_zjet:
+    test_tensor = torch.tensor([ 1.445418701E+01, -2.611547450E+00,  8.079240742E+01,  8.211672667E+01,
+                                4.121475591E+00, -3.706903553E+01, -1.028783725E+01,  3.869030307E+01,
+                                2.206750721E+01, -9.725720987E+00,  1.263696046E+01,  2.722604071E+01,
+                                -4.064316981E+01,  4.940630397E+01, -3.490849930E+01,  7.287971904E+01])
 
-res = model(test_tensor.unsqueeze(0).to(device))
-print(f"res = {res.item():.10e}")
-print(f"Expected LL/ UU weight: {0.885049987E-03 / 0.248160008E-01:.10e}")
+    res = model(test_tensor.unsqueeze(0).to(device))
+    print(f"res = {res.item():.10e}")
+    print(f"Expected LL/ UU weight: {0.885049987E-03 / 0.248160008E-01:.10e}")
+else:
+    test_tensor = torch.tensor([-12.130391188000001,  34.443724807000002, 262.44532550000002, 264.97370709000000,
+                                 59.635322049999999, -22.605515205000000, 283.59799611000000, 290.68058819999999,
+                                -47.504930862000002, -11.838209601000001, 171.64348498999999, 178.48906858000001])
 
-# %% Test the trained model
-
-# Let's test it on cpu
-# model.to(torch.device("cpu"))
-
-# X_test_pt = X_test_pt.type(torch.float).to(torch.device("cpu"))
-# res = model(X_test_pt)
+    res = model(test_tensor.unsqueeze(0).to(device))
+    print(f"res = {res.item():.10e}")
+    print(f"Expected LL/ UU weight: {0.91735652950215585:.10e}")
 

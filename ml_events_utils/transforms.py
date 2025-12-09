@@ -39,8 +39,18 @@ def boostinv(qx, pboost):
     return qprime
 
 def boost_into_four_lepton_cm_frame(features):
+    """
+    Boost the four leptons into their combined center-of-mass frame.
+    Parameters:
+    features : torch.Tensor, shape (..., 16)
+        Input features containing four leptons' four-momenta in the order:
+        (px1, py1, pz1, E1, px2, py2, pz2, E2, px3, py3, pz3, E3, px4, py4, pz4, E4).
+    Returns:
+    torch.Tensor, shape (..., 16)
+        The boosted four leptons' four-momenta in the same order as the input.
+    """
     momenta = features.reshape(4, -1)  # Assuming features contain x leptons with 4 momentum components each.
-                                             # p1 = momenta[0], p2 = momenta[1], p3 = momenta[2], p4 = momenta[3].
+                                       # p1 = momenta[0], p2 = momenta[1], p3 = momenta[2], p4 = momenta[3].
     p_tot   = momenta.sum(dim=0)
 
     momenta_prime = torch.zeros_like(momenta)
@@ -81,3 +91,24 @@ def log_target_transform(target):
     # Use log1p for better numerical stability: log(1 + x)
     return torch.log1p(torch.clamp(target, min=epsilon))
 
+def boost_into_Zjet_cm_frame(features):
+    """
+    Boost the Z boson and jet into their combined center-of-mass frame, i.e. where the Z boson and the jet are back to back.
+    Parameters:
+    features : torch.Tensor, shape (..., 12)
+        Input features containing Z boson and jet four-momenta in the order:
+        (px_Z, py_Z, pz_Z, E_Z, px_jet, py_jet, pz_jet, E_jet, ...).
+    Returns:
+    torch.Tensor, shape (..., 12)
+        The boosted Z boson and jet four-momenta in the same order as the input.
+    """
+    momenta = features.reshape(3, -1)  # Assuming features contain lepton momenta (2) and jet with 4 momentum components each.
+                                       # p_l1 = momenta[0], p_l2 = momenta[1], p_jet = momenta[2].
+    p_tot   = momenta.sum(dim=0)
+
+    momenta_prime = torch.zeros_like(momenta)
+    for i in range(3):
+        momenta_prime[i] = boostinv(momenta[i], p_tot)
+
+    # p_tot_prime = momenta_prime.sum(dim=0)
+    return momenta_prime.reshape(-1)
