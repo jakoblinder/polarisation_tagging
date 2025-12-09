@@ -138,8 +138,8 @@ def test_model(model, model_dir, dataloader, loss_fn, device):
 
     model.eval()
 
-    size = len(dataloader.dataset)  # Total number of samples in the dataset.
-    num_batches = len(dataloader)   # Number of batches in the dataloader.
+    size        = len(dataloader.dataset)  # Total number of samples in the dataset (= n_events).
+    num_batches = len(dataloader)          # Number of batches in the dataloader.
 
     observable_dict = {"weights_y":     np.zeros(size),
                        "weights_ypred": np.zeros(size),

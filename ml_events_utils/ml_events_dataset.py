@@ -229,9 +229,27 @@ class MLEventsDataset(Dataset):
         return np.array(momenta_information), np.array(weight_labels)
 
     def _load_event(self, idx: int) -> Dict[str, Any]:
-        """Load and parse a single event by index.
+        """
+        Load and parse a single event by index.
         Since events are stored across multiple files, we need to determine which file to read from.
         Since the event files are stored in a list, we need to map the global index to the specific file and local index.
+
+        The event format is assumed to be:
+        <event>
+        -1.952240822E+01  1.619171734E+01 -3.960068023E+01  4.702669463E+01
+        4.677072325E+00 -6.222946580E+01  1.290993778E+00  6.241833132E+01
+        1.629003643E+01 -2.368169622E+01 -4.681346003E+01  5.493348763E+01
+        -1.444700533E+00  6.971944468E+01 -3.560575124E+01  7.829851625E+01
+        <rwgt>
+        <weight id='UU'> 0.239419993E-01 </weight>
+        <weight id='LL'> 0.634900003E-03 </weight>
+        ...
+        </rwgt>
+        With the momentum lines containing an arbitrary number of float numbers (4 per particle),
+        and the weights being specified in the <rwgt> block.
+        In the specific example above, there are 4 particles (4 momentum lines), each with (px, py, pz, E).
+        Args:
+            idx: Global event index
         """
         # Make sure that idx is a list
         if isinstance(idx, int):
@@ -291,7 +309,7 @@ class MLEventsDataset(Dataset):
 
         # Convert to tensors
         features = torch.tensor(event['features'], dtype=torch.float32)  # Shape: [4 * n_particles]
-        labels   = torch.tensor(event['labels'], dtype=torch.float32)      # Shape: [4]
+        labels   = torch.tensor(event['labels'],   dtype=torch.float32)  # Shape: [#labels given in init]
 
         # # Flatten features (concatenate all momentum components)
         # features = features.flatten()  # Shape: [n_particles * 4]

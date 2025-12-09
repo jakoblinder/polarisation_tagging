@@ -145,6 +145,10 @@ print(f"Computation device: {device}\n")
 model = model_dict[arg.model](input_dim=input_dim)
 model_name = model.__class__.__name__
 
+# if torch.cuda.device_count() > 1:
+#   print("Let's use", torch.cuda.device_count(), "GPUs!")
+#   model = nn.DataParallel(model)
+
 model.to(device)
 print(f"Model {model_name} is on GPU: {next(model.parameters()).is_cuda}")
 
