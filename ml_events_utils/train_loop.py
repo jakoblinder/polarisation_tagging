@@ -7,6 +7,8 @@ def train_loop(dataloader, model, loss_fn, optimizer, device, print_freq=100):
     size        = len(dataloader.dataset)  # Total number of samples in the dataset.
     num_batches = len(dataloader)          # Number of batches in the dataloader.
 
+    # Move the model to the specified device (CPU or GPU)
+    model.to(device)
     # Set the model to training mode - important for batch normalization and dropout layers
     model.train()
 
@@ -44,6 +46,8 @@ def train_loop(dataloader, model, loss_fn, optimizer, device, print_freq=100):
 
 
 def valid_loop(dataloader, model, loss_fn, device):
+    # Move the model to the specified device (CPU or GPU)
+    model.to(device)
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     model.eval()
     size = len(dataloader.dataset)  # Total number of samples in the dataset.

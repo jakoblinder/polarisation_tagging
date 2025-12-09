@@ -216,6 +216,9 @@ def test_model(model, model_dir, histogram_dir, dataloader, loss_fn, device):
     histogram_data = read_top_file_histograms(histogram_dir / "pwgLHEF_analysis-mean-W8.top")
     print(f"Loaded {len(histogram_data)} histograms from .top file")
 
+    # Move the model to the specified device (CPU or GPU)
+    model.to(device)
+    # Set the model to evaluation mode - important for batch normalization and dropout layers
     model.eval()
 
     size        = len(dataloader.dataset)  # Total number of samples in the dataset (= n_events).
