@@ -1,0 +1,10 @@
+CHEKS & NEXT STEPS
+------------------
+- brute-force checks with current architecture
+- standardisation and avoid Batch norm with old architecture
+- deeper and less shallow architecture
+- hyperbolic tangent works better than RELU in NNPDF regression task
+- more refined (automated) hyperparameter optmisation as done for Zj (see trained models)
+- feed the network with the other 16 independent variables (pt, y, costheta*, ...) <- Eq.(14) in the Overleaf draft
+- particleNET model tests
+
