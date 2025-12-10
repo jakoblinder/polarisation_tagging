@@ -82,3 +82,46 @@ def costhetastar(momenta):
     ct4 = (bbv4[...,0:3] * bv34[...,0:3]).sum(dim=-1) / (torch.norm(bbv4[...,0:3], dim=-1) * torch.norm(bv34[...,0:3], dim=-1))
 
     return ct1, ct2, ct3, ct4
+
+
+def get_pt(p4):
+    """
+    Calculate the transverse momentum (pT) of a particle given its 4-momentum.
+
+    Args:
+        p4 (torch.Tensor): Tensor of shape (..., 4) representing the 4-momentum (px, py, pz, E)
+    Returns:
+        torch.Tensor: Tensor of shape (...) representing the transverse momentum
+    """
+    px = p4[..., 0]
+    py = p4[..., 1]
+    pt = torch.sqrt(px**2 + py**2)
+    return pt
+
+
+def get_rapidity(p4):
+    """
+    Calculate the rapidity of a particle given its 4-momentum.
+
+    Args:
+        p4 (torch.Tensor): Tensor of shape (..., 4) representing the 4-momentum (px, py, pz, E)
+    Returns:
+        torch.Tensor: Tensor of shape (...) representing the rapidity
+    """
+    pz = p4[..., 2]
+    E  = p4[..., 3]
+
+    tiny = 1e-10
+    # Handle edge cases similar to the Fortran code
+    # Handle edge cases where E ≈ ±pz
+    rapidity = torch.where(
+        torch.abs(E - pz) < tiny,
+        torch.sign(pz) * 1e8,
+        torch.where(
+            torch.abs(E + pz) < 1e-5 * torch.abs(E - pz),  # mauro ? (e~-pz=> large negative rap ~log0)
+            torch.sign(pz) * 1e8,
+            0.5 * torch.log((E + pz) / (E - pz))  # Ordinary definition
+        )
+    )
+
+    return rapidity
