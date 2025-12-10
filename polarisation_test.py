@@ -222,29 +222,27 @@ def print_integration_statistics(observable_dict, histogram_data):
     # pred_integral = np.sum(pred_sums * bin_widths)
     # true_integral = np.sum(true_sums * bin_widths)
 
-    print(f"Invariant mass histogram integration:")
-    print(f"  True integral:      {true_integral:.6e}")
-    print(f"  Predicted integral: {pred_integral:.6e}")
-    print(f"  xSec:               {histogram_data['totxsec']['values'][0]:.6e}")
+    print(f"Integrated cross-sections:")
+    print(f"  True r_LL:          {true_integral:.6e}")
+    print(f"  Predicted r_LL:     {pred_integral:.6e}")
+    print(f"  POWHEG reweighting: {histogram_data['totxsec']['values'][0]:.6e}")
     print(f"  Ratio (pred/true):  {pred_integral/true_integral:.6f}")
-    print(f"  Ratio (pred/xSec):  {pred_integral/histogram_data['totxsec']['values'][0]:.6f}")
+    print(f"  Ratio (pred/PWG):   {pred_integral/histogram_data['totxsec']['values'][0]:.6f}")
 
     # Create a text-only plot for integration results
     fig, ax = plt.subplots(1, 1)
     ax.axis('off')  # Remove axes
 
-    text_content = f"""Invariant Mass Histogram Integration Results:
-
-    True integral:      {true_integral:.6e}
-    Predicted integral: {pred_integral:.6e}
-    xSec:               {histogram_data['totxsec']['values'][0]:.6e}
+    text_content = f"""    True r_LL:          {true_integral:.6e}
+    Predicted r_LL:     {pred_integral:.6e}
+    POWHEG reweighting: {histogram_data['totxsec']['values'][0]:.6e}
     Ratio (pred/true):  {pred_integral/true_integral:.6f}
-    Ratio (pred/xSec):  {pred_integral/histogram_data['totxsec']['values'][0]:.6f}"""
+    Ratio (pred/PWG):   {pred_integral/histogram_data['totxsec']['values'][0]:.6f}"""
 
     ax.text(0.1, 0.5, text_content, fontsize=14, verticalalignment='center',
         bbox=dict(boxstyle="round,pad=0.5", facecolor="lightgray", alpha=0.8))
 
-    ax.set_title('Integration Statistics', fontsize=16, fontweight='bold')
+    ax.set_title('Integrated cross-sections', fontsize=16, fontweight='bold')
 
     return fig, ax
 
