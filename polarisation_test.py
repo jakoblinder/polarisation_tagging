@@ -310,7 +310,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
         axs[1].step(bin_centers, pred_sums / np.maximum(powheg_sums, 1e-10), where='mid', color='blue', linewidth=2, alpha=0.7, linestyle='--')
 
     axs[1].axhline(1.0, color='gray', linestyle='--', linewidth=1)
-    axs[1].set_ylabel("Pred / True")
+    axs[1].set_ylabel("Predicted / X")
 
     # Scale y axis logarithmically
     axs[0].set_yscale('log')
