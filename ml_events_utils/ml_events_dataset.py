@@ -248,6 +248,11 @@ class MLEventsDataset(Dataset):
         With the momentum lines containing an arbitrary number of float numbers (4 per particle),
         and the weights being specified in the <rwgt> block.
         In the specific example above, there are 4 particles (4 momentum lines), each with (px, py, pz, E).
+        In the considered ZZ case here, they correspond to
+        zl1 = e+,
+        zl2 = e-,
+        zl3 = mu+,
+        zl4 = mu-.
         Args:
             idx: Global event index
         """
