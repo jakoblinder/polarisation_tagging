@@ -31,11 +31,12 @@ parser = argparse.ArgumentParser(
 parser.add_argument("mlfiles", nargs='+', type=Path,        action="store",               help=".ml files to be used for training.")
 parser.add_argument("model",              type=str,         action="store",               help=f"Model architecture to use. Options: {list(model_dict.keys())}.")
 parser.add_argument("model_weight_file",  type=Path,        action="store",               help="Path to the .pt(y) file containing the trained model weights.")
+parser.add_argument("-g", "--gpu",        type=int,         action="store", default=-1,   help="Specify manually which of the available gpus is supposed to be used.")
 parser.add_argument("-b", "--batch_size", type=int,         action="store", default=128,  help="Batch size for training.")
 parser.add_argument("-n", "--nworkers",   type=int,         action="store", default=4,    help="Number of workers for DataLoader.")
 parser.add_argument("-t", "--test_mode",  dest="test_mode", action="store_true",          help="Run in test mode (only one data point to test implementation of the model).")
 parser.add_argument("--inputdir",         type=Path,        action="store", default=None, help='Specify name of input directory.')
-parser.add_argument("--histogram_dir",    type=Path,        action="store", default=Path("/ptmp/mpp/jlinder/ML_Giovanni/ML_FILES/UU_LO"), help='Directory containing the .top histogram files for comparison (They are in the folder where also the events are.).')
+parser.add_argument("--histogram_dir",    type=Path,        action="store", default=None, help='Directory containing the .top histogram files for comparison (They are in the folder where also the events are.).')
 
 arg = parser.parse_args()
 
@@ -50,6 +51,9 @@ if arg.inputdir is not None:
     model_dir = arg.inputdir
 else:
     model_dir = Path(model_name)
+
+if arg.histogram_dir is None:
+    arg.histogram_dir = arg.mlfiles[0].parent
 
 # %% Set fixed random number seed to get the same test/ train split as used during training
 print(Path.cwd())
@@ -106,10 +110,13 @@ if torch.cuda.is_available():
   print('Number of devices: ', torch.cuda.device_count())
   print(torch.cuda.get_device_name(0))
 
-device_gpu = ('cuda' if torch.cuda.is_available() else 'cpu')
-device_cpu = torch.device('cpu')
-
-device = device_gpu
+if torch.cuda.is_available():
+    if arg.gpu > 0:
+        device = f"cuda:{arg.gpu}"
+    else:
+        device = "cuda"
+else:
+    device = "cpu"
 print(f"Computation device: {device}\n")
 
 # %% Initialize the model and load the trained weights
@@ -124,9 +131,6 @@ else:
 
 model.load_state_dict(torch.load(model_weight_file, map_location=device, weights_only=True))
 model.to(device)
-
-# Explicitly move model to CPU and ensure all tensors are moved
-# model = model.to(device)
 
 
 #   summary(model, input_size=(1,input_dim))
