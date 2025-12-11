@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
+import numpy as np
 from .analysis import costhetastar
 
 
@@ -127,17 +128,19 @@ class FFNN_paper_BatchNorm(FFNN_paper):
 class FFNN_paper_2extraLayers(FFNN_paper):
     def __init__(self, input_dim, output_dim=1):
         super().__init__(input_dim, output_dim, emb_dim = [1000] * 3)
-        # Override hidden block to add 2 extra layers
-        old_width = 1000
-        # number of parameters with 4 hidden layers:
-        old_hidden_layers = 4
-        nparams = (1 + self.input_dim + old_hidden_layers * old_width) * old_width
 
-        # Width adjusted to keep number of parameters roughly constant:
-        n_hidden_layers = 6
-        new_width  = -1 - self.input_dim + np.sqrt(1 + 2 * self.input_dim + self.input_dim**2 + 4 * n_hidden_layers * nparams)
-        new_width /= (2 * n_hidden_layers)
-        new_width = int(new_width)
+        def calculate_new_width(input_dim:int, old_hidden_layers:int, new_hidden_layers:int, old_width:int) -> int:
+            nparams = (((2 + input_dim + old_hidden_layers + old_hidden_layers * old_width)*old_width) + 1)
+
+            new_width  = - 2 - input_dim - new_hidden_layers
+            new_width += np.sqrt(4 + input_dim**2 + new_hidden_layers**2 + 2 * input_dim*(2 + new_hidden_layers) + 4*new_hidden_layers*nparams)
+            new_width /= (2 * new_hidden_layers)
+
+            # new_width = - (2 + input_dim + new_hidden_layers - np.sqrt(4 + input_dim**2 + new_hidden_layers**2 + 2 * input_dim * (2 + new_hidden_layers) + 4 * new_hidden_layers * nparams)) / (2 * new_hidden_layers)
+
+            return int(new_width)
+
+        new_width = calculate_new_width(self.input_dim, old_hidden_layers=4, new_hidden_layers=6, old_width=1000)
 
         self.emb_dim = [new_width] * 3
 
