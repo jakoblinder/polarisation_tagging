@@ -16,7 +16,7 @@ from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepto
 from ml_events_utils import ZJetDataset
 from ml_events_utils import boost_into_Zjet_cm_frame
 from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output, FFNN_paper
-from ml_events_utils.analysis import costhetastar, get_pt, get_rapidity
+from ml_events_utils.analysis import costhetastar, get_pt, get_rapidity, cosmujet
 import argparse
 
 print('numpy', np.__version__)
@@ -551,6 +551,123 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, loss_fn, device, 
         # plt.close(fig)
 
         fig, _ = r_plot(observable_dict["rLL_pred"], observable_dict["rLL_true"], observable_dict["weights_y"])
+        pdf.savefig(fig)
+        plt.close(fig)
+
+    return test_loss
+
+# %% Define testing function for Z+jet model
+def test_model_Zjet(model, model_dir, histogram_dir, dataloader, loss_fn, device):
+    """
+    Test a trained machine learning model for Z+jet events.
+    This function evaluates the model on test data and computes the average test loss.
+    Args:
+        model: PyTorch model to be tested
+        model_dir: Directory containing the model files
+        histogram_dir (Path): Directory containing the total unpolarised cross-section (Events are unweighted in the Z+jet case).
+        dataloader: PyTorch DataLoader containing test data with features (X) and targets (y)
+        loss_fn: Loss function used for evaluation
+        device: PyTorch device (CPU or GPU) for computation
+    Returns:
+        float: Average test loss per batch
+    Side Effects:
+        - Saves comparison plots to "test_histograms.pdf" in the model run directory.
+        - Creates histogram for the rLL observable.
+    Note:
+        The function expects:
+        - Input features X with shape (batch_size, n_particles, 4) representing 4-momenta.
+        - Target y with shape (batch_size, 1) where y[:,0] are the rL weights.
+    """
+
+    print("Starting testing for Z+jet model...")
+    size        = len(dataloader.dataset)  # Total number of samples in the dataset (= n_events).
+    num_batches = len(dataloader)          # Number of batches in the dataloader.
+
+    print(f"Analysing {size} events in total.")
+
+    # Get the total unpolarised cross-section from the xsec.txt file
+    with open(histogram_dir / "xsec.txt", 'r') as f:
+        lines = f.readlines()
+        # Skip header lines and extract the cross-section value from the third line
+        xsec_line = lines[2].strip()  # "817.3(2) pb"
+        # Extract the numerical value before the parentheses
+        total_xsec = float(xsec_line.split('(')[0])
+    print(f"Total unpolarised cross-section from MG5: {total_xsec:.6e} pb")
+
+    # Move the model to the specified device (CPU or GPU)
+    model.to(device)
+    # Set the model to evaluation mode - important for batch normalization and dropout layers
+    model.eval()
+
+    observable_dict = {"weights_y":     np.zeros(size),
+                       "weights_ypred": np.zeros(size),
+                       "rL_pred":       np.zeros(size),
+                       "rL_true":       np.zeros(size),
+                       "ptjet":         np.zeros(size),
+                       "cosmupjet":     np.zeros(size),
+                     }
+
+
+    test_loss = 0
+    with torch.no_grad():
+        for batch, (X, y) in enumerate(dataloader):
+            X, y = X.to(device), y.to(device)
+            if batch == 0:
+                batch_size = X.shape[0]
+
+            # Compute prediction and loss
+            pred = model(X)
+
+            test_loss += loss_fn(pred, y).item()
+
+            # Store weights for integration
+            observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] = (pred[:,0] * total_xsec).cpu().numpy()
+            observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     = (y[:,0]    * total_xsec).cpu().numpy()
+            # The weights are calculated as an average over the number of genereated events in POWHEG-BOX-RES:
+            n_generated_events = size  # TODO: Check if this is correct for Z+jet case
+            observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] /= n_generated_events
+            observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     /= n_generated_events
+
+            # Compute observables
+            observable_dict["rL_pred"][batch * batch_size : batch * batch_size + X.shape[0]] = pred[:,0].cpu().numpy()
+            observable_dict["rL_true"][batch * batch_size : batch * batch_size + X.shape[0]] = y[:,0].cpu().numpy()
+
+            # zl1, zl2, jet =  mu+, mu-, jet
+            momenta = X.reshape(X.shape[0], -1, 4)
+
+            observable_dict["ptjet"][batch * batch_size : batch * batch_size + X.shape[0]] = get_pt(momenta[:,2,:]).cpu().numpy()
+
+            ct1, ct2 = cosmujet(momenta)
+            observable_dict["cosmupjet"][batch * batch_size : batch * batch_size + X.shape[0]] = ct1.cpu().numpy()
+
+    test_loss /= num_batches
+
+    print(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
+
+    with PdfPages(f"{model_run_dir}/test_histograms.pdf") as pdf:
+        d = pdf.infodict()
+        d['Title']        = f"Test results for model {model_name}"
+        d['Author']       = 'You'
+        d['Subject']      = 'Some comparison plots'
+        d['Keywords']     = 'Machine Learning POWHEG POWHEGBOX POWHEG-BOX-RES'
+        d['CreationDate'] = datetime.today()
+        d['ModDate']      = datetime.today()
+
+        fig, _ = print_integration_statistics(observable_dict)
+        pdf.savefig(fig)
+        plt.close(fig)
+
+        # Invariant pT of the jet
+        fig, _ = comparison_plots(observable_dict, "ptjet")
+        pdf.savefig(fig)
+        plt.close(fig)
+
+        # Cos(theta*) of the mu+ and jet in Z+jet CM frame
+        fig, _ = comparison_plots(observable_dict, "cosmupjet")
+        pdf.savefig(fig)
+        plt.close(fig)
+
+        fig, _ = r_plot(observable_dict["rL_pred"], observable_dict["rL_true"], observable_dict["weights_y"])
         pdf.savefig(fig)
         plt.close(fig)
 
