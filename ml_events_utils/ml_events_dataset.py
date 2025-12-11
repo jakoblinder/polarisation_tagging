@@ -13,12 +13,19 @@ class MLEventsDataset(Dataset):
     Uses lazy loading to handle big files without loading everything into memory.
     """
 
-    def __init__(self, file_path: Union[str, Path,List], labels: List[str], transform: Optional[Callable] = None, target_transform: Optional[Callable]=None, cache_events: bool = False) -> None:
+    def __init__(self, file_path: Union[str, Path,List],
+                 labels: List[str],
+                 transform: Optional[Callable] = None,
+                 target_transform: Optional[Callable] = None,
+                 cache_events: bool = False,
+                 standardise: bool = False) -> None:
         """
         Args:
-            file_path: Path to the ML events file
-            transform: Optional transform to be applied on features
-            cache_events: Whether to cache parsed events in memory (for smaller files)
+            file_path: Path to the ML events file.
+            transform: Optional transform to be applied on features.
+            target_transform: Optional transform to be applied on labels.
+            cache_events: Whether to cache parsed events in memory (for smaller files).
+            standardise: Whether to standardise features (not labels) using global statistics (BatchNorm should be preferred).
         """
         if isinstance(file_path, list):
             self.file_path = [Path(fp) for fp in file_path]
@@ -48,15 +55,35 @@ class MLEventsDataset(Dataset):
         # Build index of event positions specific to each file for lazy loading.
         self.event_positions = self._build_event_index()
 
-        # Read and combine the means of the momentum information and weights from all files.
-        # self.means, self.stddevs = self.compute_global_statistics()
-
         # Number of events per file
         self.number_of_events = {efp: len(positions) for efp, positions in self.event_positions.items()}
 
         self._cached_events = {} if cache_events else None
 
         print(f"Found {len(self)} events in {self.file_path}")
+
+        # Standardisation over the whole dataset:
+        if standardise:
+            print("Computing dataset-wide feature standardisation.")
+            print("This may take a moment...")
+            fulldataloader = DataLoader(
+                self,
+                batch_size=len(self),
+                shuffle=False,
+                num_workers=0,
+                pin_memory=True
+            )
+            features, _ = next(iter(fulldataloader))
+            self.feature_mean   = features.mean(dim=0)
+            self.feature_stddev = features.std(dim=0)
+            del fulldataloader
+            def standardise_fn(x):
+                return (x - self.feature_mean) / self.feature_stddev
+            if self.transform:
+                original_transform = self.transform
+                self.transform = lambda x: standardise_fn(original_transform(x))
+            else:
+                self.transform = standardise_fn
 
     def _build_event_index(self) -> List[Tuple[int, int]]:
         """Build an index of event start/end positions in the file for efficient access."""
@@ -106,6 +133,12 @@ class MLEventsDataset(Dataset):
               For those cases, the means and stddevs should be computed separately on the training dataset only,
               using for example the torch.nn.BatchNorm1d or torch.nn.BatchNorm2d layers in the model.
               This is anyway more robust, since it allows to ignore the normalisation should it turn out to be not beneficial.
+        Note2: For the weights, the statistical quantities which are combined here are the calculated per file set, i.e.
+               this is for, example the mean of only the LL weights across all files and not the mean of the ratio LL/UU!
+
+        returns: Tuple of (mean, stddev) dictionaries with 'features' and 'labels' keys.
+            mean   = sum(mean_i) / N_files
+            stddev = sqrt(sum(stddev_i^2)) / N_files
         """
         all_momentum_means   = []
         all_momentum_stddevs = []

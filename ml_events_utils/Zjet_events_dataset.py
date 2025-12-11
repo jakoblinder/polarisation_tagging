@@ -5,7 +5,7 @@ Each line contains: ['Emu+', 'pxmu+', 'pymu+', 'pzmu+', 'Emu-', 'pxmu-', 'pymu-'
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from typing import Tuple, List, Dict, Union, Any, Optional, Callable
 from pathlib import Path
 
@@ -19,7 +19,7 @@ class ZJetDataset(Dataset):
     - 1 label: rL
     """
 
-    def __init__(self, file_path, transform=None, target_transform=None, max_events=None):
+    def __init__(self, file_path, transform=None, target_transform=None, max_events=None, standardise=True):
         """
         Initialize the Z+jet dataset.
 
@@ -40,6 +40,29 @@ class ZJetDataset(Dataset):
 
         # Load and parse the data
         self._load_data(max_events)
+
+        # Standardisation over the whole dataset:
+        if standardise:
+            print("Computing dataset-wide feature standardisation.")
+            print("This may take a moment...")
+            fulldataloader = DataLoader(
+                self,
+                batch_size=len(self),
+                shuffle=False,
+                num_workers=0,
+                pin_memory=True
+            )
+            features, _ = next(iter(fulldataloader))
+            self.feature_mean   = features.mean(dim=0)
+            self.feature_stddev = features.std(dim=0)
+            del fulldataloader
+            def standardise_fn(x):
+                return (x - self.feature_mean) / self.feature_stddev
+            if self.transform:
+                original_transform = self.transform
+                self.transform = lambda x: standardise_fn(original_transform(x))
+            else:
+                self.transform = standardise_fn
 
     def _load_data(self, max_events=None):
         """
@@ -90,7 +113,7 @@ class ZJetDataset(Dataset):
         print(f"Feature shape: {self.features.shape}")
         print(f"Label   shape: {self.labels.shape}")
         print(f"Feature statistics - Mean: {self.features.mean():.3f}, Std: {self.features.std():.3f}")
-        print(f"Label statistics   - Mean: {self.labels.mean():.3f},   Std: {self.labels.std():.3f}, Min: {self.labels.min():.3f}, Max: {self.labels.max():.3f}")
+        print(f"Label   statistics - Mean: {self.labels.mean():.3f},   Std: {self.labels.std():.3f}, Min: {self.labels.min():.3f}, Max: {self.labels.max():.3f}")
 
     def __len__(self):
         """Return the number of events in the dataset."""

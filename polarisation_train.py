@@ -51,8 +51,13 @@ parser.add_argument("--no-cache-events",     dest="cache_events", action="store_
 parser.add_argument("--outputdir",           type=Path,  action='store', default=None,    help='Specify name of output directory.')
 parser.add_argument("--replot",              dest="replot_only",  action="store_true",    help="Only regenerate the training history plot from existing CSV files. The model and potentially the output directory need to be specified.")
 parser.add_argument("--useZjet",             dest="use_zjet",     action="store_true",    help="Use Z+jet dataset instead of default.")
+parser.add_argument("--standardise",         dest="standardise",  action="store_true",    help="Enable standardisation of features over the whole dataset (default).")
 
 arg = parser.parse_args()
+
+print("Arguments:")
+for attr, value in vars(arg).items():
+    print(f"  {attr}: {value}")
 
 # Validate arguments
 if not arg.replot_only and len(arg.mlfiles) == 0:
@@ -102,12 +107,14 @@ if not arg.use_zjet:
                             labels = ["LL/UU",],
                             transform=boost_into_four_lepton_cm_frame,
                             #   target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
-                            cache_events=arg.cache_events)  # Caching enabled
+                            cache_events=arg.cache_events,  # Caching enabled
+                            standardise=arg.standardise)  # Standardisation over the whole dataset not enabled.
 else:
     dataset = ZJetDataset(files[0],
                           transform=boost_into_Zjet_cm_frame,
                           target_transform=None,
-                          max_events=None)  # Maximum number of events to load (useful for testing). Max = 10^6.
+                          max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
+                          standardise=arg.standardise)  # Standardisation over the whole dataset enabled.
 print(f"Dataset info: {dataset.get_file_info()}")
 
 # %% Hyperparameters
@@ -153,6 +160,27 @@ for batch_idx, (batch_features, batch_labels) in enumerate(train_dataloader):
     input_dim = batch_features.shape[1]
     print(f"{input_dim = }")
     break  # Only show first batch
+
+# %% Test standardisation statistics
+test_standardisation = False
+if test_standardisation:
+    fulldataloader = DataLoader(
+        train_dataset,
+        batch_size=len(train_dataset),
+        shuffle=False,
+        num_workers=0,
+        pin_memory=True
+    )
+
+    features, _ = next(iter(fulldataloader))
+    overall_mean   = features.mean(dim=0)
+    overall_stddev = features.std(dim=0)
+    del fulldataloader
+
+    print(f"\nFeature means over training set:\n{overall_mean}")
+    print(f"\nFeature stddevs over training set:\n{overall_stddev}")
+
+    sys.exit(0)
 
 # %% Specify the loss function
 
