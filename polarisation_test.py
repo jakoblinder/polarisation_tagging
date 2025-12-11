@@ -267,6 +267,42 @@ def print_integration_statistics(observable_dict, histogram_data: dict = {}):
 
     return fig, ax
 
+def r_plot(r_pred, r_true, weights):
+    fig, axs = plt.subplots(1, 1)
+
+    r_min, r_max = min(r_pred.min() ,r_true.min()), max(r_pred.max(), r_true.max())
+    bins = np.linspace(r_min, r_max, 51)
+
+    # Calculate bin widths for proper integration
+    bin_widths = bins[1:] - bins[:-1]
+
+    # Sum predicted labels in each r bin
+    pred_sums, _ = np.histogram(r_pred, bins=bins, weights=weights)
+    pred_sums /= bin_widths
+    true_sums, _ = np.histogram(r_true, bins=bins, weights=weights)
+    true_sums /= bin_widths
+
+    # Plot as step histograms
+    bin_centers = (bins[:-1] + bins[1:]) / 2
+
+    axs.step(bin_centers, true_sums, where='mid', label='True r',      color='green', linewidth=2, alpha=0.7)
+    axs.step(bin_centers, pred_sums, where='mid', label='Predicted r', color='red',   linewidth=2, alpha=0.7)
+
+    # Scale y axis logarithmically
+    # axs[0].set_yscale('log')
+
+    axs.set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} r}$ [pb / [r]]")
+    axs.set_title("Predicted vs. True Labels")
+    axs.legend()
+    axs.grid(True, alpha=0.3)
+
+    axs.set_xlim(xmin=r_min * 0.99, xmax=r_max * 1.01)
+
+    axs.set_xlabel("r")
+
+    fig.tight_layout()
+    return fig, axs
+
 
 def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:dict = None):
     """
@@ -334,12 +370,13 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     # Scale y axis logarithmically
     axs[0].set_yscale('log')
 
-    axs[0].set_ylabel(r"$\sigma$ [pb / [" + observable_key + "]]")
+    axs[0].set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} \mathrm{" + observable_key + r"}}$ [pb / [" + observable_key + "]]")
     axs[0].set_title("Predicted vs. True Labels")
     axs[0].legend()
     axs[0].grid(True, alpha=0.3)
+    axs[1].grid(True, alpha=0.3)
 
-    axs[1].set_xlim(xmax=observable_dict[observable_key].max() * 1.01)
+    axs[1].set_xlim(xmin=observable_dict[observable_key].min() * 0.99, xmax=observable_dict[observable_key].max() * 1.01)
 
     axs[1].set_xlabel(f"{observable_key}")
 
@@ -400,9 +437,13 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, loss_fn, device, 
                        "invmass_Z1":    np.zeros(size),
                        "invmass_Z2":    np.zeros(size),
                        "cthep":         np.zeros(size),
+                       "cthep_mll_cut5":  np.zeros(size),
+                       "cthep_mll_cut10": np.zeros(size),
                        "pt4l":          np.zeros(size),
                        "ptep":          np.zeros(size),
                        "yep":           np.zeros(size),
+                       "rLL_pred":      np.zeros(size),
+                       "rLL_true":      np.zeros(size),
                        }
 
     test_loss = 0
@@ -418,30 +459,43 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, loss_fn, device, 
 
             test_loss += loss_fn(pred, y_first_weight_only).item()
 
-            momenta = X.reshape(X.shape[0], -1, 4)
-            # Invariant masses of Z1 and Z2 candidates:
-            invmass_Z1 = torch.sqrt((momenta[:,0,3] + momenta[:,1,3])**2 - ((momenta[:,0,0:3] + momenta[:,1,0:3])**2).sum(dim=-1) + 1e-9)
-            # invmass_Z2 = torch.sqrt((momenta[:,2,3] + momenta[:,3,3])**2 - ((momenta[:,2,0:3] + momenta[:,3,0:3])**2).sum(dim=-1) + 1e-9)
-
-
+            # Store weights for integration
             observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] = (pred[:,0] * y[:,1]).cpu().numpy()
-            observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     = (y[:,0] * y[:,1]).cpu().numpy()
+            observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     = (y[:,0]    * y[:,1]).cpu().numpy()
             # The weights are calculated as an average over the number of genereated events in POWHEG-BOX-RES:
             observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] /= n_generated_events
             observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     /= n_generated_events
 
+
+            # Compute observables
+            observable_dict["rLL_pred"][batch * batch_size : batch * batch_size + X.shape[0]] = pred[:,0].cpu().numpy()
+            observable_dict["rLL_true"][batch * batch_size : batch * batch_size + X.shape[0]] = y[:,0].cpu().numpy()
+
+
+            # zl1, zl2, zl3, zl4 = e+, e-, mu+, mu-
+            momenta = X.reshape(X.shape[0], -1, 4)
+
+            # Invariant masses of Z1 and Z2 candidates:
+            invmass_Z1 = torch.sqrt((momenta[:,0,3] + momenta[:,1,3])**2 - ((momenta[:,0,0:3] + momenta[:,1,0:3])**2).sum(dim=-1) + 1e-9)
+            # invmass_Z2 = torch.sqrt((momenta[:,2,3] + momenta[:,3,3])**2 - ((momenta[:,2,0:3] + momenta[:,3,0:3])**2).sum(dim=-1) + 1e-9)
+
             observable_dict["invmass_Z1"][batch * batch_size : batch * batch_size + X.shape[0]] = invmass_Z1.cpu().numpy()
             # observable_dict["invmass_Z2"][batch * batch_size : batch * batch_size + X.shape[0]] = invmass_Z2.cpu().numpy()
+
 
             ct1, ct2, ct3, ct4 = costhetastar(momenta)
             observable_dict["cthep"][batch * batch_size : batch * batch_size + X.shape[0]] = ct1.cpu().numpy()
 
-            # zl1, zl2, zl3, zl4 = e+, e-, mu+, mu-
             observable_dict["ptep"][batch * batch_size : batch * batch_size + X.shape[0]] = get_pt(momenta[:,0,:]).cpu().numpy()
+
             observable_dict["yep"][batch * batch_size : batch * batch_size + X.shape[0]]  = get_rapidity(momenta[:,0,:]).cpu().numpy()
             # Note that pt4l is zero in the 4-lepton CM frame
             # observable_dict["pt4l"][batch * batch_size : batch * batch_size + X.shape[0]] = get_pt(momenta.sum(dim=1)).cpu().numpy()
 
+    observable_dict["cthep_mll_cut10"] = np.where(np.abs(observable_dict["invmass_Z1"] - 91.19) < 10, observable_dict["cthep"], 0.0)
+    observable_dict["cthep_mll_cut5"] = np.where(np.abs(observable_dict["invmass_Z1"] - 91.19) < 5, observable_dict["cthep"], 0.0)
+
+    # Count number of zero values in the array
     test_loss /= num_batches
 
     print(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
@@ -470,6 +524,17 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, loss_fn, device, 
         pdf.savefig(fig)
         plt.close(fig)
 
+        # Cos(theta*) with mll cut comparison plot
+        fig, axs = comparison_plots(observable_dict, "cthep_mll_cut10", histogram_data["cthep"])
+        axs[0].set_title("Cos(theta*) with mll cut |mll - mZ| < 10 GeV")
+        pdf.savefig(fig)
+        plt.close(fig)
+
+        fig, axs = comparison_plots(observable_dict, "cthep_mll_cut5", histogram_data["cthep"])
+        axs[0].set_title("Cos(theta*) with mll cut |mll - mZ| < 5 GeV")
+        pdf.savefig(fig)
+        plt.close(fig)
+
         # Transverse momentum of positron
         fig, _ = comparison_plots(observable_dict, "ptep", histogram_data["ptep"])
         pdf.savefig(fig)
@@ -485,6 +550,9 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, loss_fn, device, 
         # pdf.savefig(fig)
         # plt.close(fig)
 
+        fig, _ = r_plot(observable_dict["rLL_pred"], observable_dict["rLL_true"], observable_dict["weights_y"])
+        pdf.savefig(fig)
+        plt.close(fig)
 
     return test_loss
 
