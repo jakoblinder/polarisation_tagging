@@ -25,22 +25,25 @@ class FFNN_BatchNorm(nn.Module):
   def __init__(self, input_dim, width=200):
     super().__init__()
 
+    self.activation = nn.ELU()
+    # self.activation = nn.Tanh()
+
     self.input_block = nn.Sequential(
       nn.BatchNorm1d(input_dim),
       nn.Linear(input_dim, width),
-      nn.ELU()
+      self.activation
     )
 
     self.linear_block = nn.Sequential(
       nn.BatchNorm1d(width),
       nn.Linear(width, width),
-      nn.ELU(),
+      self.activation,
     )
 
     self.linear_block_drop = nn.Sequential(
       nn.BatchNorm1d(width),
       nn.Linear(width, width),
-      nn.ELU(),
+      self.activation,
       nn.Dropout(p=0.4)
     )
 
@@ -73,19 +76,25 @@ class FFNN_paper(nn.Module):
     self.input_dim = input_dim
     self.output_dim = output_dim
     self.emb_dim = emb_dim
+    self.activation = nn.ReLU()
+    # self.activation = nn.Tanh()
 
     # Multilayer Perceptron block:
-    self.mlp_block = nn.Sequential(
+    self.input_block = nn.Sequential(
+      # nn.BatchNorm1d(self.input_dim),
       nn.Linear(self.input_dim, self.emb_dim[0]),
-      nn.ReLU(),
+      self.activation,
+    )
+
+    self.hidden_block = nn.Sequential(
       nn.Linear(self.emb_dim[0], self.emb_dim[1]),
-      nn.ReLU(),
+      self.activation,
       nn.Linear(self.emb_dim[1], self.emb_dim[2]),
-      nn.ReLU(),
+      self.activation,
       nn.Linear(self.emb_dim[2], self.emb_dim[1]),
-      nn.ReLU(),
+      self.activation,
       nn.Linear(self.emb_dim[1], self.emb_dim[0]),
-      nn.ReLU(),
+      self.activation,
     )
 
     # Output layer:
@@ -95,7 +104,8 @@ class FFNN_paper(nn.Module):
     self.activ_output = nn.Identity()
 
   def forward(self, x):
-    out = self.mlp_block(x)
+    out = self.input_block(x)
+    out = self.hidden_block(out)
     out = self.out_block(out)
     out = self.activ_output(out)
     return out
