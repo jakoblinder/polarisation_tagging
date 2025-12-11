@@ -114,6 +114,57 @@ class FFNN_paper_163264(FFNN_paper):
     def __init__(self, input_dim, output_dim = 1):
         super().__init__(input_dim, output_dim, emb_dim = [16, 32, 64])
 
+class FFNN_paper_BatchNorm(FFNN_paper):
+    def __init__(self, input_dim, output_dim = 1, emb_dim = [1000] * 3):
+        super().__init__(input_dim, output_dim, emb_dim)
+        # Override input block to include BatchNorm
+        self.input_block = nn.Sequential(
+            nn.BatchNorm1d(self.input_dim),
+            nn.Linear(self.input_dim, self.emb_dim[0]),
+            self.activation,
+        )
+
+class FFNN_paper_2extraLayers(FFNN_paper):
+    def __init__(self, input_dim, output_dim=1):
+        super().__init__(input_dim, output_dim, emb_dim = [1000] * 3)
+        # Override hidden block to add 2 extra layers
+        old_width = 1000
+        # number of parameters with 4 hidden layers:
+        old_hidden_layers = 4
+        nparams = (1 + self.input_dim + old_hidden_layers * old_width) * old_width
+
+        # Width adjusted to keep number of parameters roughly constant:
+        n_hidden_layers = 6
+        new_width  = -1 - self.input_dim + np.sqrt(1 + 2 * self.input_dim + self.input_dim**2 + 4 * n_hidden_layers * nparams)
+        new_width /= (2 * n_hidden_layers)
+        new_width = int(new_width)
+
+        self.emb_dim = [new_width] * 3
+
+        # Multilayer Perceptron block:
+        self.input_block = nn.Sequential(
+          # nn.BatchNorm1d(self.input_dim),
+          nn.Linear(self.input_dim, self.emb_dim[0]),
+          self.activation,
+        )
+
+        self.hidden_block = nn.Sequential(
+          nn.Linear(self.emb_dim[0], self.emb_dim[1]),
+          self.activation,
+          nn.Linear(self.emb_dim[1], self.emb_dim[2]),
+          self.activation,
+          nn.Linear(self.emb_dim[2], self.emb_dim[2]),
+          self.activation,
+          nn.Linear(self.emb_dim[2], self.emb_dim[2]),
+          self.activation,
+          nn.Linear(self.emb_dim[2], self.emb_dim[1]),
+          self.activation,
+          nn.Linear(self.emb_dim[1], self.emb_dim[0]),
+          self.activation,
+        )
+
+        # Output layer:
+        self.out_block = nn.Linear(self.emb_dim[0], self.output_dim)
 
 def minkowski_dot(p, q):
     """
@@ -260,5 +311,7 @@ model_dict = {
     "FFNN_BatchNorm": FFNN_BatchNorm,
     "FFNN_paper": FFNN_paper,
     "FFNN_paper_163264": FFNN_paper_163264,
+    "FFNN_paper_BatchNorm": FFNN_paper_BatchNorm,
+    "FFNN_paper_2extraLayers": FFNN_paper_2extraLayers,
     "FourVectorAwareNet": FourVectorAwareNet
 }
