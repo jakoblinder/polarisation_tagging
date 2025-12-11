@@ -37,7 +37,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 parser.add_argument("mlfiles", nargs='*',    type=Path,  action="store", help=".ml files to be used for training. Not required when using --replot.")
-parser.add_argument("-m", "--model",         type=str,   action="store", default="FFNN_BatchNorm_no_output", help=f"Model architecture to use. Options: {list(model_dict.keys())}.")
+parser.add_argument("-m", "--model",         type=str,   action="store", default="FFNN_paper_BatchNorm", help=f"Model architecture to use. Options: {list(model_dict.keys())}.")
 parser.add_argument("-o", "--optimizer",     type=str,   action="store", default="paper", help="Optimizer to use. Options: SGD, Adam, RMSprop, paper, paper_momentum.")
 parser.add_argument("-g", "--gpu",           type=int,   action="store", default=-1,      help="Specify manually which of the available gpus is supposed to be used.")
 parser.add_argument("-e", "--epochs",        type=int,   action="store", default=1000,    help="Number of training epochs.")
