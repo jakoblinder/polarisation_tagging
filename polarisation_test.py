@@ -13,6 +13,8 @@ from torch.utils.data import DataLoader
 from matplotlib.backends.backend_pdf import PdfPages
 
 from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepton_cm_frame  #, test_loop
+from ml_events_utils import ZJetDataset
+from ml_events_utils import boost_into_Zjet_cm_frame
 from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output, FFNN_paper
 from ml_events_utils.analysis import costhetastar, get_pt, get_rapidity
 import argparse
@@ -38,8 +40,14 @@ parser.add_argument("-t", "--test_mode",  dest="test_mode", action="store_true",
 parser.add_argument("--inputdir",         type=Path,        action="store", default=None, help='Specify name of input directory.')
 parser.add_argument("--histogram_dir",    type=Path,        action="store", default=None, help='Directory containing the .top histogram files for comparison (They are in the folder where also the events are.).')
 parser.add_argument("-e", "--n_generated_events", type=lambda x: int(float(x)),       action="store", default=int(1e7), help="Number of generated events for comparison (1e7 for LO and LOwS and 5e6 for NLO).")
+parser.add_argument("--useZjet",          dest="use_zjet",  action="store_true",          help="Use Z+jet dataset instead of default.")
+parser.add_argument("--standardise",      dest="standardise", action="store_true",        help="Enable standardisation of features over the whole dataset (default).")
 
 arg = parser.parse_args()
+
+print("Arguments:")
+for attr, value in vars(arg).items():
+    print(f"  {attr}: {value}")
 
 # %% Model selection
 model_name = arg.model
@@ -69,12 +77,20 @@ np.random.seed(seed)
 # files = Path("event_files/pwgevents-*.ml")
 files = arg.mlfiles
 
-dataset = MLEventsDataset(files,
-                        #   labels = ["LL/UU", ],
-                          labels = ["LL/UU", "UU"],
-                          transform=boost_into_four_lepton_cm_frame,
-                        #   target_transform=scale_target,  # Scale target by 1000
-                          cache_events=True)  # Caching enabled
+if not arg.use_zjet:
+    dataset = MLEventsDataset(files,
+                            #   labels = ["LL/UU", ],
+                            labels = ["LL/UU", "UU"],
+                            transform=boost_into_four_lepton_cm_frame,
+                            #   target_transform=scale_target,  # Scale target by 1000
+                            cache_events=True,  # Caching enabled
+                            standardise=arg.standardise)  # Standardisation over the whole dataset not enabled.
+else:
+    dataset = ZJetDataset(files[0],
+                          transform=boost_into_Zjet_cm_frame,
+                          target_transform=None,
+                          max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
+                          standardise=arg.standardise)  # Standardisation over the whole dataset enabled.
 print(f"Dataset info: {dataset.get_file_info()}")
 
 # %% Hyperparameters
@@ -214,7 +230,7 @@ def read_top_file_histograms(top_file_path):
 
     return histogram_data
 
-def print_integration_statistics(observable_dict, histogram_data):
+def print_integration_statistics(observable_dict, histogram_data: dict = {}):
     pred_integral = np.sum(observable_dict["weights_ypred"])
     true_integral = np.sum(observable_dict["weights_y"])
 
@@ -225,19 +241,24 @@ def print_integration_statistics(observable_dict, histogram_data):
     print(f"Integrated cross-sections:")
     print(f"  True r_LL:          {true_integral:.6e}")
     print(f"  Predicted r_LL:     {pred_integral:.6e}")
-    print(f"  POWHEG reweighting: {histogram_data['totxsec']['values'][0]:.6e}")
+    if histogram_data:
+        print(f"  POWHEG reweighting: {histogram_data['totxsec']['values'][0]:.6e}")
+        print(f"  Ratio (pred/PWG):   {pred_integral/histogram_data['totxsec']['values'][0]:.6f}")
     print(f"  Ratio (pred/true):  {pred_integral/true_integral:.6f}")
-    print(f"  Ratio (pred/PWG):   {pred_integral/histogram_data['totxsec']['values'][0]:.6f}")
 
     # Create a text-only plot for integration results
     fig, ax = plt.subplots(1, 1)
     ax.axis('off')  # Remove axes
 
     text_content = f"""    True r_LL:          {true_integral:.6e}
-    Predicted r_LL:     {pred_integral:.6e}
+    Predicted r_LL:     {pred_integral:.6e}"""
+    if histogram_data:
+        text_content += f"""
     POWHEG reweighting: {histogram_data['totxsec']['values'][0]:.6e}
-    Ratio (pred/true):  {pred_integral/true_integral:.6f}
     Ratio (pred/PWG):   {pred_integral/histogram_data['totxsec']['values'][0]:.6f}"""
+
+    text_content += f"""
+    Ratio (pred/true):  {pred_integral/true_integral:.6f}"""
 
     ax.text(0.1, 0.5, text_content, fontsize=14, verticalalignment='center',
         bbox=dict(boxstyle="round,pad=0.5", facecolor="lightgray", alpha=0.8))
@@ -327,7 +348,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
 
 
 # %% Testing loop
-def test_model(model, model_dir, histogram_dir, dataloader, loss_fn, device, n_generated_events=0.2*1e7):
+def test_model_ZZ(model, model_dir, histogram_dir, dataloader, loss_fn, device, n_generated_events=0.2*1e7):
     """
     Test a trained machine learning model and generate comparison plots with POWHEG reference data.
     This function evaluates the model on test data, computes observables (invariant masses and cos(theta*)),
@@ -345,18 +366,18 @@ def test_model(model, model_dir, histogram_dir, dataloader, loss_fn, device, n_g
     Returns:
         float: Average test loss per batch
     Side Effects:
-        - Prints testing progress and integration statistics
-        - Saves comparison plots to "test_histograms.pdf" in the model run directory
-        - Creates histograms for invariant mass (Z1) and cos(theta*) distributions
-        - Generates integration statistics comparing predicted, true, and POWHEG results
+        - Prints testing progress and integration statistics.
+        - Saves comparison plots to "test_histograms.pdf" in the model run directory.
+        - Creates histograms for invariant mass (Z1), cos(theta*), ptep and yep distributions.
+        - Generates integration statistics comparing predicted, true, and POWHEG results.
     Note:
         The function expects:
-        - Input features X with shape (batch_size, n_particles, 4) representing 4-momenta
-        - Target y with shape (batch_size, 2) where y[:,0] are weights and y[:,1] are additional factors
-        - Reference histograms in .top format containing "mee", "cthep", and "totxsec" observables
+        - Input features X with shape (batch_size, n_particles, 4) representing 4-momenta.
+        - Target y with shape (batch_size, 2) where y[:,0] are the rLL weights and y[:,1] are the UU weights.
+        - Reference histograms in .top format containing "mee", "cthep", and "totxsec" observables.
     """
 
-    print("Starting testing...")
+    print("Starting testing for ZZ model...")
     size        = len(dataloader.dataset)  # Total number of samples in the dataset (= n_events).
     num_batches = len(dataloader)          # Number of batches in the dataloader.
 
@@ -473,7 +494,10 @@ if __name__ == "__main__":
     start_time = time.time()
     test_loss_fn = torch.nn.MSELoss()
 
-    test_loss = test_model(model, model_dir, arg.histogram_dir, test_dataloader, test_loss_fn, device, split_ratios[2] * arg.n_generated_events)
+    if not arg.use_zjet:
+        test_loss = test_model_ZZ(model, model_dir, arg.histogram_dir, test_dataloader, test_loss_fn, device, split_ratios[2] * arg.n_generated_events)
+    else:
+        test_loss = test_model_Zjet(model, model_dir, arg.histogram_dir, test_dataloader, test_loss_fn, device)
 
     end_time = time.time()
     print(f"Testing completed in {end_time - start_time:.2f} seconds.")
