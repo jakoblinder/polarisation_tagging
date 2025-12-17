@@ -107,7 +107,7 @@ class ZJetDataset(Dataset):
         # Convert to numpy array and split features/labels
         data = np.array(data)
         self.features = data[:, :12]  # First 12 columns are momentum features
-        self.labels   = data[:, 12]   # Last column is rL label
+        self.labels   = np.expand_dims(data[:, 12], axis=-1)   # Last column is rL label (fix shape to (N, 1))
 
         print(f"Loaded {len(self.features)} events")
         print(f"Feature shape: {self.features.shape}")
