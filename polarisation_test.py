@@ -300,7 +300,10 @@ def r_plot(r_pred, r_true, weights):
     axs.legend()
     axs.grid(True, alpha=0.3)
 
-    axs.set_xlim(xmin=r_min * 0.99, xmax=r_max * 1.01)
+    try:
+        axs.set_xlim(xmin=r_min * 0.99, xmax=r_max * 1.01)
+    except ValueError as e:
+        print(f"Could not set x limits for r plot: {e}")
 
     axs.set_xlabel("r")
 
@@ -372,7 +375,13 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     axs[1].set_ylabel("Predicted / X")
 
     # Scale y axis logarithmically
-    axs[0].set_yscale('log')
+    try:
+        if np.all(true_sums > 0) and np.all(pred_sums > 0) and (not powheg_histogram or np.all(powheg_sums > 0)):
+            axs[0].set_yscale('log')
+        else:
+            print(f"Not all histogram values are positive for {observable_key} plot; skipping log scale.")
+    except ValueError as e:
+        print(f"Could not set y scale to log for {observable_key} plot: {e}")
 
     axs[0].set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} \mathrm{" + observable_key + r"}}$ [pb / [" + observable_key + "]]")
     axs[0].set_title("Predicted vs. True Labels")
@@ -380,11 +389,15 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     axs[0].grid(True, alpha=0.3)
     axs[1].grid(True, alpha=0.3)
 
-    axs[1].set_xlim(xmin=observable_dict[observable_key].min() * 0.99, xmax=observable_dict[observable_key].max() * 1.01)
+    try:
+        axs[1].set_xlim(xmin=observable_dict[observable_key].min() * 0.99, xmax=observable_dict[observable_key].max() * 1.01)
+    except ValueError as e:
+        print(f"Could not set x limits for {observable_key} plot: {e}")
 
     axs[1].set_xlabel(f"{observable_key}")
 
     fig.tight_layout()
+
     return fig, axs
 
 
