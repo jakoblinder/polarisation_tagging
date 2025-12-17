@@ -17,7 +17,7 @@ from torchsummary import summary
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform
+from ml_events_utils import MLEventsDataset, get_statistics_from_dataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform
 from ml_events_utils import boost_into_Zjet_cm_frame
 from ml_events_utils import train_loop, valid_loop
 from ml_events_utils import ZJetDataset
@@ -108,13 +108,13 @@ if not arg.use_zjet:
                             transform=boost_into_four_lepton_cm_frame,
                             #   target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
                             cache_events=arg.cache_events,  # Caching enabled
-                            standardise=arg.standardise)  # Standardisation over the whole dataset not enabled.
+                            standardise=False)  # Specify wether standardisation over the whole dataset is enabled (this changes the dataset).
 else:
     dataset = ZJetDataset(files[0],
                           transform=boost_into_Zjet_cm_frame,
                           target_transform=None,
                           max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
-                          standardise=arg.standardise)  # Standardisation over the whole dataset enabled.
+                          standardise=False)  # Specify wether standardisation over the whole dataset is enabled (this changes the dataset).
 print(f"Dataset info: {dataset.get_file_info()}")
 
 # %% Hyperparameters
@@ -133,6 +133,17 @@ train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(dataset
 print(f"Train dataset size:      {len(train_dataset)}")
 print(f"Validation dataset size: {len(val_dataset)}")
 print(f"Test dataset size:       {len(test_dataset)}")
+
+
+if arg.standardise:
+    overall_mean, overall_stddev = get_statistics_from_dataset(train_dataset)
+    stat_norm = {
+        "mean": overall_mean,
+        "stddev": overall_stddev
+    }
+    print(f"\nFeature means over training set (verification):\n{overall_mean}")
+    print(f"\nFeature stddevs over training set (verification):\n{overall_stddev}")
+
 
 # Create DataLoader with multiple workers for better performance
 
@@ -207,18 +218,27 @@ else:
 print(f"Computation device: {device}\n")
 
 # %% Set the model and choose an optimizer.
+if arg.standardise:
+    model = model_dict[arg.model](input_dim=input_dim, stat_norm=stat_norm)
+else:
+    model = model_dict[arg.model](input_dim=input_dim)
 
-model = model_dict[arg.model](input_dim=input_dim)
 model_name = model.__class__.__name__
 
 # if torch.cuda.device_count() > 1:
 #   print("Let's use", torch.cuda.device_count(), "GPUs!")
 #   model = nn.DataParallel(model)
 
+if torch.cuda.is_available():
+#   summary(model.cuda(), input_size=(1,input_dim))
+  summary(model.cuda(), input_size=(input_dim,))
+else:
+#   summary(model, input_size=(1,input_dim))
+  summary(model, input_size=(input_dim,))
+
 model.to(device)
 # print(f"Model {model_name} is on GPU: {next(model.parameters()).is_cuda}")
 print(f"Model {model_name} device: {next(model.parameters()).device}")
-
 
 # Create directory for this model's outputs
 if arg.outputdir is not None:
@@ -268,14 +288,6 @@ loss = loss_fn(pred, yb)
 
 print('loss: ', loss.item())
 # print('metric: ', metric.item())
-
-
-if torch.cuda.is_available():
-#   summary(model.cuda(), input_size=(1,input_dim))
-  summary(model.cuda(), input_size=(input_dim,))
-else:
-#   summary(model, input_size=(1,input_dim))
-  summary(model, input_size=(input_dim,))
 
 
 if arg.test_mode:

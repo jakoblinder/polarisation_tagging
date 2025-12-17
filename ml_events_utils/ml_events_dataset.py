@@ -370,3 +370,18 @@ class MLEventsDataset(Dataset):
             'num_events': len(self),
             'cache_enabled': self.cache_events
         }
+
+
+def get_statistics_from_dataset(dataset: Dataset) -> Tuple[torch.Tensor, torch.Tensor]:
+    fulldataloader = DataLoader(
+        dataset,
+        batch_size=len(dataset),
+        shuffle=False,
+        num_workers=0
+    )
+    features, _ = next(iter(fulldataloader))
+    overall_mean   = features.mean(dim=0)
+    overall_stddev = features.std(dim=0)
+    del fulldataloader
+
+    return overall_mean, overall_stddev

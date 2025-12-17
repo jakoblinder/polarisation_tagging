@@ -84,13 +84,13 @@ if not arg.use_zjet:
                             transform=boost_into_four_lepton_cm_frame,
                             #   target_transform=scale_target,  # Scale target by 1000
                             cache_events=True,  # Caching enabled
-                            standardise=arg.standardise)  # Standardisation over the whole dataset not enabled.
+                            standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
 else:
     dataset = ZJetDataset(files[0],
                           transform=boost_into_Zjet_cm_frame,
                           target_transform=None,
                           max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
-                          standardise=arg.standardise)  # Standardisation over the whole dataset enabled.
+                          standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
 print(f"Dataset info: {dataset.get_file_info()}")
 
 # %% Hyperparameters
@@ -129,7 +129,7 @@ if torch.cuda.is_available():
   print(torch.cuda.get_device_name(0))
 
 if torch.cuda.is_available():
-    if arg.gpu > 0:
+    if arg.gpu >= 0:
         device = f"cuda:{arg.gpu}"
     else:
         device = "cuda"
@@ -138,7 +138,10 @@ else:
 print(f"Computation device: {device}\n")
 
 # %% Initialize the model and load the trained weights
-model = model_dict[arg.model](input_dim=input_dim)
+if arg.standardise:
+    model = model_dict[arg.model](input_dim=input_dim, external_stat=True)
+else:
+    model = model_dict[arg.model](input_dim=input_dim)
 
 if arg.model_weight_file.is_absolute():
     model_weight_file = arg.model_weight_file
@@ -147,13 +150,14 @@ else:
     model_weight_file = model_dir / arg.model_weight_file
     model_run_dir     = model_dir
 
+
+if torch.cuda.is_available():
+  summary(model.cuda(), input_size=(input_dim,))
+else:
+  summary(model, input_size=(input_dim,))
+
 model.load_state_dict(torch.load(model_weight_file, map_location=device, weights_only=True))
 model.to(device)
-
-
-#   summary(model, input_size=(1,input_dim))
-
-# summary(model, input_size=(input_dim,))
 
 # %% Histogram reading function
 def read_top_file_histograms(top_file_path):
