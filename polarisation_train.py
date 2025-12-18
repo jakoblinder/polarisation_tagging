@@ -72,7 +72,7 @@ if torch.cuda.is_available():
   print(torch.cuda.get_device_name(0))
 
 if torch.cuda.is_available():
-    if arg.gpu > 0:
+    if arg.gpu >= 0:
         device = f"cuda:{arg.gpu}"
     else:
         device = "cuda"
@@ -80,14 +80,14 @@ else:
     device = "cpu"
 print(f"Computation device: {device}\n")
 
-# # Set CUDA device globally
-# if torch.cuda.is_available():
-#     if arg.gpu > 0:
-#         torch.cuda.set_device(arg.gpu)
-#         print(f"Set CUDA device to: {arg.gpu}")
-#     else:
-#         torch.cuda.set_device(0)
-#         print(f"Set CUDA device to: 0")
+# Set CUDA device globally
+if torch.cuda.is_available():
+    if arg.gpu >= 0:
+        torch.cuda.set_device(arg.gpu)
+        print(f"Set CUDA device to: {arg.gpu}")
+    else:
+        torch.cuda.set_device(0)
+        print(f"Set CUDA device to: 0")
 
 # Validate arguments
 if not arg.replot_only and len(arg.mlfiles) == 0:

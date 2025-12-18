@@ -81,6 +81,15 @@ else:
     device = "cpu"
 print(f"Computation device: {device}\n")
 
+# Set CUDA device globally
+if torch.cuda.is_available():
+    if arg.gpu >= 0:
+        torch.cuda.set_device(arg.gpu)
+        print(f"Set CUDA device to: {arg.gpu}")
+    else:
+        torch.cuda.set_device(0)
+        print(f"Set CUDA device to: 0")
+
 # %% Set fixed random number seed to get the same test/ train split as used during training
 print(Path.cwd())
 with open(model_dir / "training_seed.txt", 'r') as f:
