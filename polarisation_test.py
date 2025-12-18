@@ -311,7 +311,7 @@ def r_plot(r_pred, r_true, weights):
     return fig, axs
 
 
-def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:dict = None):
+def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:dict = None, log_scale=True, nbins=50):
     """
     Create a comparison plot of predicted vs true labels for a given observable.
     This function generates a step histogram plot comparing predicted labels, true labels,
@@ -329,6 +329,8 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
             containing POWHEG reference data with keys:
             - 'edges': Bin edges for the histogram
             - 'values': Histogram values for comparison
+        log_scale (bool, optional): Whether to use logarithmic scaling for the y-axis. Default is True.
+        nbins (int, optional): Number of bins to use if powheg_histogram is not provided. Default is 50.
     Returns:
         tuple: Figure and axes objects (fig, axs) for the created plot
     Note:
@@ -344,7 +346,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     if powheg_histogram:
         bins = powheg_histogram['edges']
     else:
-        bins = np.linspace(observable_dict[observable_key].min(), observable_dict[observable_key].max(), 51)
+        bins = np.linspace(observable_dict[observable_key].min(), observable_dict[observable_key].max(), nbins+1)
 
     # Calculate bin widths for proper integration
     bin_widths = bins[1:] - bins[:-1]
@@ -375,13 +377,14 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     axs[1].set_ylabel("Predicted / X")
 
     # Scale y axis logarithmically
-    try:
-        if np.all(true_sums > 0) and np.all(pred_sums > 0) and (not powheg_histogram or np.all(powheg_sums > 0)):
-            axs[0].set_yscale('log')
-        else:
-            print(f"Not all histogram values are positive for {observable_key} plot; skipping log scale.")
-    except ValueError as e:
-        print(f"Could not set y scale to log for {observable_key} plot: {e}")
+    if log_scale:
+        try:
+            if np.all(true_sums > 0) and np.all(pred_sums > 0) and (not powheg_histogram or np.all(powheg_sums > 0)):
+                axs[0].set_yscale('log')
+            else:
+                print(f"Not all histogram values are positive for {observable_key} plot; skipping log scale.")
+        except ValueError as e:
+            print(f"Could not set y scale to log for {observable_key} plot: {e}")
 
     axs[0].set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} \mathrm{" + observable_key + r"}}$ [pb / [" + observable_key + "]]")
     axs[0].set_title("Predicted vs. True Labels")
@@ -680,7 +683,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, loss_fn, device
         plt.close(fig)
 
         # Cos(theta*) of the mu+ and jet in Z+jet CM frame
-        fig, _ = comparison_plots(observable_dict, "cosmupjet")
+        fig, _ = comparison_plots(observable_dict, "cosmupjet", log_scale=False, nbins=30)
         pdf.savefig(fig)
         plt.close(fig)
 
