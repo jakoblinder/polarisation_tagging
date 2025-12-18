@@ -377,12 +377,8 @@ class FourVectorAwareNet(nn.Module):
         self.n_4vectors = int(input_dim**0.5)
 
         # Normalise input data if wished:
-        if stat_norm is not None:
-            self.data_norm = DataNorm(input_dim, stat_norm['mean'], stat_norm['stddev'])
-        elif external_stat:
-            self.data_norm = DataNorm(input_dim)  # Weights to be set externally.
-        else:
-            self.data_norm = nn.Identity()
+        if stat_norm is not None or external_stat:
+            print("FourVectorAwareNet: Data normalization is not applied, since the model works on 4-vectors directly.")
 
         self.predict_log = predict_log
 
@@ -409,9 +405,6 @@ class FourVectorAwareNet(nn.Module):
         """
         x: [B, 16] → reshape to [B, 4, 4]
         """
-
-        # Normalise input data if wished:
-        x = self.data_norm(x)
 
         x = x.view(x.size(0), 4, 4)  # 4 particles, each (E, px, py, pz)
 
