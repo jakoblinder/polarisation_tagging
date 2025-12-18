@@ -35,7 +35,7 @@ parser.add_argument("model",              type=str,         action="store",     
 parser.add_argument("model_weight_file",  type=Path,        action="store",               help="Path to the .pt(y) file containing the trained model weights.")
 parser.add_argument("-g", "--gpu",        type=int,         action="store", default=-1,   help="Specify manually which of the available gpus is supposed to be used.")
 parser.add_argument("-b", "--batch_size", type=int,         action="store", default=128,  help="Batch size for training.")
-parser.add_argument("-n", "--nworkers",   type=int,         action="store", default=4,    help="Number of workers for DataLoader.")
+parser.add_argument("-n", "--nworkers",   type=int,         action="store", default=0,    help="Number of workers for DataLoader.")
 parser.add_argument("-t", "--test_mode",  dest="test_mode", action="store_true",          help="Run in test mode (only one data point to test implementation of the model).")
 parser.add_argument("--inputdir",         type=Path,        action="store", default=None, help='Specify name of input directory.')
 parser.add_argument("--histogram_dir",    type=Path,        action="store", default=None, help='Directory containing the .top histogram files for comparison (They are in the folder where also the events are.).')
@@ -63,6 +63,23 @@ else:
 
 if arg.histogram_dir is None:
     arg.histogram_dir = arg.mlfiles[0].parent
+
+# %% Specify the computation device (cpu or gpu).
+# In torch/pytorch data and models need to be moved in the specific processing unit
+# this code snippet allows to set the variable "device" according to available resource (cpu or cuda gpu)
+
+if torch.cuda.is_available():
+  print('Number of devices: ', torch.cuda.device_count())
+  print(torch.cuda.get_device_name(0))
+
+if torch.cuda.is_available():
+    if arg.gpu >= 0:
+        device = f"cuda:{arg.gpu}"
+    else:
+        device = "cuda"
+else:
+    device = "cpu"
+print(f"Computation device: {device}\n")
 
 # %% Set fixed random number seed to get the same test/ train split as used during training
 print(Path.cwd())
@@ -119,23 +136,6 @@ for batch_idx, (batch_features, batch_labels) in enumerate(test_dataloader):
     input_dim = batch_features.shape[1]
     print(f"{input_dim = }")
     break  # Only show first batch
-
-# %% Specify the computation device (cpu or gpu).
-# In torch/pytorch data and models need to be moved in the specific processing unit
-# this code snippet allows to set the variable "device" according to available resource (cpu or cuda gpu)
-
-if torch.cuda.is_available():
-  print('Number of devices: ', torch.cuda.device_count())
-  print(torch.cuda.get_device_name(0))
-
-if torch.cuda.is_available():
-    if arg.gpu >= 0:
-        device = f"cuda:{arg.gpu}"
-    else:
-        device = "cuda"
-else:
-    device = "cpu"
-print(f"Computation device: {device}\n")
 
 # %% Initialize the model and load the trained weights
 if arg.standardise:

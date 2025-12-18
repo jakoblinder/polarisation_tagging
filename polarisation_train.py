@@ -45,7 +45,7 @@ parser.add_argument("-b", "--batch_size",    type=int,   action="store", default
 parser.add_argument("-l", "--learning_rate", type=float, action="store", default=1e-2,    help="Learning rate for the optimizer.")
 parser.add_argument("-p", "--patience",      type=int,   action="store", default=25,      help="Early stopping patience.")
 parser.add_argument("-s", "--seed",          type=int,   action="store", default=42,      help="Random seed for reproducibility.")
-parser.add_argument("-n", "--nworkers",      type=int,   action="store", default=4,       help="Number of workers for DataLoader.")
+parser.add_argument("-n", "--nworkers",      type=int,   action="store", default=0,       help="Number of workers for DataLoader.")
 parser.add_argument("-t", "--test_mode",     dest="test_mode",    action="store_true",    help="Run in test mode (only one data point to test implementation of the model).")
 parser.add_argument("--no-cache-events",     dest="cache_events", action="store_false",   help="Disable caching of events in the dataset (defaul: Cache the events.).")
 parser.add_argument("--outputdir",           type=Path,  action='store', default=None,    help='Specify name of output directory.')
@@ -58,6 +58,36 @@ arg = parser.parse_args()
 print("Arguments:")
 for attr, value in vars(arg).items():
     print(f"  {attr}: {value}")
+
+# %%
+# from torch import nn
+# from torchsummary import summary
+# from torch.utils.data import DataLoader
+# %% Specify the computation device (cpu or gpu).
+# In torch/pytorch data and models need to be moved in the specific processing unit
+# this code snippet allows to set the variable "device" according to available resource (cpu or cuda gpu)
+
+if torch.cuda.is_available():
+  print('Number of devices: ', torch.cuda.device_count())
+  print(torch.cuda.get_device_name(0))
+
+if torch.cuda.is_available():
+    if arg.gpu > 0:
+        device = f"cuda:{arg.gpu}"
+    else:
+        device = "cuda"
+else:
+    device = "cpu"
+print(f"Computation device: {device}\n")
+
+# # Set CUDA device globally
+# if torch.cuda.is_available():
+#     if arg.gpu > 0:
+#         torch.cuda.set_device(arg.gpu)
+#         print(f"Set CUDA device to: {arg.gpu}")
+#     else:
+#         torch.cuda.set_device(0)
+#         print(f"Set CUDA device to: 0")
 
 # Validate arguments
 if not arg.replot_only and len(arg.mlfiles) == 0:
@@ -199,23 +229,6 @@ if test_standardisation:
 loss_fn = nn.MSELoss()
 
 # loss_fn = nn.SmoothL1Loss()
-
-# %% Specify the computation device (cpu or gpu).
-# In torch/pytorch data and models need to be moved in the specific processing unit
-# this code snippet allows to set the variable "device" according to available resource (cpu or cuda gpu)
-
-if torch.cuda.is_available():
-  print('Number of devices: ', torch.cuda.device_count())
-  print(torch.cuda.get_device_name(0))
-
-if torch.cuda.is_available():
-    if arg.gpu > 0:
-        device = f"cuda:{arg.gpu}"
-    else:
-        device = "cuda"
-else:
-    device = "cpu"
-print(f"Computation device: {device}\n")
 
 # %% Set the model and choose an optimizer.
 if arg.standardise:
