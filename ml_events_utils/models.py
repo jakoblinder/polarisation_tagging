@@ -267,6 +267,12 @@ class FFNN_paper_2extraLayers(FFNN_paper_nextraLayers):
     def __init__(self, input_dim, output_dim=1, *args, **kwargs):
         super().__init__(input_dim, output_dim, n_extra_layers=2, *args, **kwargs)
 
+class FFNN_paper_4extraLayers(FFNN_paper_nextraLayers):
+    """
+    Same as FFNN_paper but with 4 extra hidden layers.
+    """
+    def __init__(self, input_dim, output_dim=1, *args, **kwargs):
+        super().__init__(input_dim, output_dim, n_extra_layers=4, *args, **kwargs)
 
 def minkowski_dot(p, q):
     """
@@ -427,6 +433,6 @@ model_dict = {
     "FFNN_paper_163264": FFNN_paper_163264,
     "FFNN_paper_BatchNorm": FFNN_paper_BatchNorm,
     "FFNN_paper_2extraLayers": FFNN_paper_2extraLayers,
-    "FFNN_paper_nextraLayers": FFNN_paper_nextraLayers,
+    "FFNN_paper_4extraLayers": FFNN_paper_4extraLayers,
     "FourVectorAwareNet": FourVectorAwareNet
 }
