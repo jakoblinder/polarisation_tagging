@@ -144,21 +144,11 @@ def cosmujet(momenta):
         Cosine of theta* angles for lepton with respect to the jet.
     """
     l1, l2, jet = momenta[...,0,:], momenta[...,1,:], momenta[...,2,:]
-    v12 = l1 + l2    # Momentum of 1st Vector boson
-    vj  = v12 + jet  # Boson + jet momentum
-
-    # Boost into Z+jet CMS
-    bv12  = boostinv(v12, vj)
-    bl1   = boostinv(l1, vj)
-    bl2   = boostinv(l2, vj)
-    bjet  = boostinv(jet, vj)
-
-    # # Boost into the restframe of the boson
-    # bbl1 = boostinv(bl1, bv12)
-    # bbl2 = boostinv(bl2, bv12)
+    # v12 = l1 + l2    # Momentum of 1st Vector boson
+    # vj  = v12 + jet  # Boson + jet momentum
 
     # Calculate cosine of angles (dot product of normalized 3-vectors)
-    ct1 = (bl1[...,0:3] * bjet[...,0:3]).sum(dim=-1) / (torch.norm(bl1[...,0:3], dim=-1) * torch.norm(bjet[...,0:3], dim=-1))
-    ct2 = (bl2[...,0:3] * bjet[...,0:3]).sum(dim=-1) / (torch.norm(bl2[...,0:3], dim=-1) * torch.norm(bjet[...,0:3], dim=-1))
+    ct1 = (l1[...,0:3] * jet[...,0:3]).sum(dim=-1) / (torch.norm(l1[...,0:3], dim=-1) * torch.norm(jet[...,0:3], dim=-1))
+    ct2 = (l2[...,0:3] * jet[...,0:3]).sum(dim=-1) / (torch.norm(l2[...,0:3], dim=-1) * torch.norm(jet[...,0:3], dim=-1))
 
     return ct1, ct2
