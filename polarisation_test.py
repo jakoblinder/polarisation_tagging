@@ -42,6 +42,7 @@ parser.add_argument("--histogram_dir",    type=Path,        action="store", defa
 parser.add_argument("-e", "--n_generated_events", type=lambda x: int(float(x)),       action="store", default=int(1e7), help="Number of generated events for comparison (1e7 for LO and LOwS and 5e6 for NLO).")
 parser.add_argument("--useZjet",          dest="use_zjet",  action="store_true",          help="Use Z+jet dataset instead of default.")
 parser.add_argument("--standardise",      dest="standardise", action="store_true",        help="Enable standardisation of features over the whole dataset (default).")
+parser.add_argument("--labframe",            dest="labframe",     action="store_true",    help="Use lab frame instead of partonic CMS.")
 
 arg = parser.parse_args()
 
@@ -104,16 +105,24 @@ np.random.seed(seed)
 files = arg.mlfiles
 
 if not arg.use_zjet:
+    if arg.labframe:
+        trafo = None
+    else:
+        trafo = boost_into_four_lepton_cm_frame
     dataset = MLEventsDataset(files,
                             #   labels = ["LL/UU", ],
                             labels = ["LL/UU", "UU"],
-                            transform=boost_into_four_lepton_cm_frame,
+                            transform=trafo,
                             #   target_transform=scale_target,  # Scale target by 1000
                             cache_events=True,  # Caching enabled
                             standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
 else:
+    if arg.labframe:
+        trafo = None
+    else:
+        trafo = boost_into_Zjet_cm_frame
     dataset = ZJetDataset(files[0],
-                          transform=boost_into_Zjet_cm_frame,
+                          transform=trafo,
                           target_transform=None,
                           max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
                           standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.

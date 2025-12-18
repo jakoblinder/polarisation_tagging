@@ -52,6 +52,7 @@ parser.add_argument("--outputdir",           type=Path,  action='store', default
 parser.add_argument("--replot",              dest="replot_only",  action="store_true",    help="Only regenerate the training history plot from existing CSV files. The model and potentially the output directory need to be specified.")
 parser.add_argument("--useZjet",             dest="use_zjet",     action="store_true",    help="Use Z+jet dataset instead of default.")
 parser.add_argument("--standardise",         dest="standardise",  action="store_true",    help="Enable standardisation of features over the whole dataset (default).")
+parser.add_argument("--labframe",            dest="labframe",     action="store_true",    help="Use lab frame instead of partonic CMS.")
 
 arg = parser.parse_args()
 
@@ -133,15 +134,23 @@ files = arg.mlfiles
 print(f"Cache events: {arg.cache_events}")
 
 if not arg.use_zjet:
+    if arg.labframe:
+        trafo = None
+    else:
+        trafo = boost_into_four_lepton_cm_frame
     dataset = MLEventsDataset(files,
                             labels = ["LL/UU",],
-                            transform=boost_into_four_lepton_cm_frame,
+                            transform=trafo,
                             #   target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
                             cache_events=arg.cache_events,  # Caching enabled
                             standardise=False)  # Specify wether standardisation over the whole dataset is enabled (this changes the dataset).
 else:
+    if arg.labframe:
+        trafo = None
+    else:
+        trafo = boost_into_Zjet_cm_frame
     dataset = ZJetDataset(files[0],
-                          transform=boost_into_Zjet_cm_frame,
+                          transform=trafo,
                           target_transform=None,
                           max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
                           standardise=False)  # Specify wether standardisation over the whole dataset is enabled (this changes the dataset).
