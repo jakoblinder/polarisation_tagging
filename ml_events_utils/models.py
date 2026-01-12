@@ -127,6 +127,62 @@ class FFNN_BatchNorm(nn.Module):
     out = self.activ_output(out)
     return out
 
+class FFNN_BatchNorm_nextraLayers(FFNN_BatchNorm):
+    def __init__(self, input_dim, n_extra_layers=2, *args, **kwargs):
+        def calculate_new_width(input_dim: int, old_hidden_layers: int, new_hidden_layers: int, old_width: int) -> int:
+            nparams = (((2 + input_dim + old_hidden_layers + old_hidden_layers * old_width) * old_width) + 1)
+
+            new_width = -2 - input_dim - new_hidden_layers
+            new_width += np.sqrt(4 + input_dim**2 + new_hidden_layers**2 + 2 * input_dim * (2 + new_hidden_layers) + 4 * new_hidden_layers * nparams)
+            new_width /= (2 * new_hidden_layers)
+
+            # new_width = - (2 + input_dim + new_hidden_layers - np.sqrt(4 + input_dim**2 + new_hidden_layers**2 + 2 * input_dim * (2 + new_hidden_layers) + 4 * new_hidden_layers * nparams)) / (2 * new_hidden_layers)
+
+            return int(new_width)
+
+        self.input_dim = input_dim
+        self.n_extra_layers = n_extra_layers
+
+        # Dynamically calculate the new width to keep the total number of parameters approximately constant
+        new_width = calculate_new_width(self.input_dim, old_hidden_layers=4, new_hidden_layers=4 + self.n_extra_layers, old_width=200)
+
+        super().__init__(self.input_dim, width=new_width, *args, **kwargs)
+
+    def forward(self, x):
+        # Normalise input data if wished:
+        x = self.data_norm(x)
+        out = self.input_block(x)
+
+        residual = out
+        out = self.linear_block_drop(out)
+        out = self.linear_block_drop(out) + residual  # Residual connection
+
+        residual = out
+        out = self.linear_block_drop(out)
+        out = self.linear_block_drop(out) + residual  # Residual connection
+
+        for _ in range(self.n_extra_layers):  # Extra layers
+            residual = out
+            out = self.linear_block_drop(out)
+            out = self.linear_block_drop(out) + residual  # Residual connection
+
+        out = self.out_block(out)
+        out = self.activ_output(out)
+        return out
+
+class FFNN_BatchNorm_2extraLayers(FFNN_BatchNorm_nextraLayers):
+    """
+    Same as FFNN_BatchNorm but with 2 extra hidden layers.
+    """
+    def __init__(self, input_dim, *args, **kwargs):
+        super().__init__(input_dim, n_extra_layers=2, *args, **kwargs)
+
+class FFNN_BatchNorm_4extraLayers(FFNN_BatchNorm_nextraLayers):
+    """
+    Same as FFNN_BatchNorm but with 4 extra hidden layers.
+    """
+    def __init__(self, input_dim, *args, **kwargs):
+        super().__init__(input_dim, n_extra_layers=4, *args, **kwargs)
 
 class FFNN_paper(nn.Module):
   def __init__(self, input_dim, output_dim = 1, emb_dim = [1000] * 3, stat_norm: dict = None, external_stat: bool = False):
@@ -435,6 +491,8 @@ class FourVectorAwareNet(nn.Module):
 
 model_dict = {
     "FFNN_BatchNorm": FFNN_BatchNorm,
+    "FFNN_BatchNorm_2extraLayers": FFNN_BatchNorm_2extraLayers,
+    "FFNN_BatchNorm_4extraLayers": FFNN_BatchNorm_4extraLayers,
     "FFNN_paper": FFNN_paper,
     "FFNN_paper_163264": FFNN_paper_163264,
     "FFNN_paper_BatchNorm": FFNN_paper_BatchNorm,
