@@ -274,6 +274,19 @@ class FFNN_paper_4extraLayers(FFNN_paper_nextraLayers):
     def __init__(self, input_dim, output_dim=1, *args, **kwargs):
         super().__init__(input_dim, output_dim, n_extra_layers=4, *args, **kwargs)
 
+class FFNN_paper_4extraLayers_BatchNorm(FFNN_paper_4extraLayers):
+    """
+    Same as FFNN_paper_4extraLayers but with BatchNorm in input block.
+    """
+    def __init__(self, input_dim, output_dim = 1, *args, **kwargs):
+        super().__init__(input_dim, output_dim, *args, **kwargs)
+        # Override input block to include BatchNorm
+        self.input_block = nn.Sequential(
+            nn.BatchNorm1d(self.input_dim),
+            nn.Linear(self.input_dim, self.emb_dim[0]),
+            nn.ReLU(),
+        )
+
 def minkowski_dot(p, q):
     """
     Computes Minkowski inner product for batches.
@@ -427,5 +440,6 @@ model_dict = {
     "FFNN_paper_BatchNorm": FFNN_paper_BatchNorm,
     "FFNN_paper_2extraLayers": FFNN_paper_2extraLayers,
     "FFNN_paper_4extraLayers": FFNN_paper_4extraLayers,
+    "FFNN_paper_4extraLayers_BatchNorm": FFNN_paper_4extraLayers_BatchNorm,
     "FourVectorAwareNet": FourVectorAwareNet
 }
