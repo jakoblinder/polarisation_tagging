@@ -52,7 +52,11 @@ parser.add_argument("--outputdir",           type=Path,  action='store', default
 parser.add_argument("--replot",              dest="replot_only",  action="store_true",    help="Only regenerate the training history plot from existing CSV files. The model and potentially the output directory need to be specified.")
 parser.add_argument("--useZjet",             dest="use_zjet",     action="store_true",    help="Use Z+jet dataset instead of default.")
 parser.add_argument("--standardise",         dest="standardise",  action="store_true",    help="Enable standardisation of features over the whole dataset (default).")
-parser.add_argument("--labframe",            dest="labframe",     action="store_true",    help="Use lab frame instead of partonic CMS.")
+
+# Create a mutually exclusive group for specifying the reference frame
+frame_group = parser.add_mutually_exclusive_group()
+frame_group.add_argument("--labframe",       dest="labframe", default=True, action="store_true",    help="Use lab frame instead of partonic CMS.")
+frame_group.add_argument("--cmframe",        dest="labframe", default=True, action="store_false",   help="Use partonic CMS instead of lab frame.")
 
 arg = parser.parse_args()
 

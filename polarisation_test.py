@@ -42,7 +42,11 @@ parser.add_argument("--histogram_dir",    type=Path,        action="store", defa
 parser.add_argument("-e", "--n_generated_events", type=lambda x: int(float(x)),       action="store", default=int(1e7), help="Number of generated events for comparison (1e7 for LO and LOwS and 5e6 for NLO).")
 parser.add_argument("--useZjet",          dest="use_zjet",  action="store_true",          help="Use Z+jet dataset instead of default.")
 parser.add_argument("--standardise",      dest="standardise", action="store_true",        help="Enable standardisation of features over the whole dataset (default).")
-parser.add_argument("--labframe",            dest="labframe",     action="store_true",    help="Use lab frame instead of partonic CMS.")
+
+# Create a mutually exclusive group for specifying the reference frame
+frame_group = parser.add_mutually_exclusive_group()
+frame_group.add_argument("--labframe",       dest="labframe", default=True, action="store_true",    help="Use lab frame instead of partonic CMS.")
+frame_group.add_argument("--cmframe",        dest="labframe", default=True, action="store_false",   help="Use partonic CMS instead of lab frame.")
 
 arg = parser.parse_args()
 
