@@ -272,8 +272,6 @@ class FFNN_paper_nextraLayers(FFNN_paper):
     Each extra layer consists of a linear layer followed by an activation function.
     """
     def __init__(self, input_dim, output_dim=1, n_extra_layers=2, *args, **kwargs):
-        super().__init__(input_dim, output_dim, emb_dim=[1000] * 3, *args, **kwargs)
-
         def calculate_new_width(input_dim: int, old_hidden_layers: int, new_hidden_layers: int, old_width: int) -> int:
             nparams = (((2 + input_dim + old_hidden_layers + old_hidden_layers * old_width) * old_width) + 1)
 
@@ -285,17 +283,13 @@ class FFNN_paper_nextraLayers(FFNN_paper):
 
             return int(new_width)
 
+        self.input_dim = input_dim
+        self.n_extra_layers = n_extra_layers
+
         # Dynamically calculate the new width to keep the total number of parameters approximately constant
-        new_width = calculate_new_width(self.input_dim, old_hidden_layers=4, new_hidden_layers=4 + n_extra_layers, old_width=1000)
+        new_width = calculate_new_width(self.input_dim, old_hidden_layers=4, new_hidden_layers=4 + self.n_extra_layers, old_width=1000)
 
-        self.emb_dim = [new_width] * 3
-
-        # Input block remains the same
-        self.input_block = nn.Sequential(
-            # nn.BatchNorm1d(self.input_dim),
-            nn.Linear(self.input_dim, self.emb_dim[0]),
-            nn.ReLU(),
-        )
+        super().__init__(self.input_dim, output_dim, emb_dim=[new_width] * 3, *args, **kwargs)
 
         # Dynamically create the extra layers
         extra_layers = [nn.Linear(self.emb_dim[0], self.emb_dim[0]), nn.ReLU()] * n_extra_layers
@@ -312,9 +306,6 @@ class FFNN_paper_nextraLayers(FFNN_paper):
             nn.Linear(self.emb_dim[1], self.emb_dim[0]),
             nn.ReLU(),
         )
-
-        # Output layer:
-        self.out_block = nn.Linear(self.emb_dim[0], self.output_dim)
 
 class FFNN_paper_2extraLayers(FFNN_paper_nextraLayers):
     """
