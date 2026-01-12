@@ -64,7 +64,7 @@ else:
 if arg.inputdir is not None:
     model_dir = arg.inputdir
 else:
-    model_dir = Path(model_name)
+    model_dir = Path().cwd()
 
 if arg.histogram_dir is None:
     arg.histogram_dir = arg.mlfiles[0].parent

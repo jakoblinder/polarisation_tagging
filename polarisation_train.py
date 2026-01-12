@@ -110,14 +110,13 @@ if arg.replot_only:
     # Determine model directory
     if arg.outputdir is not None:
         model_dir = arg.outputdir
+        if not model_dir.exists():
+            print(f"Error: Directory {model_dir} does not exist!")
+            sys.exit(1)
     else:
         # Try to infer from model name
         model_name = arg.model
-        model_dir = Path(model_name)
-
-    if not model_dir.exists():
-        print(f"Error: Directory {model_dir} does not exist!")
-        sys.exit(1)
+        model_dir = Path().cwd()
 
     # Generate plot using the plotting function
     try:
@@ -269,10 +268,9 @@ print(f"Model {model_name} device: {next(model.parameters()).device}")
 # Create directory for this model's outputs
 if arg.outputdir is not None:
     model_dir = arg.outputdir
+    model_dir.mkdir(exist_ok=True)
 else:
-    model_dir = Path(model_name)
-model_dir.mkdir(exist_ok=True)
-print(f"Created directory: {model_dir}")
+    model_dir = Path().cwd()
 
 optimizers = {
     "SGD":     torch.optim.SGD(    model.parameters(), lr=learning_rate),
