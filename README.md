@@ -79,7 +79,7 @@ They contain a directory for LO (UU_LO), for LO including the radiation from the
 The filtered events can be found in `pwgevents-????.ml` coming from POWHEG only, i.e. after stage 4. `output_shower_events-????.ml` are the filtered events created from the showered events.
 
 #### Z+j Events
-For testing purposes a [link (Updated on 04.12.2025)](https://cernbox.cern.ch/s/3JmiHNoKW0bwYtd) to the Z+j events.
+For testing purposes a [link (Updated on 12.01.2026)](https://cernbox.cern.ch/s/3JmiHNoKW0bwYtd) to the Z+j events for rL and rT.
 
 ## Usage Examples
 
