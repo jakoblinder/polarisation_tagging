@@ -78,6 +78,9 @@ They contain a directory for LO (UU_LO), for LO including the radiation from the
 
 The filtered events can be found in `pwgevents-????.ml` coming from POWHEG only, i.e. after stage 4. `output_shower_events-????.ml` are the filtered events created from the showered events.
 
+**Other potentially interesting files**
+Some results where the models are test on both datasets, i.e. for ZZ and Z+jet can be found in [this (Updated on 13.01.2026)](https://nextcloud.mpp.mpg.de/nextcloud/index.php/s/CtQrZamtorfWYdC) directory. It also includes the above mentioned event files for ZZ. Interesting histograms are for each run the `test_histograms.pdf` and potentially the `<model name>_training_history.pdf`, showing some distributions done on the test data set and the loss behaviour during the training of the models.
+
 #### Z+j Events
 For testing purposes a [link (Updated on 12.01.2026)](https://cernbox.cern.ch/s/3JmiHNoKW0bwYtd) to the Z+j events for rL and rT.
 
