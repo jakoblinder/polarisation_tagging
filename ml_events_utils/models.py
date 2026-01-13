@@ -170,20 +170,6 @@ class FFNN_BatchNorm_nextraLayers(FFNN_BatchNorm):
         out = self.activ_output(out)
         return out
 
-class FFNN_BatchNorm_2extraLayers(FFNN_BatchNorm_nextraLayers):
-    """
-    Same as FFNN_BatchNorm but with 2 extra hidden layers.
-    """
-    def __init__(self, input_dim, *args, **kwargs):
-        super().__init__(input_dim, n_extra_layers=2, *args, **kwargs)
-
-class FFNN_BatchNorm_4extraLayers(FFNN_BatchNorm_nextraLayers):
-    """
-    Same as FFNN_BatchNorm but with 4 extra hidden layers.
-    """
-    def __init__(self, input_dim, *args, **kwargs):
-        super().__init__(input_dim, n_extra_layers=4, *args, **kwargs)
-
 class FFNN_paper(nn.Module):
   def __init__(self, input_dim, output_dim = 1, emb_dim = [1000] * 3, stat_norm: dict = None, external_stat: bool = False):
     """
@@ -307,26 +293,12 @@ class FFNN_paper_nextraLayers(FFNN_paper):
             nn.ReLU(),
         )
 
-class FFNN_paper_2extraLayers(FFNN_paper_nextraLayers):
+class FFNN_paper_nextraLayers_BatchNorm(FFNN_paper_nextraLayers):
     """
-    Same as FFNN_paper but with 2 extra hidden layers.
+    Same as FFNN_paper_nextraLayers but with BatchNorm in input block.
     """
-    def __init__(self, input_dim, output_dim=1, *args, **kwargs):
-        super().__init__(input_dim, output_dim, n_extra_layers=2, *args, **kwargs)
-
-class FFNN_paper_4extraLayers(FFNN_paper_nextraLayers):
-    """
-    Same as FFNN_paper but with 4 extra hidden layers.
-    """
-    def __init__(self, input_dim, output_dim=1, *args, **kwargs):
-        super().__init__(input_dim, output_dim, n_extra_layers=4, *args, **kwargs)
-
-class FFNN_paper_4extraLayers_BatchNorm(FFNN_paper_4extraLayers):
-    """
-    Same as FFNN_paper_4extraLayers but with BatchNorm in input block.
-    """
-    def __init__(self, input_dim, output_dim = 1, *args, **kwargs):
-        super().__init__(input_dim, output_dim, *args, **kwargs)
+    def __init__(self, input_dim, output_dim = 1, n_extra_layers=2, *args, **kwargs):
+        super().__init__(input_dim, output_dim, n_extra_layers=n_extra_layers, *args, **kwargs)
         # Override input block to include BatchNorm
         self.input_block = nn.Sequential(
             nn.BatchNorm1d(self.input_dim),
@@ -482,13 +454,16 @@ class FourVectorAwareNet(nn.Module):
 
 model_dict = {
     "FFNN_BatchNorm": FFNN_BatchNorm,
-    "FFNN_BatchNorm_2extraLayers": FFNN_BatchNorm_2extraLayers,
-    "FFNN_BatchNorm_4extraLayers": FFNN_BatchNorm_4extraLayers,
+    "FFNN_BatchNorm_2extraLayers": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_BatchNorm_nextraLayers(input_dim, output_dim, n_extra_layers=2, *args, **kwargs),
+    "FFNN_BatchNorm_4extraLayers": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_BatchNorm_nextraLayers(input_dim, output_dim, n_extra_layers=4, *args, **kwargs),
     "FFNN_paper": FFNN_paper,
     "FFNN_paper_163264": FFNN_paper_163264,
     "FFNN_paper_BatchNorm": FFNN_paper_BatchNorm,
-    "FFNN_paper_2extraLayers": FFNN_paper_2extraLayers,
-    "FFNN_paper_4extraLayers": FFNN_paper_4extraLayers,
-    "FFNN_paper_4extraLayers_BatchNorm": FFNN_paper_4extraLayers_BatchNorm,
+    "FFNN_paper_2extraLayers": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_paper_nextraLayers(input_dim, output_dim, n_extra_layers=2, *args, **kwargs),
+    "FFNN_paper_4extraLayers": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_paper_nextraLayers(input_dim, output_dim, n_extra_layers=4, *args, **kwargs),
+    "FFNN_paper_8extraLayers": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_paper_nextraLayers(input_dim, output_dim, n_extra_layers=8, *args, **kwargs),
+    "FFNN_paper_2extraLayers_BatchNorm": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_paper_nextraLayers_BatchNorm(input_dim, output_dim, n_extra_layers=2, *args, **kwargs),
+    "FFNN_paper_4extraLayers_BatchNorm": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_paper_nextraLayers_BatchNorm(input_dim, output_dim, n_extra_layers=4, *args, **kwargs),
+    "FFNN_paper_8extraLayers_BatchNorm": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_paper_nextraLayers_BatchNorm(input_dim, output_dim, n_extra_layers=8, *args, **kwargs),
     "FourVectorAwareNet": FourVectorAwareNet
 }
