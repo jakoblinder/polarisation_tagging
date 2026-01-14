@@ -243,12 +243,11 @@ loss_fn = nn.MSELoss()
 # loss_fn = nn.SmoothL1Loss()
 
 # %% Set the model and choose an optimizer.
+model_name = arg.model
 if arg.standardise:
-    model = model_dict[arg.model](input_dim=input_dim, stat_norm=stat_norm)
+    model = model_dict[model_name](input_dim=input_dim, stat_norm=stat_norm)
 else:
-    model = model_dict[arg.model](input_dim=input_dim)
-
-model_name = model.__class__.__name__
+    model = model_dict[model_name](input_dim=input_dim)
 
 # if torch.cuda.device_count() > 1:
 #   print("Let's use", torch.cuda.device_count(), "GPUs!")
