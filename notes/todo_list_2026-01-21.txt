@@ -1,0 +1,10 @@
+
+> Reproduced well (and even improved) fixed-order ZJ results from paper by adding layers and using BatchNorm. 
+> For ZZ (at LO)
+ - test(s) with higher number of hyperparameters
+ - always use BatchNorm / standardisation 
+ - use penalty factor at intermediate steps relying on single-batch longitudinal cross sections (obtained with rLL labels)
+ - if costheta*(e+ or mu^+) = +1 or -1, then "set" the event to zero as it should be, maybe using that sigmaLL ~ (1-x1^2)(1-x2^2), x1 = costheta*(e+), x2 = costheta*(mu+)
+ - fix histogram in rL (make use of unpolarised cross section without additional reweighting on rL)
+ - is ZZ at LO too "degenerate" (back-to-back,...), can NLOQCD(+ QCDPS) be easier?
+ 
