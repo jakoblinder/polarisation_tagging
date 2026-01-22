@@ -77,6 +77,7 @@ The event files for this project are stored on Nextcloud: [Download ZIP (Updated
 They contain a directory for LO (UU_LO), for LO including the radiation from the POWHEG Sudakov (UU_LOwS) and at NLO (UU_NLO). In each directory there are the histograms done at lhe level (`pwgLHEF_analysis-mean-W*.top`) and after showering with only qcd radiation being activated (`pwgoutput_py8_histos-mean-W*.top`). The definition of the weights can be found in the `powheg.input-save` file.
 
 The filtered events can be found in `pwgevents-????.ml` coming from POWHEG only, i.e. after stage 4. `output_shower_events-????.ml` are the filtered events created from the showered events.
+The events are part of the fiducial phase space and are written in the form `px`, `py`, `pz`, `E`.
 
 **Other potentially interesting files**
 Some results where the models are test on both datasets, i.e. for ZZ and Z+jet can be found in [this (Updated on 13.01.2026)](https://nextcloud.mpp.mpg.de/nextcloud/index.php/s/CtQrZamtorfWYdC) directory. It also includes the above mentioned event files for ZZ. Interesting histograms are for each run the `test_histograms.pdf` and potentially the `<model name>_training_history.pdf`, showing some distributions done on the test data set and the loss behaviour during the training of the models.
