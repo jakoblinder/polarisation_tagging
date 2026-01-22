@@ -1,0 +1,20 @@
+ You are parsing NLO QCD LHE events
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0001.ml
+...
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0050.ml
+Elapsed (1st step): 50.89371919631958 seconds
+size of the whole dataset (train + test) =  1196639
+ estimated longitudinal cross section (hit-or-miss with rLL sampling, using full dataset) ... 0.8829 
+          kin_pt_1   kin_pt_2   kin_pt_3   kin_pt_4  kin_phi_1  kin_phi_2  kin_phi_3  kin_phi_4   kin_y_1   kin_y_2   kin_y_3   kin_y_4       rLL  label
+1196636  55.317500  43.434929  58.707667  52.400045   1.106420  -1.286395  -2.356194   2.282745  2.280580  2.279101  0.984214  1.215703  0.224555      0
+1196637  45.330144  42.734053  44.830883  42.764851  -1.659643   1.496003  -2.356194  -0.458911 -0.216600  0.226763 -2.380586 -1.882953  0.001127      0
+1196638  56.864642  81.486948  29.154279  99.059359  -3.123161  -1.738055   0.785398   1.162159 -0.075357  0.280563  1.350916  0.378343  0.010032      0
+Elapsed (2nd step): 20.917083501815796 seconds. Now start training step...
+Training step: 190.5324673652649 seconds. Now start testing...
+mean squared error: 0.004129866189174767
+Correlation: 0.6868984711910787
+ total parsed events .............................................  394891
+ estimated longitudinal cross section (true-rLL reweighting) ..... 0.8789   +- 0.0004 fb
+ estimated longitudinal cross section (pred-rLL reweighting) ..... 0.8815   +- 0.0058 fb
+ polarised simulation ............................................ 0.8918   +- 0.0003 fb
+Testing step: 2.510709285736084 seconds. Done.
