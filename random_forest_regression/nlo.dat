@@ -1,20 +1,80 @@
  You are parsing NLO QCD LHE events
 parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0001.ml
-...
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0002.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0003.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0004.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0005.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0006.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0007.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0008.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0009.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0010.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0011.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0012.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0013.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0014.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0015.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0016.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0017.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0018.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0019.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0020.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0021.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0022.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0023.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0024.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0025.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0026.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0027.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0028.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0029.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0030.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0031.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0032.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0033.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0034.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0035.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0036.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0037.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0038.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0039.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0040.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0041.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0042.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0043.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0044.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0045.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0046.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0047.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0048.ml
+parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0049.ml
 parsing file  ../../events/ML_FILES/UU_NLO/pwgevents-0050.ml
-Elapsed (1st step): 50.89371919631958 seconds
+Elapsed (1st step): 48.74848508834839 seconds
 size of the whole dataset (train + test) =  1196639
- estimated longitudinal cross section (hit-or-miss with rLL sampling, using full dataset) ... 0.8829 
-          kin_pt_1   kin_pt_2   kin_pt_3   kin_pt_4  kin_phi_1  kin_phi_2  kin_phi_3  kin_phi_4   kin_y_1   kin_y_2   kin_y_3   kin_y_4       rLL  label
-1196636  55.317500  43.434929  58.707667  52.400045   1.106420  -1.286395  -2.356194   2.282745  2.280580  2.279101  0.984214  1.215703  0.224555      0
-1196637  45.330144  42.734053  44.830883  42.764851  -1.659643   1.496003  -2.356194  -0.458911 -0.216600  0.226763 -2.380586 -1.882953  0.001127      0
-1196638  56.864642  81.486948  29.154279  99.059359  -3.123161  -1.738055   0.785398   1.162159 -0.075357  0.280563  1.350916  0.378343  0.010032      0
-Elapsed (2nd step): 20.917083501815796 seconds. Now start training step...
-Training step: 190.5324673652649 seconds. Now start testing...
-mean squared error: 0.004129866189174767
-Correlation: 0.6868984711910787
- total parsed events .............................................  394891
- estimated longitudinal cross section (true-rLL reweighting) ..... 0.8789   +- 0.0004 fb
- estimated longitudinal cross section (pred-rLL reweighting) ..... 0.8815   +- 0.0058 fb
- polarised simulation ............................................ 0.8918   +- 0.0003 fb
-Testing step: 2.510709285736084 seconds. Done.
+                x0         x1          x2  ...     phiZ2       rLL  label
+1196636  24.774806  49.459426  267.740324  ... -2.785418  0.224555      0
+1196637  -4.022140 -45.151349   -9.895458  ...  1.698339  0.001127      0
+1196638 -56.854983  -1.048041   -4.289200  ...  0.877675  0.010032      0
+
+[3 rows x 38 columns]
+Elapsed (2nd step): 130.66203451156616 seconds. Now start training and testing steps...
+Training step: 93.66251063346863 seconds. Now start testing...
+ total number of train events ............................  801748
+ total number of test events .............................  394891
+ expected LL xsec (polarised simulation) ................. 0.8918   +- 0.0003 (MC) fb
+ estimated LL xsec (true-rLL reweighting, test) .......... 0.8789   +- 0.0004 (MC) fb
+ estimated LL xsec (true-rLL resampling, test+train) ..... 0.8792   +- 0.0030 (binomial) fb
+ estimated LL xsec (pred-rLL reweighting, test) .......... 0.8811   +- 0.0013 (test residuals) fb
+
+mse, correlation: 0.0027507969485093043 0.8022252286063256  
+
+Testing step: 2.178232192993164 seconds.
+ 
+ Light-GBM Regressor + model for train residuals
+
+ estimated LL xsec from new model (pred-rLL, test) ............ 0.8887   +- 0.0012 (train-residual regression) fb
+ other model testing and training: 5.270034313201904 seconds.
+Plotting step: 2.5068578720092773 seconds.
+
+ Full elapsed time: 283.02821111679077 seconds. Done.
+

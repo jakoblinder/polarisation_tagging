@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sklearn
 import re
+import lightgbm as lgb
 from pathlib import Path
 from datetime import datetime
 from sklearn.model_selection import train_test_split
@@ -12,6 +13,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import resample
+from sklearn.pipeline import Pipeline
+from sklearn.base import clone
 
 
  # parsing routine for .ml files
@@ -70,18 +73,26 @@ def boostinv(qx, px):
 # parsing input argument (LO / NLO QCD)
 parser = argparse.ArgumentParser(description="Which events do you want?")
 parser.add_argument('--order',  '-p', type=str, choices=['lo', 'nlo'])
+parser.add_argument('--data',   '-d', type=str, choices=['reduced', 'full'])
+parser.add_argument('--model',  '-m', type=str, choices=['all'])
 args = parser.parse_args()
 
 # initialisation and choice of LHE-ML dataset
 sigma_uu = np.array([0.11245290E-01, 0.37648619E-05])
+sigma_ll = np.array([0.6574E-03, 0.0002E-03])
 data_dir = Path("../../events/ML_FILES/UU_LO")
 nr_lhef = 26
+if str(args.data) == 'reduced':
+    nr_lhef = 3
 #if str(data_dir).find("NLO") != -1:
 if str(args.order) == 'nlo':
     print(' You are parsing NLO QCD LHE events')
     sigma_uu = np.array([0.15183819E-01,0.71627436E-05])
+    sigma_ll = np.array([0.8918E-03, 0.0003E-03])
     data_dir = Path("../../events/ML_FILES/UU_NLO")
     nr_lhef = 51 # 51
+    if str(args.data) == 'reduced':
+        nr_lhef = 6
 else:
     print(' You are parsing LO LHE events')
     
@@ -89,11 +100,11 @@ else:
 used_weights = {"UU", "LL", "LT", "TL", "TT"}
 all_events = []
 start = time.time()
-for i in range(1, 10):   
+for i in range(1, min(10,nr_lhef)):   
     filepath = data_dir/f"pwgevents-000{i}.ml"
     print('parsing file ', filepath)
     all_events.extend(parse_ml_events(filepath,used_weights))
-for i in range(10, nr_lhef): 
+for i in range(10, max(10,nr_lhef)): 
     filepath = data_dir/f"pwgevents-00{i}.ml"
     print('parsing file ', filepath)
     all_events.extend(parse_ml_events(filepath,used_weights))
@@ -134,6 +145,12 @@ p1_in_p12_rest = np.zeros_like(p1)
 p3_in_p34_rest = np.zeros_like(p3)
 cos_theta = np.zeros(len(df))
 cos_thetab= np.zeros(len(df))
+ptv1 = np.zeros(len(df))
+ptv2 = np.zeros(len(df))
+yv1 = np.zeros(len(df))
+yv2 = np.zeros(len(df))
+phiv1 = np.zeros(len(df))
+phiv2 = np.zeros(len(df))
 for i in range(len(df)):
     p12_cm[i] = boostinv(p12[i], ptot[i])
     p1_cm[i]  = boostinv(p1[i], ptot[i])
@@ -147,130 +164,166 @@ for i in range(len(df)):
     p3_dir_rest = p3_in_p34_rest[i, :3]
     cos_theta[i]  = np.dot(p12_dir_cm, p1_dir_rest) / (np.linalg.norm(p12_dir_cm) * np.linalg.norm(p1_dir_rest))
     cos_thetab[i] = np.dot(p34_dir_cm, p3_dir_rest) / (np.linalg.norm(p34_dir_cm) * np.linalg.norm(p3_dir_rest))
+    ptv1[i] = (p12[i,0]**2+p12[i,1]**2)**0.5
+    ptv2[i] = (p34[i,0]**2+p34[i,1]**2)**0.5
+    yv1[i]  = 0.5*np.log(( p12[i,3] + p12[i,2] ) / ( p12[i,3] - p12[i,2] ))
+    yv2[i]  = 0.5*np.log(( p34[i,3] + p34[i,2] ) / ( p34[i,3] - p34[i,2] ))
+    phiv1[i] = np.arctan2(p12[i,1],p12[i,0])
+    phiv2[i] = np.arctan2(p34[i,1],p34[i,0])
+    
 df["cos_theta_p1_p12"] = cos_theta
 df["cos_theta_p3_p34"] = cos_thetab
-
+df["ptZ1"] = ptv1
+df["ptZ2"] = ptv2
+df["yZ1"] = yv1
+df["yZ2"] = yv2
+df["phiZ1"] = phiv1
+df["phiZ2"] = phiv2
 
 df["rLL"] = df["LL"] / df["UU"]
-df["rLT"] = df["LT"] / df["UU"]
-df["rTL"] = df["TL"] / df["UU"]
-df["rTT"] = df["TT"] / df["UU"]
+#df["rLT"] = df["LT"] / df["UU"]
+#df["rTL"] = df["TL"] / df["UU"]
+#df["rTT"] = df["TT"] / df["UU"]
 df = df.drop(columns=["UU", "LL", "LT", "TL", "TT"]) # keep  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15"
 print('size of the whole dataset (train + test) = ', len(df))
 
 # label events with basic hit-or-miss 
 n_longit = 0
+err_longit = 0.0e+00
 df["label"] = 0
 x = np.random.rand(len(df))
 for i in range(0,len(df)):
+    err_longit += ((df["rLL"].iloc[i])*(1.0-(df["rLL"].iloc[i])))
     if x[i] < df["rLL"].iloc[i]:
         df.at[i,"label"] = 1
         n_longit += 1
-print(' estimated longitudinal cross section (hit-or-miss with rLL sampling, using full dataset) ... %.4f ' % (1e+3*sigma_uu[0]*(float(n_longit)/float(len(df)))))
-df = df.drop(columns=["rLT", "rTL", "rTT"])
-        
+#df = df.drop(columns=["rLT", "rTL", "rTT"])
+err_longit = err_longit**0.5/float(len(df))
+
 # test print 
 print(df.tail(3))
 
 
-#############################################################################
-#   # Random-Forest Regressor
-#############################################################################
-
 #X = df[["kin_pt_1", "kin_pt_2", "kin_pt_3", "kin_pt_4", "kin_phi_1", "kin_phi_2", "kin_phi_3", "kin_phi_4", "kin_y_1", "kin_y_2", "kin_y_3", "kin_y_4"]]  # non-redundant features
 #X = df[["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "cos_theta_p1_p12"]]  # over-redundant features
-X = df[["cos_theta_p1_p12", "cos_theta_p3_p34"]]  # very few features
+#X = df[["ptZ1", "ptZ2", "yZ1", "yZ2", "phiZ1", "phiZ2", "cos_theta_p1_p12", "cos_theta_p3_p34"]]  # few features
+#X = df[["cos_theta_p1_p12", "cos_theta_p3_p34"]]  # very few features
+
+X = df[["ptZ1", "ptZ2", "yZ1", "yZ2", "cos_theta_p1_p12", "cos_theta_p3_p34"]]  # few features (including decay angles)
 y = df["rLL"]   # target
 
 # split into training and testing datasets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
 end2 = time.time()
-print("Elapsed (2nd step):", end2 - end1, "seconds. Now start training step...")
-
-# define model 
-model = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=42, n_jobs=40) # parallelise over 40 workers (~12 trees per worker)
-
-model.fit(X_train, y_train)
-end3 = time.time()
-print("Training step:", end3 - end2, "seconds. Now start testing...")
-
-# testing
-#y_pred = model.predict(X_test) # predict, allowing for out-of-range values
-y_pred = np.clip(model.predict(X_test), 0, 1) # predict, avoiding out-of-range values
-mse = mean_squared_error(y_test, y_pred)
-print("mean squared error:", mse)
-corr = np.corrcoef(y_test, y_pred)[0,1]
-print("Correlation:", corr)
-
-print(' total parsed events ............................................. ', len(y_test))
-print(' estimated longitudinal cross section (true-rLL reweighting) ..... %.4f ' % (1e+3*sigma_uu[0]*(y_test.sum()/len(y_test))), ' +- %.4f fb' % (1e+3*sigma_uu[1]*(y_test.sum()/len(y_test))) )
-print(' estimated longitudinal cross section (pred-rLL reweighting) ..... %.4f ' % (1e+3*sigma_uu[0]*(y_pred.sum()/len(y_pred))), ' +- %.4f fb' % (1e+3*sigma_uu[0]*(y_pred.sum()**0.5/len(y_pred))) )
-
-end4 = time.time()
-print("Testing step:", end4 - end3, "seconds. Done.")
-
-# now plotting stuff
-fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(7, 10))
-
-yep = df.loc[X_test.index, "kin_y_1"]
-ax1.set_title("Rapidity of the positron")
-ax1.hist(yep, weights=y_test, bins=40, histtype="step", linewidth=1, color="blue", label="true", density=True)
-ax1.hist(yep, weights=y_pred, bins=40, histtype="step", linewidth=1, color="red", label="predicted", density=True)
-ax1.legend()
-ax1.set_xlabel("y$_{\\tt e^+}$")
-ax1.set_ylabel("Normalised distributions")
-#ax1.set_yscale("log")
-
-ax2.set_title("Label distribution")
-ax2.hist(y_test, range=(-0.1, 1.1), bins=40, histtype="step", linewidth=1, color="blue", label="true", density=True)
-ax2.hist(y_pred, range=(-0.1, 1.1), bins=40, histtype="step", linewidth=1, color="red", label="predicted", density=True)
-ax2.legend()
-ax2.set_xlabel("r$_{\\tt LL}$")
-ax2.set_ylabel("Normalised distributions")
-#ax2.set_yscale("log")
-
-cth = df.loc[X_test.index, "cos_theta_p1_p12"]
-ax3.set_title("Decay angle of the positron")
-ax3.hist(cth, weights=y_test, bins=40, histtype="step", linewidth=1, color="blue", label="true", density=True)
-ax3.hist(cth, weights=y_pred, bins=40, histtype="step", linewidth=1, color="red", label="predicted", density=True)
-ax3.legend()
-ax3.set_xlabel("cos$\\theta^*_{\\tt e^+}$")
-ax3.set_ylabel("Normalised distributions")
+print("Elapsed (2nd step):", end2 - end1, "seconds. Now start training and testing steps...")
 
 
-plt.tight_layout()
-fig.savefig("test_random_forest_regressor_"+ str(args.order) +"_test_events_" + str(len(y_pred)) + ".pdf")
+if args.model == 'all':
+    
+    #############################################################################
+    #   # Random-Forest Regressor
+    #############################################################################
+    # define and train model
+    model = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=None, n_jobs=40) # parallelise over 40 workers (~12 trees per worker)
+    model.fit(X_train, y_train)
+    end3 = time.time()
+    print("Training step:", end3 - end2, "seconds. Now start testing...")
+
+    # # tree-level bootstrap for model uncertainty
+    # preds = np.array([tree.predict(X_test.values) for tree in model.estimators_])
+    # B = 100
+    # T_boot = []
+    # for b in range(B):
+    #     idx = np.random.randint(0, preds.shape[0], preds.shape[0])
+    #     yb = preds[idx].mean(axis=0)
+    #     T_boot.append(yb.mean())
+    # T_boot = np.array(T_boot)
+    # T_hat = T_boot.mean()
+    # sigma_T = np.std(T_boot, ddof=1)
+
+    # testing
+    #y_pred = model.predict(X_test) # predict, allowing for out-of-range values
+    y_pred = np.clip(model.predict(X_test), 0, 1) # predict, avoiding out-of-range values
+    mse = mean_squared_error(y_test, y_pred)
+    corr = np.corrcoef(y_test, y_pred)[0,1]
+    
+    # RFR
+    print(' total number of train events ............................ ', len(y_train))
+    print(' total number of test events ............................. ', len(y_test))
+    print(' expected LL xsec (polarised simulation) ................. %.4f ' % (1e+3*sigma_ll[0]), ' +- %.4f (MC) fb' % (1e+3*sigma_ll[1]) )
+    print(' estimated LL xsec (true-rLL reweighting, test) .......... %.4f ' % (1e+3*sigma_uu[0]*(y_test.sum()/len(y_test))), ' +- %.4f (MC) fb' % (1e+3*sigma_uu[1]*(y_test.sum()/len(y_test))) )
+    print(' estimated LL xsec (true-rLL resampling, test+train) ..... %.4f ' % (1e+3*sigma_uu[0]*(float(n_longit)/float(len(df)))), ' +- %.4f (binomial) fb' % (1e+3*sigma_uu[0]*err_longit))
+
+    
+    print(' estimated LL xsec (pred-rLL reweighting, test) .......... %.4f ' % (1e+3*sigma_uu[0]*(y_pred.sum()/len(y_test))), ' +- %.4f (test residuals) fb' % (1e+3*sigma_uu[0]* (mse/float(len(y_test)))**0.5 ))
+
+    print("\nmse, correlation:", mse, corr, " \n")
+    
+    end4 = time.time()
+    print("Testing step:", end4 - end3, "seconds.")
+
+    #############################################################################
+    #   # Two-model approach with Light-GBM MSE-regressor for mean and variance 
+    #############################################################################
+
+    print(" \n Light-GBM Regressor + model for train residuals\n")
+    reg = lgb.LGBMRegressor(objective="mse", alpha=0.5, n_estimators=500, max_depth=10, learning_rate=0.05, force_row_wise=True, verbose=-1)
+    reg.fit(X_train, y_train)    
+    y_pred_2 = np.clip(reg.predict(X_test),0,1)
+    resid = y_train - reg.predict(X_train)
+    var_model = lgb.LGBMRegressor(objective="mse", force_row_wise=True, verbose=-1)
+    var_model.fit(X_train, resid**2)
+    M_hat = y_pred_2.sum()/float(len(y_pred))
+    sigma_M = np.sqrt(np.sum( np.clip(var_model.predict(X_test), 0, None)  ))/float(len(y_pred))
+    
+    end5 = time.time()
+
+    # LGBMR
+    print(' estimated LL xsec from new model (pred-rLL, test) ............ %.4f ' % (1e+3*sigma_uu[0]*M_hat), ' +- %.4f (train-residual regression) fb' % (1e+3*sigma_uu[0]*sigma_M))
+    print(" other model testing and training:", end5 - end4, "seconds.")
+
+    # now plotting stuff
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(7, 10))
+    
+    yep = df.loc[X_test.index, "kin_y_1"]
+    ax1.set_title("Rapidity of the positron")
+    ax1.hist(yep, weights=y_test, bins=40, histtype="step", linewidth=1, color="blue", label="true", density=True)
+    ax1.hist(yep, weights=y_pred, bins=40, histtype="step", linewidth=1, color="red", label="pred. (RFR)", density=True)
+    ax1.hist(yep, weights=y_pred_2, bins=40, histtype="step", linewidth=1, color="green", label="pred. (LGBM)", density=True)
+    ax1.legend()
+    ax1.set_xlabel("y$_{\\tt e^+}$")
+    ax1.set_ylabel("Normalised distributions")
+
+    #ax1.set_yscale("log")
+    
+    ax2.set_title("Label distribution")
+    ax2.hist(y_test, range=(-0.1, 1.1), bins=40, histtype="step", linewidth=1, color="blue", label="true", density=True)
+    ax2.hist(y_pred, range=(-0.1, 1.1), bins=40, histtype="step", linewidth=1, color="red", label="pred. (RFR)", density=True)
+    ax2.hist(y_pred_2, range=(-0.1,1.1), bins=40, histtype="step", linewidth=1, color="green", label="pred. (LGBM)", density=True)
+    ax2.legend()
+    ax2.set_xlabel("r$_{\\tt LL}$")
+    ax2.set_ylabel("Normalised distributions")
+    #ax2.set_yscale("log")
+    
+    cth = df.loc[X_test.index, "cos_theta_p1_p12"]
+    ax3.set_title("Decay angle of the positron")
+    ax3.hist(cth, weights=y_test, bins=40, histtype="step", linewidth=1, color="blue", label="true", density=True)
+    ax3.hist(cth, weights=y_pred, bins=40, histtype="step", linewidth=1, color="red", label="pred. (RFR)", density=True)
+    ax3.hist(cth, weights=y_pred_2, bins=40, histtype="step", linewidth=1, color="green", label="pred. (LGBM)", density=True)
+    ax3.legend()
+    ax3.set_xlabel("cos$\\theta^*_{\\tt e^+}$")
+    ax3.set_ylabel("Normalised distributions")
+    
+    plt.tight_layout()
+    fig.savefig("test_random_forest_regressor_"+ str(args.order) +"_test_events_" + str(len(y_pred)) + ".pdf")
+    
+    end6 = time.time()
+    print("Plotting step:", end6 - end5, "seconds.")
+
+
+endall = time.time()
+print("\n Full elapsed time:", endall - start, "seconds. Done.\n")
 #plt.show()
-
-
-
-# plt.scatter(y_test, y_pred, s=3, alpha=0.3)
-# plt.xlabel("True $r_{\\tt LL}$")
-# plt.ylabel("Guessed $r_{\\tt LL}$")
-# plt.plot([0,1],[0,1],'r--')
-# plt.show()
-
-#  X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42, stratify=y)
-#  scaler = StandardScaler()
-#  X_train = scaler.fit_transform(X_train)
-#  X_test = scaler.transform(X_test)
-
-#  features = [c for c in df.columns if c.startswith("kin_pt")]
-#  target = "rLL" 
-#  Xs = df[features]
-#  correlation = Xs.corr(method="spearman")
-#  correlation_with_target = df[features + [target]].corr()[target].sort_values()
-#  print(correlation_with_target)
-#  plt.figure(figsize=(10, 8))
-#  plt.imshow(correlation, aspect="auto")
-#  plt.colorbar(label="Correlation")
-#  plt.xticks(range(len(correlation)), correlation.columns, rotation=90)
-#  plt.yticks(range(len(correlation)), correlation.columns)
-#  plt.title("Correlation Matrix for Kinematic Features")
-#  plt.tight_layout()
-#  plt.show()
-
-
 
 
 
