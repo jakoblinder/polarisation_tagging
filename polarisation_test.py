@@ -303,9 +303,15 @@ def r_plot(r_pred, r_true, weights):
     bin_widths = bins[1:] - bins[:-1]
 
     # Sum predicted labels in each r bin
-    pred_sums, _ = np.histogram(r_pred, bins=bins, weights=weights)
+    # Handle case where weights is a single float
+    if np.isscalar(weights):
+        weight_array = np.full_like(r_pred, weights)
+    else:
+        weight_array = weights
+
+    pred_sums, _ = np.histogram(r_pred, bins=bins, weights=weight_array)
     pred_sums /= bin_widths
-    true_sums, _ = np.histogram(r_true, bins=bins, weights=weights)
+    true_sums, _ = np.histogram(r_true, bins=bins, weights=weight_array)
     true_sums /= bin_widths
 
     # Plot as step histograms
@@ -709,7 +715,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, loss_fn, device
         pdf.savefig(fig)
         plt.close(fig)
 
-        fig, _ = r_plot(observable_dict["rL_pred"], observable_dict["rL_true"], observable_dict["weights_y"])
+        fig, _ = r_plot(observable_dict["rL_pred"], observable_dict["rL_true"], total_xsec)
         pdf.savefig(fig)
         plt.close(fig)
 
