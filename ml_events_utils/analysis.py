@@ -83,7 +83,6 @@ def costhetastar(momenta):
 
     return ct1, ct2, ct3, ct4
 
-
 def get_pt(p4):
     """
     Calculate the transverse momentum (pT) of a particle given its 4-momentum.
@@ -97,6 +96,21 @@ def get_pt(p4):
     py = p4[..., 1]
     pt = torch.sqrt(px**2 + py**2)
     return pt
+
+
+def get_phi(p4):
+    """
+    Calculate the azimuthal angle (phi) of a particle given its 4-momentum.
+
+    Args:
+        p4 (torch.Tensor): Tensor of shape (..., 4) representing the 4-momentum (px, py, pz, E)
+    Returns:
+        torch.Tensor: Tensor of shape (...) representing the azimuthal angle in radians
+    """
+    px = p4[..., 0]
+    py = p4[..., 1]
+    phi = torch.atan2(py, px)
+    return phi
 
 
 def get_rapidity(p4):
@@ -126,6 +140,8 @@ def get_rapidity(p4):
 
     return rapidity
 
+
+# Z jet:
 def cosmujet(momenta):
     """
     Take the momenta of 2 leptons coming from 1 boson and 1 jet.
