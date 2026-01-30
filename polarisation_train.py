@@ -17,6 +17,7 @@ from torchsummary import summary
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from ML_Giovanni.polarisation_tagging.ml_events_utils.transforms import januar2026_input_choice
 from ml_events_utils import MLEventsDataset, get_statistics_from_dataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform
 from ml_events_utils import boost_into_Zjet_cm_frame
 from ml_events_utils import train_loop, valid_loop
@@ -52,6 +53,7 @@ parser.add_argument("--outputdir",           type=Path,  action='store', default
 parser.add_argument("--replot",              dest="replot_only",  action="store_true",    help="Only regenerate the training history plot from existing CSV files. The model and potentially the output directory need to be specified.")
 parser.add_argument("--useZjet",             dest="use_zjet",     action="store_true",    help="Use Z+jet dataset instead of default.")
 parser.add_argument("--standardise",         dest="standardise",  action="store_true",    help="Enable standardisation of features over the whole dataset (default).")
+parser.add_argument("--input_choice",        type=str,   action="store", default=None,    help="Choice of input features. Options: Momenta, jan2026.")
 
 # Create a mutually exclusive group for specifying the reference frame
 frame_group = parser.add_mutually_exclusive_group()
@@ -141,6 +143,13 @@ if not arg.use_zjet:
         trafo = None
     else:
         trafo = boost_into_four_lepton_cm_frame
+
+    if arg.input_choice == "jan2026":
+        if trafo:
+            trafo = lambda x: januar2026_input_choice(trafo(x))
+        else:
+            trafo = januar2026_input_choice
+
     dataset = MLEventsDataset(files,
                             labels = ["LL/UU",],
                             transform=trafo,
@@ -152,6 +161,13 @@ else:
         trafo = None
     else:
         trafo = boost_into_Zjet_cm_frame
+
+    if arg.input_choice == "jan2026":
+        if trafo:
+            trafo = lambda x: januar2026_input_choice(trafo(x))
+        else:
+            trafo = januar2026_input_choice
+
     dataset = ZJetDataset(files[0],
                           transform=trafo,
                           target_transform=None,

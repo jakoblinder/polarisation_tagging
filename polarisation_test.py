@@ -42,6 +42,7 @@ parser.add_argument("--histogram_dir",    type=Path,        action="store", defa
 parser.add_argument("-e", "--n_generated_events", type=lambda x: int(float(x)),       action="store", default=int(1e7), help="Number of generated events for comparison (1e7 for LO and LOwS and 5e6 for NLO).")
 parser.add_argument("--useZjet",          dest="use_zjet",  action="store_true",          help="Use Z+jet dataset instead of default.")
 parser.add_argument("--standardise",      dest="standardise", action="store_true",        help="Enable standardisation of features over the whole dataset (default).")
+parser.add_argument("--input_choice",        type=str,   action="store", default=None,    help="Choice of input features. Options: Momenta, jan2026.")
 
 # Create a mutually exclusive group for specifying the reference frame
 frame_group = parser.add_mutually_exclusive_group()
@@ -108,28 +109,51 @@ np.random.seed(seed)
 # files = Path("event_files/pwgevents-*.ml")
 files = arg.mlfiles
 
+
 if not arg.use_zjet:
     if arg.labframe:
         trafo = None
     else:
         trafo = boost_into_four_lepton_cm_frame
+
+    if arg.input_choice == "jan2026":
+        if trafo:
+            trafo = lambda x: januar2026_input_choice(trafo(x))
+        else:
+            trafo = januar2026_input_choice
+
+    labels = ["LL/UU", "UU"]
     dataset = MLEventsDataset(files,
-                            #   labels = ["LL/UU", ],
-                            labels = ["LL/UU", "UU"],
+                            labels = labels,
                             transform=trafo,
                             #   target_transform=scale_target,  # Scale target by 1000
                             cache_events=True,  # Caching enabled
                             standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
+    dataset_untransformed = MLEventsDataset(files,
+                            labels = labels,
+                            cache_events=True,  # Caching enabled
+                            standardise=False)
+
 else:
     if arg.labframe:
         trafo = None
     else:
         trafo = boost_into_Zjet_cm_frame
+
+    if arg.input_choice == "jan2026":
+        if trafo:
+            trafo = lambda x: januar2026_input_choice(trafo(x))
+        else:
+            trafo = januar2026_input_choice
+
     dataset = ZJetDataset(files[0],
                           transform=trafo,
                           target_transform=None,
                           max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
                           standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
+    dataset_untransformed = ZJetDataset(files[0],
+                          max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
+                          standardise=False)
 print(f"Dataset info: {dataset.get_file_info()}")
 
 # %% Hyperparameters
@@ -142,10 +166,18 @@ generator = torch.Generator().manual_seed(seed)
 split_ratios = [0.6, 0.2, 0.2]  # Train, Val, Test
 _, _, test_dataset = torch.utils.data.random_split(dataset, split_ratios, generator=generator)
 print(f"Test dataset size:       {len(test_dataset)}")
+_, _, test_dataset_untransformed = torch.utils.data.random_split(dataset_untransformed, split_ratios, generator=generator)
 
 
 test_dataloader = DataLoader(
     test_dataset,
+    batch_size=batch_size,  # Larger batch size for efficiency
+    shuffle=False,
+    num_workers=n_workers,  # Use multiple workers for large files
+    pin_memory=True  # Faster GPU transfer
+)
+test_dataloader_untransformed = DataLoader(
+    test_dataset_untransformed,
     batch_size=batch_size,  # Larger batch size for efficiency
     shuffle=False,
     num_workers=n_workers,  # Use multiple workers for large files
@@ -433,7 +465,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
 
 
 # %% Testing loop
-def test_model_ZZ(model, model_dir, histogram_dir, dataloader, loss_fn, device, n_generated_events=0.2*1e7):
+def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untransformed, loss_fn, device, n_generated_events=0.2*1e7):
     """
     Test a trained machine learning model and generate comparison plots with POWHEG reference data.
     This function evaluates the model on test data, computes observables (invariant masses and cos(theta*)),
@@ -443,6 +475,7 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, loss_fn, device, 
         model_dir: Directory containing the model files
         histogram_dir (Path): Directory containing reference histogram files (.top format)
         dataloader: PyTorch DataLoader containing test data with features (X) and targets (y)
+        dataloader_untransformed: PyTorch DataLoader containing untransformed test data with features (X_untransformed) and targets (y_untransformed)
         loss_fn: Loss function used for evaluation
         device: PyTorch device (CPU or GPU) for computation
         n_generated_events (float, optional): Number of events generated in POWHEG-BOX-RES for normalization multiplied by
@@ -494,10 +527,13 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, loss_fn, device, 
                        "rLL_true":      np.zeros(size),
                        }
 
+    # TODO: Add model name into the plots.
+
     test_loss = 0
     with torch.no_grad():
-        for batch, (X, y) in enumerate(dataloader):
+        for batch, ((X, y), (X_untransformed, y_untransformed)) in enumerate(zip(dataloader, dataloader_untransformed)):
             X, y = X.to(device), y.to(device)
+            X_untransformed, y_untransformed = X_untransformed.to(device), y_untransformed.to(device)
             if batch == 0:
                 batch_size = X.shape[0]
             y_first_weight_only = y[...,0].unsqueeze(-1)
@@ -521,24 +557,24 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, loss_fn, device, 
 
 
             # zl1, zl2, zl3, zl4 = e+, e-, mu+, mu-
-            momenta = X.reshape(X.shape[0], -1, 4)
+            momenta = X_untransformed.reshape(X_untransformed.shape[0], -1, 4)
 
             # Invariant masses of Z1 and Z2 candidates:
             invmass_Z1 = torch.sqrt((momenta[:,0,3] + momenta[:,1,3])**2 - ((momenta[:,0,0:3] + momenta[:,1,0:3])**2).sum(dim=-1) + 1e-9)
             # invmass_Z2 = torch.sqrt((momenta[:,2,3] + momenta[:,3,3])**2 - ((momenta[:,2,0:3] + momenta[:,3,0:3])**2).sum(dim=-1) + 1e-9)
 
-            observable_dict["invmass_Z1"][batch * batch_size : batch * batch_size + X.shape[0]] = invmass_Z1.cpu().numpy()
-            # observable_dict["invmass_Z2"][batch * batch_size : batch * batch_size + X.shape[0]] = invmass_Z2.cpu().numpy()
+            observable_dict["invmass_Z1"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = invmass_Z1.cpu().numpy()
+            # observable_dict["invmass_Z2"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = invmass_Z2.cpu().numpy()
 
 
             ct1, ct2, ct3, ct4 = costhetastar(momenta)
-            observable_dict["cthep"][batch * batch_size : batch * batch_size + X.shape[0]] = ct1.cpu().numpy()
+            observable_dict["cthep"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = ct1.cpu().numpy()
 
-            observable_dict["ptep"][batch * batch_size : batch * batch_size + X.shape[0]] = get_pt(momenta[:,0,:]).cpu().numpy()
+            observable_dict["ptep"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta[:,0,:]).cpu().numpy()
 
-            observable_dict["yep"][batch * batch_size : batch * batch_size + X.shape[0]]  = get_rapidity(momenta[:,0,:]).cpu().numpy()
+            observable_dict["yep"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]]  = get_rapidity(momenta[:,0,:]).cpu().numpy()
             # Note that pt4l is zero in the 4-lepton CM frame
-            # observable_dict["pt4l"][batch * batch_size : batch * batch_size + X.shape[0]] = get_pt(momenta.sum(dim=1)).cpu().numpy()
+            # observable_dict["pt4l"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta.sum(dim=1)).cpu().numpy()
 
     observable_dict["cthep_mll_cut10"] = np.where(np.abs(observable_dict["invmass_Z1"] - 91.19) < 10, observable_dict["cthep"], 0.0)
     observable_dict["cthep_mll_cut5"] = np.where(np.abs(observable_dict["invmass_Z1"] - 91.19) < 5, observable_dict["cthep"], 0.0)
@@ -605,7 +641,7 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, loss_fn, device, 
     return test_loss
 
 # %% Define testing function for Z+jet model
-def test_model_Zjet(model, model_dir, histogram_dir, dataloader, loss_fn, device):
+def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untransformed, loss_fn, device):
     """
     Test a trained machine learning model for Z+jet events.
     This function evaluates the model on test data and computes the average test loss.
@@ -614,6 +650,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, loss_fn, device
         model_dir: Directory containing the model files
         histogram_dir (Path): Directory containing the total unpolarised cross-section (Events are unweighted in the Z+jet case).
         dataloader: PyTorch DataLoader containing test data with features (X) and targets (y)
+        dataloader_untransformed: PyTorch DataLoader containing untransformed test data with features (X_untransformed) and targets (y_untransformed)
         loss_fn: Loss function used for evaluation
         device: PyTorch device (CPU or GPU) for computation
     Returns:
@@ -625,6 +662,8 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, loss_fn, device
         The function expects:
         - Input features X with shape (batch_size, n_particles, 4) representing 4-momenta.
         - Target y with shape (batch_size, 1) where y[:,0] are the rL weights.
+        - Input features X_untransformed with shape (batch_size, n_particles, 4) representing untransformed 4-momenta.
+        - Target y_untransformed with shape (batch_size, 1) where y_untransformed[:,0] are the rL weights.
     """
 
     print("Starting testing for Z+jet model...")
@@ -655,11 +694,13 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, loss_fn, device
                        "cosmupjet":     np.zeros(size),
                      }
 
+    # TODO: Add model name into the plots.
 
     test_loss = 0
     with torch.no_grad():
-        for batch, (X, y) in enumerate(dataloader):
+        for batch, ((X, y), (X_untransformed, y_untransformed)) in enumerate(zip(dataloader, dataloader_untransformed)):
             X, y = X.to(device), y.to(device)
+            X_untransformed, y_untransformed = X_untransformed.to(device), y_untransformed.to(device)
             if batch == 0:
                 batch_size = X.shape[0]
 
@@ -681,12 +722,12 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, loss_fn, device
             observable_dict["rL_true"][batch * batch_size : batch * batch_size + X.shape[0]] = y[:,0].cpu().numpy()
 
             # zl1, zl2, jet =  mu+, mu-, jet
-            momenta = X.reshape(X.shape[0], -1, 4)
+            momenta = X_untransformed.reshape(X_untransformed.shape[0], -1, 4)
 
-            observable_dict["ptjet"][batch * batch_size : batch * batch_size + X.shape[0]] = get_pt(momenta[:,2,:]).cpu().numpy()
+            observable_dict["ptjet"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta[:,2,:]).cpu().numpy()
 
             ct1, ct2 = cosmujet(momenta)
-            observable_dict["cosmupjet"][batch * batch_size : batch * batch_size + X.shape[0]] = ct1.cpu().numpy()
+            observable_dict["cosmupjet"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = ct1.cpu().numpy()
 
     test_loss /= num_batches
 
@@ -728,9 +769,9 @@ if __name__ == "__main__":
     test_loss_fn = torch.nn.MSELoss()
 
     if not arg.use_zjet:
-        test_loss = test_model_ZZ(model, model_dir, arg.histogram_dir, test_dataloader, test_loss_fn, device, split_ratios[2] * arg.n_generated_events)
+        test_loss = test_model_ZZ(model, model_dir, arg.histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, split_ratios[2] * arg.n_generated_events)
     else:
-        test_loss = test_model_Zjet(model, model_dir, arg.histogram_dir, test_dataloader, test_loss_fn, device)
+        test_loss = test_model_Zjet(model, model_dir, arg.histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device)
 
     end_time = time.time()
     print(f"Testing completed in {end_time - start_time:.2f} seconds.")
