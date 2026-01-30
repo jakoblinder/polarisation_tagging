@@ -100,16 +100,16 @@ if str(args.order) == 'nlo':
         nr_lhef = 6
 else:
     print(' You are parsing LO LHE events')
-    
-# access ml unpolarised events and various weights 
+
+# access ml unpolarised events and various weights
 used_weights = {"UU", "LL", "LT", "TL", "TT"}
 all_events = []
 start = time.time()
-for i in range(1, min(10,nr_lhef)):   
+for i in range(1, min(10,nr_lhef)):
     filepath = data_dir/f"pwgevents-000{i}.ml"
     print('parsing file ', filepath)
     all_events.extend(parse_ml_events(filepath,used_weights))
-for i in range(10, max(10,nr_lhef)): 
+for i in range(10, max(10,nr_lhef)):
     filepath = data_dir/f"pwgevents-00{i}.ml"
     print('parsing file ', filepath)
     all_events.extend(parse_ml_events(filepath,used_weights))
@@ -175,7 +175,7 @@ for i in range(len(df)):
     yv2[i]  = 0.5*np.log(( p34[i,3] + p34[i,2] ) / ( p34[i,3] - p34[i,2] ))
     phiv1[i] = np.arctan2(p12[i,1],p12[i,0])
     phiv2[i] = np.arctan2(p34[i,1],p34[i,0])
-    
+
 df["cos_theta_p1_p12"] = cos_theta
 df["cos_theta_p3_p34"] = cos_thetab
 df["ptZ1"] = ptv1
@@ -192,7 +192,7 @@ df["rLL"] = df["LL"] / df["UU"]
 df = df.drop(columns=["UU", "LL", "LT", "TL", "TT"]) # keep  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15"
 print('size of the whole dataset (train + test) = ', len(df))
 
-# label events with basic hit-or-miss 
+# label events with basic hit-or-miss
 n_longit = 0
 err_longit = 0.0e+00
 df["label"] = 0
@@ -206,7 +206,7 @@ for i in range(0,len(df)):
 err_longit = err_longit**0.5/float(len(df))
 df = df.drop(columns=["label"])
 
-# test print 
+# test print
 print(df.tail(3))
 
 
@@ -229,7 +229,7 @@ print("Elapsed (2nd step):", end2 - end1, "seconds. Now start training and testi
 
 
 if args.model == 'all':
-    
+
     #############################################################################
     #   # Random-Forest Regressor
     #############################################################################
@@ -257,13 +257,13 @@ if args.model == 'all':
     mse = mean_squared_error(y_test, y_pred)
     corr = np.corrcoef(y_test, y_pred)[0,1]
 
-    resid = y_train - model.oob_prediction_ # resid = y_train - model.predict(X_train) would bias the training residuals    
+    resid = y_train - model.oob_prediction_ # resid = y_train - model.predict(X_train) would bias the training residuals
     var_model = lgb.LGBMRegressor(objective="mse", force_row_wise=True, verbose=-1)
     var_model.fit(X_train, resid**2)
     var_events = np.clip(var_model.predict(X_test), 0, None)
     err_rfr = np.sqrt(np.sum(var_events))/float(len(y_pred))
 
-    
+
     # RFR
     print(' total number of train events ............................ ', len(y_train))
     print(' total number of test events ............................. ', len(y_test))
@@ -276,7 +276,7 @@ if args.model == 'all':
     sigLLsim = np.array([(1e+3*sigma_ll[0]),(1e+3*sigma_ll[1])])
     sigLLtrue = np.array([(1e+3*sigma_uu[0]*(y_test.sum()/len(y_test))),(1e+3*sigma_uu[1]*(y_test.sum()/len(y_test)))])
     sigLLpred = np.array([(1e+3*sigma_uu[0]*(y_pred.sum()/len(y_test))),(1e+3*sigma_uu[0]* err_rfr)])
-    
+
 
     result = permutation_importance(
         model,
@@ -290,38 +290,38 @@ if args.model == 'all':
     std = result.importances_std
     indices = np.argsort(importances)[::-1]
 
-    
+
     end4 = time.time()
     print("Testing step:", end4 - end3, "seconds.")
 
 #     #############################################################################
-#     #   # Two-model approach with Light-GBM MSE-regressor for mean and variance 
+#     #   # Two-model approach with Light-GBM MSE-regressor for mean and variance
 #     #############################################################################
-# 
+#
 #     print(" \n Light-GBM Regressor + model for train residuals\n")
 #     reg = lgb.LGBMRegressor(objective="mse", alpha=0.5, n_estimators=500, max_depth=10, learning_rate=0.05, force_row_wise=True, verbose=-1)
-#     reg.fit(X_train, y_train)    
+#     reg.fit(X_train, y_train)
 #     y_pred_2 = np.clip(reg.predict(X_test),0,1)
 #     M_hat = y_pred_2.sum()/float(len(y_pred))
-#     
+#
 #     resid_2 = y_train - reg.predict(X_train)
 #     var_model_2 = lgb.LGBMRegressor(objective="mse", force_row_wise=True, verbose=-1)
 #     var_model_2.fit(X_train, resid_2**2)
 #     sigma_M = np.sqrt(np.sum( np.clip(var_model_2.predict(X_test), 0, None)  ))/float(len(y_pred))
-#     
+#
 #     # LGBMR
 #     print(' estimated LL xsec from new model (pred-rLL, test) ............ %.4f ' % (1e+3*sigma_uu[0]*M_hat), ' +- %.4f (train-residual regression) fb' % (1e+3*sigma_uu[0]*sigma_M))
 #     print(" other model testing and training:", end5 - end4, "seconds.")
 
 
     end5 = time.time()
-       
-    
+
+
     # now plotting stuff
     bins = 20 # for physical observables
     norm_factor = 1e+03*sigma_uu[0]/float(len(y_pred))
 
-    
+
     #fig, (ax1, ax3, ax4, ax2) = plt.subplots(4, 1, figsize=(7, 15))
     fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(11.5, 14))
     ax1 = axes[0, 0]
@@ -330,7 +330,7 @@ if args.model == 'all':
     ax2 = axes[1, 1]
     ax5 = axes[2, 0]
     ax6 = axes[2, 1]
-    
+
     yep = df.loc[X_test.index, "kin_y_1"]
     ax1.set_title("Positron rapidity "+t_app)
     hist_vals, bin_edges = np.histogram(yep, bins=bins, weights=y_pred)
@@ -362,8 +362,8 @@ if args.model == 'all':
     ax1.set_xlabel("y$_{\\tt e^+}$")
     ax1.set_ylabel("d$\\sigma/$d$y_{\\tt e^+}$ [fb]")
     #ax1.set_yscale("log")
-    
-    
+
+
     cth = df.loc[X_test.index, "cos_theta_p1_p12"]
     ax3.set_title("Positron decay angle "+t_app)
     hist_vals, bin_edges = np.histogram(cth, bins=bins, weights=y_pred)
@@ -457,8 +457,8 @@ if args.model == 'all':
                        rotation=45,
                        ha="right")
     ax5.set_ylabel("Decrease in performance")
-       
-    
+
+
     ax6.set_title("True vs pred. $r_{\\tt LL}$ labels "+t_app)
     #dr = y_pred - y_test
     #ax6.hist2d(y_test, y_pred, bins=100, cmap="viridis")
@@ -473,16 +473,16 @@ if args.model == 'all':
     ax6.set_xlim(-0.1,0.4)
     ax6.set_ylim(-0.1,0.4)
     ax6.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], "r--", linewidth=1)
-    
+
     plt.tight_layout()
     fig.savefig("test_random_forest_regressor_"+ str(args.order) +"_test_events_" + str(len(y_pred)) + "_basis_" + str(args.features) + ".pdf")
     plt.close()
 
-    
+
     end6 = time.time()
     print("Plotting step:", end6 - end5, "seconds.")
 
-    
+
 
 endall = time.time()
 print("\n Full elapsed time:", endall - start, "seconds. Done.\n")
