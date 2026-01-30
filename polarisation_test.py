@@ -325,7 +325,7 @@ def print_integration_statistics(observable_dict, histogram_data: dict = {}):
 
     return fig, ax
 
-def r_plot(r_pred, r_true, weights):
+def r_plot(r_pred, r_true, weights, model_name="Model"):
     fig, axs = plt.subplots(1, 1)
 
     r_min, r_max = min(r_pred.min() ,r_true.min()), max(r_pred.max(), r_true.max())
@@ -356,7 +356,7 @@ def r_plot(r_pred, r_true, weights):
     # axs[0].set_yscale('log')
 
     axs.set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} r}$ [pb / [r]]")
-    axs.set_title("Predicted vs. True Labels")
+    axs.set_title(f"Predicted vs. True Labels - {model_name}")
     axs.legend()
     axs.grid(True, alpha=0.3)
 
@@ -371,7 +371,7 @@ def r_plot(r_pred, r_true, weights):
     return fig, axs
 
 
-def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:dict = None, log_scale=True, nbins=50):
+def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:dict = None, log_scale=True, nbins=50, model_name="Model"):
     """
     Create a comparison plot of predicted vs true labels for a given observable.
     This function generates a step histogram plot comparing predicted labels, true labels,
@@ -447,7 +447,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
             print(f"Could not set y scale to log for {observable_key} plot: {e}")
 
     axs[0].set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} \mathrm{" + observable_key + r"}}$ [pb / [" + observable_key + "]]")
-    axs[0].set_title("Predicted vs. True Labels")
+    axs[0].set_title(f"Predicted vs. True Labels - {model_name}")
     axs[0].legend()
     axs[0].grid(True, alpha=0.3)
     axs[1].grid(True, alpha=0.3)
@@ -465,7 +465,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
 
 
 # %% Testing loop
-def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untransformed, loss_fn, device, n_generated_events=0.2*1e7):
+def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untransformed, loss_fn, device, n_generated_events=0.2*1e7, model_name="Model"):
     """
     Test a trained machine learning model and generate comparison plots with POWHEG reference data.
     This function evaluates the model on test data, computes observables (invariant masses and cos(theta*)),
@@ -493,6 +493,8 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untran
         - Input features X with shape (batch_size, n_particles, 4) representing 4-momenta.
         - Target y with shape (batch_size, 2) where y[:,0] are the rLL weights and y[:,1] are the UU weights.
         - Reference histograms in .top format containing "mee", "cthep", and "totxsec" observables.
+        - Input features X_untransformed with shape (batch_size, n_particles, 4) representing untransformed 4-momenta.
+        - Target y_untransformed with shape (batch_size, 1) where y_untransformed[:,0] are the rL weights.
     """
 
     print("Starting testing for ZZ model...")
@@ -599,49 +601,49 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untran
         plt.close(fig)
 
         # Invariant mass Z1 comparison plot
-        fig, _ = comparison_plots(observable_dict, "invmass_Z1", histogram_data["mee"])
+        fig, _ = comparison_plots(observable_dict, "invmass_Z1", histogram_data["mee"], model_name=model_name)
         pdf.savefig(fig)
         plt.close(fig)
 
         # Cos(theta*) comparison plot
-        fig, _ = comparison_plots(observable_dict, "cthep", histogram_data["cthep"])
+        fig, _ = comparison_plots(observable_dict, "cthep", histogram_data["cthep"], model_name=model_name)
         pdf.savefig(fig)
         plt.close(fig)
 
         # Cos(theta*) with mll cut comparison plot
-        fig, axs = comparison_plots(observable_dict, "cthep_mll_cut10", histogram_data["cthep"])
+        fig, axs = comparison_plots(observable_dict, "cthep_mll_cut10", histogram_data["cthep"], model_name=model_name)
         axs[0].set_title("Cos(theta*) with mll cut |mll - mZ| < 10 GeV")
         pdf.savefig(fig)
         plt.close(fig)
 
-        fig, axs = comparison_plots(observable_dict, "cthep_mll_cut5", histogram_data["cthep"])
+        fig, axs = comparison_plots(observable_dict, "cthep_mll_cut5", histogram_data["cthep"], model_name=model_name)
         axs[0].set_title("Cos(theta*) with mll cut |mll - mZ| < 5 GeV")
         pdf.savefig(fig)
         plt.close(fig)
 
         # Transverse momentum of positron
-        fig, _ = comparison_plots(observable_dict, "ptep", histogram_data["ptep"])
+        fig, _ = comparison_plots(observable_dict, "ptep", histogram_data["ptep"], model_name=model_name)
         pdf.savefig(fig)
         plt.close(fig)
 
         # Rapidity of positron
-        fig, _ = comparison_plots(observable_dict, "yep", histogram_data["yep"])
+        fig, _ = comparison_plots(observable_dict, "yep", histogram_data["yep"], model_name=model_name)
         pdf.savefig(fig)
         plt.close(fig)
 
         # # Transverse momentum of 4-lepton system
-        # fig, _ = comparison_plots(observable_dict, "pt4l", histogram_data["pt4l"])
+        # fig, _ = comparison_plots(observable_dict, "pt4l", histogram_data["pt4l"], model_name=model_name)
         # pdf.savefig(fig)
         # plt.close(fig)
 
-        fig, _ = r_plot(observable_dict["rLL_pred"], observable_dict["rLL_true"], observable_dict["weights_y"])
+        fig, _ = r_plot(observable_dict["rLL_pred"], observable_dict["rLL_true"], observable_dict["weights_y"], model_name=model_name)
         pdf.savefig(fig)
         plt.close(fig)
 
     return test_loss
 
 # %% Define testing function for Z+jet model
-def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untransformed, loss_fn, device):
+def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untransformed, loss_fn, device, model_name="Model"):
     """
     Test a trained machine learning model for Z+jet events.
     This function evaluates the model on test data and computes the average test loss.
@@ -747,16 +749,16 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
         plt.close(fig)
 
         # Invariant pT of the jet
-        fig, _ = comparison_plots(observable_dict, "ptjet")
+        fig, _ = comparison_plots(observable_dict, "ptjet", model_name=model_name)
         pdf.savefig(fig)
         plt.close(fig)
 
         # Cos(theta*) of the mu+ and jet in Z+jet CM frame
-        fig, _ = comparison_plots(observable_dict, "cosmupjet", log_scale=False, nbins=30)
+        fig, _ = comparison_plots(observable_dict, "cosmupjet", log_scale=False, nbins=30, model_name=model_name)
         pdf.savefig(fig)
         plt.close(fig)
 
-        fig, _ = r_plot(observable_dict["rL_pred"], observable_dict["rL_true"], total_xsec)
+        fig, _ = r_plot(observable_dict["rL_pred"], observable_dict["rL_true"], total_xsec, model_name=model_name)
         pdf.savefig(fig)
         plt.close(fig)
 
@@ -769,9 +771,9 @@ if __name__ == "__main__":
     test_loss_fn = torch.nn.MSELoss()
 
     if not arg.use_zjet:
-        test_loss = test_model_ZZ(model, model_dir, arg.histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, split_ratios[2] * arg.n_generated_events)
+        test_loss = test_model_ZZ(model, model_dir, arg.histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, split_ratios[2] * arg.n_generated_events, model_name=arg.model)
     else:
-        test_loss = test_model_Zjet(model, model_dir, arg.histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device)
+        test_loss = test_model_Zjet(model, model_dir, arg.histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, model_name=arg.model)
 
     end_time = time.time()
     print(f"Testing completed in {end_time - start_time:.2f} seconds.")
