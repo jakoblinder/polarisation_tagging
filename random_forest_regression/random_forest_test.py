@@ -77,6 +77,7 @@ parser = argparse.ArgumentParser(description="Which events do you want?")
 parser.add_argument('--order',  '-p', type=str, choices=['lo', 'nlo'])
 parser.add_argument('--data',   '-d', type=str, choices=['reduced', 'full'])
 parser.add_argument('--model',  '-m', type=str, choices=['all'])
+parser.add_argument('--features',  '-f', type=str, choices=['ep', 'ct'])
 args = parser.parse_args()
 
 # initialisation and choice of LHE-ML dataset
@@ -203,6 +204,7 @@ for i in range(0,len(df)):
         n_longit += 1
 #df = df.drop(columns=["rLT", "rTL", "rTT"])
 err_longit = err_longit**0.5/float(len(df))
+df = df.drop(columns=["label"])
 
 # test print 
 print(df.tail(3))
@@ -213,7 +215,11 @@ print(df.tail(3))
 ##X = df[["cos_theta_p1_p12", "cos_theta_p3_p34"]]  # very few features
 #X = df[["ptZ1", "ptZ2", "yZ1", "yZ2", "phiZ1", "phiZ2", "cos_theta_p1_p12", "cos_theta_p3_p34"]]  # few features
 
-X = df[["ptZ1", "ptZ2", "yZ1", "yZ2", "cos_theta_p1_p12", "cos_theta_p3_p34"]]  # few features (including decay angles)
+X = df[[]]
+if args.features == 'ct':
+    X = df[["ptZ1", "ptZ2", "yZ1", "yZ2", "cos_theta_p1_p12", "cos_theta_p3_p34"]]  # few features (including decay angles)
+elif args.features == 'ep':
+    X = df[["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15"]]  # {px, py, pz, E} basis of inut features, as in NN
 y = df["rLL"]   # target
 
 # split into training and testing datasets
@@ -264,13 +270,13 @@ if args.model == 'all':
     print(' expected LL xsec (polarised simulation) ................. %.4f ' % (1e+3*sigma_ll[0]), ' +- %.4f (MC) fb' % (1e+3*sigma_ll[1]) )
     print(' estimated LL xsec (true-rLL reweighting, test) .......... %.4f ' % (1e+3*sigma_uu[0]*(y_test.sum()/len(y_test))), ' +- %.4f (MC) fb' % (1e+3*sigma_uu[1]*(y_test.sum()/len(y_test))) )
     print(' estimated LL xsec (true-rLL resampling, test+train) ..... %.4f ' % (1e+3*sigma_uu[0]*(float(n_longit)/float(len(df)))), ' +- %.4f (binomial) fb' % (1e+3*sigma_uu[0]*err_longit))
-
-    
     print(' estimated LL xsec (pred-rLL reweighting, test) .......... %.4f ' % (1e+3*sigma_uu[0]*(y_pred.sum()/len(y_test))), ' +- %.4f (regression model for out-of-bag train residuals) fb' % (1e+3*sigma_uu[0]* err_rfr))
-
     print("\nmse, correlation:", mse, corr, " \n")
 
-
+    sigLLsim = np.array([(1e+3*sigma_ll[0]),(1e+3*sigma_ll[1])])
+    sigLLtrue = np.array([(1e+3*sigma_uu[0]*(y_test.sum()/len(y_test))),(1e+3*sigma_uu[1]*(y_test.sum()/len(y_test)))])
+    sigLLpred = np.array([(1e+3*sigma_uu[0]*(y_pred.sum()/len(y_test))),(1e+3*sigma_uu[0]* err_rfr)])
+    
 
     result = permutation_importance(
         model,
@@ -303,7 +309,6 @@ if args.model == 'all':
 #     var_model_2.fit(X_train, resid_2**2)
 #     sigma_M = np.sqrt(np.sum( np.clip(var_model_2.predict(X_test), 0, None)  ))/float(len(y_pred))
 #     
-# 
 #     # LGBMR
 #     print(' estimated LL xsec from new model (pred-rLL, test) ............ %.4f ' % (1e+3*sigma_uu[0]*M_hat), ' +- %.4f (train-residual regression) fb' % (1e+3*sigma_uu[0]*sigma_M))
 #     print(" other model testing and training:", end5 - end4, "seconds.")
@@ -397,7 +402,9 @@ if args.model == 'all':
     ax2.set_ylabel("Normalised distribution")
     #ax2.set_yscale("log")
 
-
+    ax2.text(0.6, 0.50, f"$\\sigma$(LL, MC sim)   = {sigLLsim[0]:.4f}({(sigLLsim[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
+    ax2.text(0.6, 0.46, f"$\\sigma$(LL, true rLL) = {sigLLtrue[0]:.4f}({(sigLLtrue[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
+    ax2.text(0.6, 0.42, f"$\\sigma$(LL, RFR pred) = {sigLLpred[0]:.4f}({(sigLLpred[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
 
     ptep = df.loc[X_test.index, "kin_pt_1"]
     ax4.set_title("Positron transverse momentum "+t_app)
@@ -429,23 +436,28 @@ if args.model == 'all':
 
     ax5.set_title("Permutation importance "+t_app)
     ax5.bar(range(len(importances)), importances[indices], yerr=0, color="red", alpha = 0.35) #, yerr=std[indices])
-    latex_labels = [
-        r"cos$\theta^*_{\mathrm{e}^+}$",
-        r"cos$\theta^*_{\mu^+}$",
-        r"$p_{\mathrm{T}, e^+e^-}$",
-        r"$p_{\mathrm{T}, \mu^+\mu^-}$",
-        r"$y_{\mathrm{ e}^+\mathrm{e}^-}$",
-        r"$y_{\mu^+\mu^-}$"
-        #r"$\phi_{\mathrm{ e}^+\mathrm{e}^-}$",
-        #r"$\phi_{\mu^+\mu^-}$"
-    ]
-    ax5.set_xticks(range(len(importances)),
-                   #X_test.columns[indices],
-                   latex_labels,
-                   rotation=45,
-                   ha="right")
+    if args.features == 'ct':
+        latex_labels = [
+            r"cos$\theta^*_{\mathrm{e}^+}$",
+            r"cos$\theta^*_{\mu^+}$",
+            r"$p_{\mathrm{T}, e^+e^-}$",
+            r"$p_{\mathrm{T}, \mu^+\mu^-}$",
+            r"$y_{\mathrm{ e}^+\mathrm{e}^-}$",
+            r"$y_{\mu^+\mu^-}$"
+            #r"$\phi_{\mathrm{ e}^+\mathrm{e}^-}$",
+            #r"$\phi_{\mu^+\mu^-}$"
+        ]
+        ax5.set_xticks(range(len(importances)),
+                       latex_labels,
+                       rotation=45,
+                       ha="right")
+    elif args.features == 'ep':
+        ax5.set_xticks(range(len(importances)),
+                       X_test.columns[indices],
+                       rotation=45,
+                       ha="right")
     ax5.set_ylabel("Decrease in performance")
-    
+       
     
     ax6.set_title("True vs pred. $r_{\\tt LL}$ labels "+t_app)
     #dr = y_pred - y_test
@@ -463,7 +475,7 @@ if args.model == 'all':
     ax6.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], "r--", linewidth=1)
     
     plt.tight_layout()
-    fig.savefig("test_random_forest_regressor_"+ str(args.order) +"_test_events_" + str(len(y_pred)) + ".pdf")
+    fig.savefig("test_random_forest_regressor_"+ str(args.order) +"_test_events_" + str(len(y_pred)) + "_basis_" + str(args.features) + ".pdf")
     plt.close()
 
     
