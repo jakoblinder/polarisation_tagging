@@ -3,13 +3,15 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-def train_loop(dataloader, model, loss_fn, optimizer, device, print_freq=100, penalties: dict = {}, *args, **kwargs):
+def train_loop(epoch: int, dataloader, model, loss_fn, optimizer, device, print_freq=100, penalties: dict = {}, *args, **kwargs):
     """
     Executes the training loop for a given model, dataloader, loss function, and optimizer.
 
     This function iterates over the dataloader, computes the loss, applies optional penalty terms,
     performs backpropagation, and updates the model parameters using the optimizer.
 
+    :param epoch: int
+        The current epoch number (used for logging and penalty purposes).
     :param dataloader: torch.utils.data.DataLoader
         The dataloader providing batches of input data and corresponding labels.
     :param model: torch.nn.Module
