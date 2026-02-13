@@ -7,6 +7,7 @@ import sklearn
 import re
 import lightgbm as lgb
 import matplotlib.colors as colors
+import joblib
 from pathlib import Path
 from datetime import datetime
 from sklearn.model_selection import train_test_split
@@ -17,59 +18,8 @@ from sklearn.utils import resample
 from sklearn.pipeline import Pipeline
 from sklearn.base import clone
 from sklearn.inspection import permutation_importance
-
-
- # parsing routine for .ml files
-def parse_ml_events(filepath, useful_weights):
-    events = []
-    with open(filepath) as f:
-        in_event = False
-        in_rwgt = False
-        numbers = []
-        weights = {}
-        for line in f:
-            line = line.strip()
-            if line == "<event>": # start event
-                in_event = True
-                numbers = []
-                weights = {}
-            elif line == "</event>": # end event
-                event = {}
-                for i, val in enumerate(numbers):
-                    event[f"x{i}"] = val
-                event.update(weights)
-                events.append(event)
-                in_event = False
-            elif line == "<rwgt>": # weight tag begin
-                in_rwgt = True
-            elif line == "</rwgt>": # weight tag end
-                in_rwgt = False
-            elif in_event and not in_rwgt: # event kinematics
-                if line and not line.startswith("<"):
-                    numbers.extend(float(x) for x in line.split())
-            elif in_rwgt: # selected weights
-                match = re.search(r"id='([^']+)'>\s*([0-9E+\-.]+)", line)
-                if match:
-                    wid, val = match.groups()
-                    if wid in useful_weights:
-                        weights[wid] = float(val)
-    return events
-
-
-def boostinv(qx, px):
-    q      = np.array([qx[3],qx[0],qx[1],qx[2]])
-    pboost = np.array([px[3],px[0],px[1],px[2]])
-    qprime = np.array([0.0,0.0,0.0,0.0])
-    rmboost=(max((pboost[0]**2-pboost[1]**2-pboost[2]**2-pboost[3]**2),0.0))**0.5
-    aux=(q[0]*pboost[0]-q[1]*pboost[1]-q[2]*pboost[2]-q[3]*pboost[3])/rmboost
-    aaux=(aux+q[0])/(pboost[0]+rmboost)
-    qprime[3]=aux
-    qprime[0]=q[1]-aaux*pboost[1]
-    qprime[1]=q[2]-aaux*pboost[2]
-    qprime[2]=q[3]-aaux*pboost[3]
-    return qprime
-
-
+from scipy.optimize import curve_fit
+from routines import parse_ml_events, boostinv
 
 
 # parsing input argument (LO / NLO QCD)
@@ -83,7 +33,7 @@ args = parser.parse_args()
 # initialisation and choice of LHE-ML dataset
 sigma_uu = np.array([0.11245290E-01, 0.37648619E-05])
 sigma_ll = np.array([0.6574E-03, 0.0002E-03])
-data_dir = Path("../../events/ML_FILES/UU_LO")
+data_dir = Path("../../events/ML_FILES/UU_LOwS")
 t_app = str("(LO, fiducial)")
 nr_lhef = 26
 if str(args.data) == 'reduced':
@@ -152,6 +102,7 @@ cos_theta = np.zeros(len(df))
 cos_thetab= np.zeros(len(df))
 ptv1 = np.zeros(len(df))
 ptv2 = np.zeros(len(df))
+ptvv = np.zeros(len(df))
 yv1 = np.zeros(len(df))
 yv2 = np.zeros(len(df))
 phiv1 = np.zeros(len(df))
@@ -171,6 +122,7 @@ for i in range(len(df)):
     cos_thetab[i] = np.dot(p34_dir_cm, p3_dir_rest) / (np.linalg.norm(p34_dir_cm) * np.linalg.norm(p3_dir_rest))
     ptv1[i] = (p12[i,0]**2+p12[i,1]**2)**0.5
     ptv2[i] = (p34[i,0]**2+p34[i,1]**2)**0.5
+    ptvv[i] = ((p12[i,0]+p34[i,0])**2+(p12[i,1]+p34[i,1])**2)**0.5
     yv1[i]  = 0.5*np.log(( p12[i,3] + p12[i,2] ) / ( p12[i,3] - p12[i,2] ))
     yv2[i]  = 0.5*np.log(( p34[i,3] + p34[i,2] ) / ( p34[i,3] - p34[i,2] ))
     phiv1[i] = np.arctan2(p12[i,1],p12[i,0])
@@ -184,6 +136,7 @@ df["yZ1"] = yv1
 df["yZ2"] = yv2
 df["phiZ1"] = phiv1
 df["phiZ2"] = phiv2
+df["pt4l"] = ptvv
 
 df["rLL"] = df["LL"] / df["UU"]
 #df["rLT"] = df["LT"] / df["UU"]
@@ -236,9 +189,15 @@ if args.model == 'all':
     # define and train model
     model = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=99, n_jobs=40, oob_score=True, bootstrap=True) # parallelise over 40 workers (~12 trees per worker)
     model.fit(X_train, y_train)
+    
+    print(' now save model ... ')
+    joblib.dump({"model": model, "features": X.columns.tolist()},"trained_RFR_"+ str(args.order) +"_train_events_"+ str(len(X_train)) +"_basis_" + str(args.features) + ".joblib")
+    print(' ... saved')
     end3 = time.time()
     print("Training step:", end3 - end2, "seconds. Now start testing...")
 
+
+    
     # # tree-level bootstrap for model uncertainty
     # preds = np.array([tree.predict(X_test.values) for tree in model.estimators_])
     # B = 100
@@ -318,7 +277,7 @@ if args.model == 'all':
 
 
     # now plotting stuff
-    bins = 20 # for physical observables
+    bins = 100 # for physical observables
     norm_factor = 1e+03*sigma_uu[0]/float(len(y_pred))
 
 
@@ -375,7 +334,7 @@ if args.model == 'all':
         bin_var[b] += var_events[i]
     bin_sigma = np.sqrt(bin_var)
     bin_width = bin_edges[1] - bin_edges[0]
-    ax3.hist(cth, weights=y_test*(norm_factor/bin_width), bins=20, histtype="step", linewidth=1, color="blue", label="true")
+    ax3.hist(cth, weights=y_test*(norm_factor/bin_width), bins=bins, histtype="step", linewidth=1, color="blue", label="true")
     ax3.fill_between(
         bin_centers,
         (hist_vals - bin_sigma)*(norm_factor/bin_width),#_density,
@@ -406,9 +365,9 @@ if args.model == 'all':
     ax2.text(0.6, 0.46, f"$\\sigma$(LL, true rLL) = {sigLLtrue[0]:.4f}({(sigLLtrue[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
     ax2.text(0.6, 0.42, f"$\\sigma$(LL, RFR pred) = {sigLLpred[0]:.4f}({(sigLLpred[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
 
-    ptep = df.loc[X_test.index, "kin_pt_1"]
-    ax4.set_title("Positron transverse momentum "+t_app)
-    hist_vals, bin_edges = np.histogram(ptep, range=(0.0,200.0), bins=bins, weights=y_pred)
+    ptep = df.loc[X_test.index, "pt4l"]
+    ax4.set_title("Four-lepton transverse momentum "+t_app)
+    hist_vals, bin_edges = np.histogram(ptep, range=(0.0,250.0), bins=bins, weights=y_pred)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(ptep, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
@@ -417,7 +376,7 @@ if args.model == 'all':
     for i, b in enumerate(bin_indices):
         bin_var[b] += var_events[i]
     bin_sigma = np.sqrt(bin_var)
-    ax4.hist(ptep, range=(0.0,200.0),  weights=y_test*(norm_factor/bin_width), bins=bins, histtype="step", linewidth=1, color="blue", label="true")
+    ax4.hist(ptep, range=(0.0,250.0),  weights=y_test*(norm_factor/bin_width), bins=bins, histtype="step", linewidth=1, color="blue", label="true")
     ax4.fill_between(
         bin_centers,
         (hist_vals - bin_sigma)*(norm_factor/bin_width),#_density,
@@ -428,12 +387,70 @@ if args.model == 'all':
         edgecolor='red', facecolor='red',
         step='mid'
     )
-    ax4.set_xlim(5.0,195.0)
+    ax4.set_xlim(0.5,249.5)
+    ax4.set_ylim(1e-06,1e-01)
     ax4.legend(loc='best', borderpad=0.5, framealpha=0.9, frameon=False, ncol = 1)
-    ax4.set_xlabel("$p_{\\tt T, e^+}$ [GeV]")
-    ax4.set_ylabel("d$\\sigma/$d$p_{\\tt T, e^+}$ [fb/GeV]")
+    ax4.set_xlabel("$p_{\\tt T, 4\ell}$ [GeV]")
+    ax4.set_ylabel("d$\\sigma/$d$p_{\\tt T, 4\ell}$ [fb/GeV]")
     ax4.set_yscale("log")
 
+    # h_to_fit, bef = np.histogram(ptep, range=(0.0,250.0), bins=100, weights=y_test*(norm_factor/bin_width))
+    # x = (bef[:-1] + bef[1:])/2.0 
+    # 
+    # 
+    # # p0 = [6.0, 0.5, 2]  # initial guess (n, T)
+    # 
+    # params, cov = curve_fit(fitting_pdf, x, h_to_fit, p0=[0.035, 4.0, 2.7, 1.1], bounds=([0.02, 2.6, 2.2, 0.5], [0.05, 4.2, 3.1, 3.5]))
+    # 
+    # pT_plot = np.linspace(0, 250, 100)
+    # fit_curve = fitting_pdf(pT_plot, params[0], params[1], params[2], params[3])
+    # ax4.plot(pT_plot, fit_curve, lw=2)
+
+    # print ('fit results for C, n, T, pto = ', params[0], params[1], params[2], params[3])
+    
+    #dval01, dcov01 = curve_fit(distorted, x_an, np.array(test[2]), sigma=np.array(test[3]),  bounds=bounds, absolute_sigma=True, maxfev=20000, method='trf')
+   
+
+    
+
+    
+    #pT = ptep.to_numpy()
+    #print('shape of pT', pT.size)
+
+
+
+    
+#    ptep = df.loc[X_test.index, "kin_pt_1"]
+#    ax4.set_title("Positron transverse momentum "+t_app)
+#    hist_vals, bin_edges = np.histogram(ptep, range=(0.0,200.0), bins=bins, weights=y_pred)
+#    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+#    bin_indices = np.digitize(ptep, bin_edges) - 1
+#    bin_indices = np.clip(bin_indices, 0, bins-1)
+#    bin_var = np.zeros(bins)
+#    bin_width = bin_edges[1] - bin_edges[0]
+#    for i, b in enumerate(bin_indices):
+#        bin_var[b] += var_events[i]
+#    bin_sigma = np.sqrt(bin_var)
+#    ax4.hist(ptep, range=(0.0,200.0),  weights=y_test*(norm_factor/bin_width), bins=bins, histtype="step", linewidth=1, color="blue", label="true")
+#    ax4.fill_between(
+#        bin_centers,
+#        (hist_vals - bin_sigma)*(norm_factor/bin_width),#_density,
+#        (hist_vals + bin_sigma)*(norm_factor/bin_width),#_density,
+#        alpha=0.3,
+#        color='red',
+#        label="RFR pred.",
+#        edgecolor='red', facecolor='red',
+#        step='mid'
+#    )
+#    ax4.set_xlim(5.0,195.0)
+#    ax4.legend(loc='best', borderpad=0.5, framealpha=0.9, frameon=False, ncol = 1)
+#    ax4.set_xlabel("$p_{\\tt T, e^+}$ [GeV]")
+#    ax4.set_ylabel("d$\\sigma/$d$p_{\\tt T, e^+}$ [fb/GeV]")
+#    ax4.set_yscale("log")
+
+
+
+    
     ax5.set_title("Permutation importance "+t_app)
     ax5.bar(range(len(importances)), importances[indices], yerr=0, color="red", alpha = 0.35) #, yerr=std[indices])
     if args.features == 'ct':
