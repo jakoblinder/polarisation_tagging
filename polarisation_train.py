@@ -386,7 +386,10 @@ for epoch in range(epochs):
     print("-" * 50)
 
     # Training phase
-    train_loss = train_loop(train_dataloader, model, loss_fn, optimizer, device, print_freq = 2500)
+    penalties = {
+        "cross_section": True,  # Enable penalty term to enforce correct cross section (average predicted value over the training set should be close to the average true label).
+    }
+    train_loss = train_loop(train_dataloader, model, loss_fn, optimizer, device, print_freq = 2500, penalties=penalties)
     hist_loss.append(train_loss)
     hist_lr.append(current_lr)
 
