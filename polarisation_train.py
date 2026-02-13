@@ -17,7 +17,7 @@ from torchsummary import summary
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from ML_Giovanni.polarisation_tagging.ml_events_utils.transforms import januar2026_input_choice
+from ml_events_utils.transforms import januar2026_input_choice
 from ml_events_utils import MLEventsDataset, get_statistics_from_dataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform
 from ml_events_utils import boost_into_Zjet_cm_frame
 from ml_events_utils import train_loop, valid_loop
@@ -265,6 +265,9 @@ if arg.standardise:
 else:
     model = model_dict[model_name](input_dim=input_dim)
 
+# TODO: Change the class name to model_name.
+
+
 # if torch.cuda.device_count() > 1:
 #   print("Let's use", torch.cuda.device_count(), "GPUs!")
 #   model = nn.DataParallel(model)
@@ -490,7 +493,7 @@ except Exception as e:
 
 model.eval()
 
-if not arg.use_zjet:
+if not arg.use_zjet and not (arg.input_choice in ["jan2026",]):
     test_tensor = torch.tensor([ 1.445418701E+01, -2.611547450E+00,  8.079240742E+01,  8.211672667E+01,
                                 4.121475591E+00, -3.706903553E+01, -1.028783725E+01,  3.869030307E+01,
                                 2.206750721E+01, -9.725720987E+00,  1.263696046E+01,  2.722604071E+01,
@@ -499,7 +502,7 @@ if not arg.use_zjet:
     res = model(test_tensor.unsqueeze(0).to(device))
     print(f"res = {res.item():.10e}")
     print(f"Expected LL/ UU weight: {0.885049987E-03 / 0.248160008E-01:.10e}")
-else:
+elif not (arg.input_choice in ["jan2026",]):
     test_tensor = torch.tensor([-12.130391188000001,  34.443724807000002, 262.44532550000002, 264.97370709000000,
                                  59.635322049999999, -22.605515205000000, 283.59799611000000, 290.68058819999999,
                                 -47.504930862000002, -11.838209601000001, 171.64348498999999, 178.48906858000001])

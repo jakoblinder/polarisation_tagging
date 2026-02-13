@@ -115,7 +115,7 @@ def boost_into_Zjet_cm_frame(features):
     return momenta_prime.reshape(-1)
 
 
-def januar2026_input_choice(momenta):
+def januar2026_input_choice(features):
     """
     Transform four leptons' four-momenta according to correspond to the following input choice:
     .. math::
@@ -123,20 +123,25 @@ def januar2026_input_choice(momenta):
     where :math:`Z_{1}` and :math:`Z_{2}` are the two Z bosons formed by the four leptons :math:`l_{1} + l_{2}`
     and :math:`l_{3} + l_{4}` respectively.
 
-    :param momenta: Input features containing four leptons' four-momenta in the order:
+    :param features: Input features containing four leptons' four-momenta in the order:
                     (px1, py1, pz1, E1, px2, py2, pz2, E2, px3, py3, pz3, E3, px4, py4, pz4, E4)
-    :type momenta: torch.Tensor
+    :type features: torch.Tensor
     :param shape: (..., 16)
 
     :returns: The boosted four leptons' four-momenta in the same order as the input
     :rtype: torch.Tensor
     :return shape: (..., 16)
     """
-    V1, V2 = momenta[...,0,:] + momenta[...,1,:], momenta[...,2,:] + momenta[...,3,:]
+    momenta = features.reshape(4, -1)  # Assuming features contain x leptons with 4 momentum components each.
+                                       # p1 = momenta[0], p2 = momenta[1], p3 = momenta[2], p4 = momenta[3].
+
+    V1 = momenta[...,0,:] + momenta[...,1,:]
+    V2 = momenta[...,2,:] + momenta[...,3,:]
+
     pT_V1 = get_pt(V1)
     y_V1  = get_rapidity(V1)
     pT_V2 = get_pt(V2)
     y_V2  = get_rapidity(V2)
-    cthep, _, cthmup, _ = torch.stack(costhetastar(vectors), dim=-1)
+    cthep, _, cthmup, _ = torch.stack(costhetastar(momenta), dim=-1)
 
     return torch.stack([pT_V1, y_V1, pT_V2, y_V2, cthep, cthmup], dim=-1)

@@ -12,6 +12,7 @@ from torchsummary import summary
 from torch.utils.data import DataLoader
 from matplotlib.backends.backend_pdf import PdfPages
 
+from ml_events_utils.transforms import januar2026_input_choice
 from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepton_cm_frame  #, test_loop
 from ml_events_utils import ZJetDataset
 from ml_events_utils import boost_into_Zjet_cm_frame
