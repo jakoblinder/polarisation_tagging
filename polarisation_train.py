@@ -377,6 +377,14 @@ with open(lr_file, 'w') as f:
 print(f"Starting training for {epochs} epochs...")
 print(f"Early stopping patience: {patience}")
 
+
+
+penalties = {
+    "cross_section": True,  # Enable penalty term to enforce correct cross section (average predicted value over the training set should be close to the average true label).
+}
+if not arg.use_zjet and not (arg.input_choice in ["jan2026",]):
+    penalties["ZdecayAngles"] = True
+
 for epoch in range(epochs):
     epoch_start_time = time.time()
     current_lr = optimizer.param_groups[0]['lr']
@@ -386,9 +394,6 @@ for epoch in range(epochs):
     print("-" * 50)
 
     # Training phase
-    penalties = {
-        "cross_section": True,  # Enable penalty term to enforce correct cross section (average predicted value over the training set should be close to the average true label).
-    }
     train_loss = train_loop(epoch, train_dataloader, model, loss_fn, optimizer, device, print_freq = 2500, penalties=penalties)
     hist_loss.append(train_loss)
     hist_lr.append(current_lr)

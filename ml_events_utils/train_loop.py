@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+from ml_events_utils.analysis import costhetastar
+
 def train_loop(epoch: int, dataloader, model, loss_fn, optimizer, device, print_freq=100, penalties: dict = {}, *args, **kwargs):
     """
     Executes the training loop for a given model, dataloader, loss function, and optimizer.
@@ -91,6 +93,79 @@ def train_loop(epoch: int, dataloader, model, loss_fn, optimizer, device, print_
             xsec_penalty = torch.abs(sigma_learned - sigma_true) / torch.clamp(torch.abs(sigma_true), min=epsilon) - threshold
             xsec_penalty = importance * torch.clamp(xsec_penalty, min=0)
             penalty += xsec_penalty
+
+        if penalties.get("ZdecayAngles", False):
+            importance = 1.0 + 0.01 * epoch**2  # Weight of the penalty term in the total loss
+            # The functional form of the normalised cthep distribution is
+            #     (3/4)*sin(theta)^2 = (3/4)*(1-cthep^2).
+            xsec_LL = pred[:,0] * y[:,1]
+            # xsec_LL = y[:,0] * y[:,1]
+            xsec_LL_norm = xsec_LL / xsec_LL.sum()
+
+
+            momenta = X.reshape(X.shape[0], -1, 4)
+            # cthep, _, cthmup, _ = torch.stack(costhetastar(momenta), dim=-1)
+            cthep, _, cthmup, _ = costhetastar(momenta)
+
+            expected_cthep = (3/4) * (1 - cthep**2)
+            expected_cthep /= expected_cthep.sum()  # Normalize the expected distribution
+
+            expected_cthmup = (3/4) * (1 - cthmup**2)
+            expected_cthmup /= expected_cthmup.sum()
+            # Note that event though the normalization over only the batch size is going to be bad,
+            # there is no way around that, since (3/4) * (1 - cthep**2) is only valid for the normalized distribution.
+
+            diff_cthep  = torch.mean(torch.abs(xsec_LL_norm) / torch.clamp(torch.abs(expected_cthep),  min=1e-9))
+            diff_cthmup = torch.mean(torch.abs(xsec_LL_norm) / torch.clamp(torch.abs(expected_cthmup), min=1e-9))
+
+            angle_penalty = importance * (diff_cthep + diff_cthmup)
+            penalty += angle_penalty
+
+            # # Plot the stuff as a sanity check.
+            # bins = np.linspace(-1, +1, 50 + 1)
+            # bin_widths = bins[1:] - bins[:-1]
+            # bin_midths = (bins[:-1] + bins[1:]) / 2
+
+            # # Sum predicted labels in each invariant mass bin
+            # pred_sums_cthep, _ = np.histogram(cthep.cpu().detach().numpy(), bins=bins, weights=xsec_LL_norm.cpu().detach().numpy())
+            # # Sum expected values in each invariant mass bin
+            # expected_sums_cthep, _ = np.histogram(cthep.cpu().detach().numpy(), bins=bins, weights=expected_cthep.cpu().detach().numpy())
+
+            # pred_sums_cthmup, _ = np.histogram(cthmup.cpu().detach().numpy(), bins=bins, weights=xsec_LL_norm.cpu().detach().numpy())
+            # expected_sums_cthmup, _ = np.histogram(cthmup.cpu().detach().numpy(), bins=bins, weights=expected_cthmup.cpu().detach().numpy())
+
+            # import matplotlib.pyplot as plt
+
+            # plt.figure(figsize=(10, 12))
+
+            # # Top plot: Expected vs Predicted distributions
+            # plt.subplot(2, 1, 1)
+            # plt.plot(bin_midths, expected_sums_cthep, label="Expected", linestyle="--", color="blue")
+            # plt.plot(bin_midths, pred_sums_cthep, label="Predicted", linestyle="-", color="orange")
+            # plt.plot(bin_midths, expected_sums_cthmup, label="Expected cthmup", linestyle="--", color="green")
+            # plt.plot(bin_midths, pred_sums_cthmup, label="Predicted cthmup", linestyle="-", color="red")
+            # plt.xlabel("cos(theta)")
+            # plt.ylabel("Normalized Distribution")
+            # plt.title("Comparison of Expected and Predicted cos(theta) Distribution")
+            # plt.legend()
+            # plt.grid(True)
+
+            # # Bottom plot: Ratios of Predicted to Expected
+            # plt.subplot(2, 1, 2)
+            # ratio_cthep  = pred_sums_cthep  / np.clip(np.abs(expected_sums_cthep), a_min=1e-9, a_max=None)
+            # ratio_cthmup = pred_sums_cthmup / np.clip(np.abs(expected_sums_cthmup), a_min=1e-9, a_max=None)
+            # plt.plot(bin_midths, ratio_cthep, label="Ratio cthep", linestyle="-", color="orange")
+            # plt.plot(bin_midths, ratio_cthmup, label="Ratio cthmup", linestyle="-", color="red")
+            # plt.axhline(1.0, color="black", linestyle="--", linewidth=1, label="Ideal Ratio")
+            # plt.xlabel("cos(theta)")
+            # plt.ylabel("Ratio (Predicted / Expected)")
+            # plt.title("Ratio of Predicted to Expected cos(theta) Distribution")
+            # plt.legend()
+            # plt.grid(True)
+
+            # plt.tight_layout()
+            # plt.savefig(f"cthep_distribution_epoch_{epoch}.pdf")
+
 
         # Compute the total loss
         loss += penalty
