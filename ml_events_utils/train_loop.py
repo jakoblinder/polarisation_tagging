@@ -68,7 +68,10 @@ def train_loop(epoch: int, dataloader, model, loss_fn, optimizer, device, print_
         # Compute prediction and loss
         pred = model(X)
         try:
-            loss = loss_fn(pred, y)
+            # Note: y[:,0].unsqueeze(-1) is used to bring y to shape (batch_size, 1) to match pred shape for loss computation.
+            #       This can be necessary if the labels also contain additional information in other columns that are not used for the loss computation.
+            #       For example: y[:,0] = r_LL + LL/UU and y[:,1] = UU, but only r_LL is used for the loss.
+            loss = loss_fn(pred, y[:,0].unsqueeze(-1))
         except RuntimeError as e:
             print(f"RuntimeError during loss computation: {e}")
             print(f"pred shape: {pred.shape}, y shape: {y.shape}")
@@ -80,7 +83,7 @@ def train_loop(epoch: int, dataloader, model, loss_fn, optimizer, device, print_
         penalty = torch.zeros_like(loss)
 
         if penalties.get("cross_section", False):
-            sigma_true = y.mean()  # Average over all true labels in the training set
+            sigma_true = y[:,0].mean()  # Average over all true labels in the training set
             sigma_learned = pred.mean()  # Average over the predicted values
             threshold = 0.01  # Threshold for closeness (in %)
             importance = 1.0  # Weight of the penalty term in the total loss
@@ -123,8 +126,8 @@ def valid_loop(dataloader, model, loss_fn, device):
         for X, y in dataloader:
             X, y = X.to(device), y.to(device)
             pred = model(X)
-            valid_loss += loss_fn(pred, y).item()
-            l1loss += nn.L1Loss()(pred, y).item()
+            valid_loss += loss_fn(pred, y[:,0].unsqueeze(-1)).item()  # For y[:,0].unsqueeze(-1) see comment in train_loop regarding the shape of y and pred for loss computation.
+            l1loss += nn.L1Loss()(pred, y[:,0].unsqueeze(-1)).item()
 
     valid_loss /= num_batches
     l1loss /= num_batches

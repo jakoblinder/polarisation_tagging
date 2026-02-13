@@ -151,7 +151,7 @@ if not arg.use_zjet:
             trafo = januar2026_input_choice
 
     dataset = MLEventsDataset(files,
-                            labels = ["LL/UU",],
+                            labels = ["LL/UU", "UU"],
                             transform=trafo,
                             #   target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
                             cache_events=arg.cache_events,  # Caching enabled
