@@ -292,7 +292,7 @@ def read_top_file_histograms(top_file_path):
 
     return histogram_data
 
-def print_integration_statistics(observable_dict, histogram_data: dict = {}):
+def print_integration_statistics(observable_dict, histogram_data: dict = {}, model: str = ""):
     pred_integral = np.sum(observable_dict["weights_ypred"])
     true_integral = np.sum(observable_dict["weights_y"])
 
@@ -300,7 +300,11 @@ def print_integration_statistics(observable_dict, histogram_data: dict = {}):
     # pred_integral = np.sum(pred_sums * bin_widths)
     # true_integral = np.sum(true_sums * bin_widths)
 
-    print(f"Integrated cross-sections:")
+    if model:
+        title = f"Integrated cross-sections for model {model}"
+    else:
+        title = "Integrated cross-sections"
+    print(f"{title}:")
     print(f"  True r_LL:          {true_integral:.6e}")
     print(f"  Predicted r_LL:     {pred_integral:.6e}")
     if histogram_data:
@@ -325,7 +329,7 @@ def print_integration_statistics(observable_dict, histogram_data: dict = {}):
     ax.text(0.1, 0.5, text_content, fontsize=14, verticalalignment='center',
         bbox=dict(boxstyle="round,pad=0.5", facecolor="lightgray", alpha=0.8))
 
-    ax.set_title('Integrated cross-sections', fontsize=16, fontweight='bold')
+    ax.set_title(f'{title}', fontsize=16, fontweight='bold')
 
     return fig, ax
 
@@ -600,7 +604,7 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untran
         d['ModDate']      = datetime.today()
 
         # Integration statistics
-        fig, _ = print_integration_statistics(observable_dict, histogram_data)
+        fig, _ = print_integration_statistics(observable_dict, histogram_data, model=model_name)
         pdf.savefig(fig)
         plt.close(fig)
 
@@ -748,7 +752,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
         d['CreationDate'] = datetime.today()
         d['ModDate']      = datetime.today()
 
-        fig, _ = print_integration_statistics(observable_dict)
+        fig, _ = print_integration_statistics(observable_dict, model=model_name)
         pdf.savefig(fig)
         plt.close(fig)
 
