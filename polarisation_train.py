@@ -263,6 +263,7 @@ loss_fn = nn.MSELoss()
 # loss_fn = nn.SmoothL1Loss()
 
 # %% Set the model and choose an optimizer.
+input_dim = dataset.input_shape[0]
 model_name = arg.model
 if arg.standardise:
     model = model_dict[model_name](input_dim=input_dim, stat_norm=stat_norm)
