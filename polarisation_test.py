@@ -167,7 +167,10 @@ generator = torch.Generator().manual_seed(seed)
 split_ratios = [0.6, 0.2, 0.2]  # Train, Val, Test
 _, _, test_dataset = torch.utils.data.random_split(dataset, split_ratios, generator=generator)
 print(f"Test dataset size:       {len(test_dataset)}")
-_, _, test_dataset_untransformed = torch.utils.data.random_split(dataset_untransformed, split_ratios, generator=generator)
+
+# Identical random number generator for the untransformed dataset to get the same test/ train split as used during training.
+test_generator = torch.Generator().manual_seed(seed)
+_, _, test_dataset_untransformed = torch.utils.data.random_split(dataset_untransformed, split_ratios, generator=test_generator)
 
 
 test_dataloader = DataLoader(
