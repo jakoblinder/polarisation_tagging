@@ -20,204 +20,8 @@ from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output
 from ml_events_utils.analysis import costhetastar, get_pt, get_rapidity, cosmujet
 import argparse
 
-print('numpy', np.__version__)
-print('pandas', pd.__version__)
-print('torch', torch.__version__)
 
-
-
-# %%
-parser = argparse.ArgumentParser(
-    description='Test the already trained neural network for polarisation tagging.',
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter
-)
-parser.add_argument("mlfiles", nargs='+', type=Path,        action="store",               help=".ml files to be used for training.")
-parser.add_argument("model",              type=str,         action="store",               help=f"Model architecture to use. Options: {list(model_dict.keys())}.")
-parser.add_argument("model_weight_file",  type=Path,        action="store",               help="Path to the .pt(y) file containing the trained model weights.")
-parser.add_argument("-g", "--gpu",        type=int,         action="store", default=-1,   help="Specify manually which of the available gpus is supposed to be used.")
-parser.add_argument("-b", "--batch_size", type=int,         action="store", default=128,  help="Batch size for training.")
-parser.add_argument("-n", "--nworkers",   type=int,         action="store", default=0,    help="Number of workers for DataLoader.")
-parser.add_argument("-t", "--test_mode",  dest="test_mode", action="store_true",          help="Run in test mode (only one data point to test implementation of the model).")
-parser.add_argument("--inputdir",         type=Path,        action="store", default=None, help='Specify name of input directory.')
-parser.add_argument("--histogram_dir",    type=Path,        action="store", default=None, help='Directory containing the .top histogram files for comparison (They are in the folder where also the events are.).')
-parser.add_argument("-e", "--n_generated_events", type=lambda x: int(float(x)),       action="store", default=int(1e7), help="Number of generated events for comparison (1e7 for LO and LOwS and 5e6 for NLO).")
-parser.add_argument("--useZjet",          dest="use_zjet",  action="store_true",          help="Use Z+jet dataset instead of default.")
-parser.add_argument("--standardise",      dest="standardise", action="store_true",        help="Enable standardisation of features over the whole dataset (default).")
-parser.add_argument("--input_choice",        type=str,   action="store", default=None,    help="Choice of input features. Options: Momenta, jan2026.")
-
-# Create a mutually exclusive group for specifying the reference frame
-frame_group = parser.add_mutually_exclusive_group()
-frame_group.add_argument("--labframe",       dest="labframe", default=True, action="store_true",    help="Use lab frame instead of partonic CMS.")
-frame_group.add_argument("--cmframe",        dest="labframe", default=True, action="store_false",   help="Use partonic CMS instead of lab frame.")
-
-arg = parser.parse_args()
-
-print("Arguments:")
-for attr, value in vars(arg).items():
-    print(f"  {attr}: {value}")
-
-# %% Model selection
-model_name = arg.model
-if model_name not in model_dict:
-    raise ValueError(f"Model '{model_name}' not recognized. Available models: {list(model_dict.keys())}")
-else:
-    print(f"Using model architecture: {model_name}")
-
-if arg.inputdir is not None:
-    model_dir = arg.inputdir
-else:
-    model_dir = Path().cwd()
-
-if arg.histogram_dir is None:
-    arg.histogram_dir = arg.mlfiles[0].parent
-
-# %% Specify the computation device (cpu or gpu).
-# In torch/pytorch data and models need to be moved in the specific processing unit
-# this code snippet allows to set the variable "device" according to available resource (cpu or cuda gpu)
-
-if torch.cuda.is_available():
-  print('Number of devices: ', torch.cuda.device_count())
-  print(torch.cuda.get_device_name(0))
-
-if torch.cuda.is_available():
-    if arg.gpu >= 0:
-        device = f"cuda:{arg.gpu}"
-    else:
-        device = "cuda"
-else:
-    device = "cpu"
-print(f"Computation device: {device}\n")
-
-# Set CUDA device globally
-if torch.cuda.is_available():
-    if arg.gpu >= 0:
-        torch.cuda.set_device(arg.gpu)
-        print(f"Set CUDA device to: {arg.gpu}")
-    else:
-        torch.cuda.set_device(0)
-        print(f"Set CUDA device to: 0")
-
-# %% Set fixed random number seed to get the same test/ train split as used during training
-print(Path.cwd())
-with open(model_dir / "training_seed.txt", 'r') as f:
-    seed = int(f.readline().strip())
-
-torch.manual_seed(seed)
-np.random.seed(seed)
-# %% Data Handling
-
-# Example usage for large files:
-# files = Path("event_files/pwgevents-*.ml")
-files = arg.mlfiles
-
-
-if not arg.use_zjet:
-    if arg.labframe:
-        trafo = None
-    else:
-        trafo = boost_into_four_lepton_cm_frame
-
-    if arg.input_choice == "jan2026":
-        if trafo:
-            trafo = lambda x: januar2026_input_choice(trafo(x))
-        else:
-            trafo = januar2026_input_choice
-
-    labels = ["LL/UU", "UU"]
-    dataset = MLEventsDataset(files,
-                            labels = labels,
-                            transform=trafo,
-                            #   target_transform=scale_target,  # Scale target by 1000
-                            cache_events=True,  # Caching enabled
-                            standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
-    dataset_untransformed = MLEventsDataset(files,
-                            labels = labels,
-                            cache_events=True,  # Caching enabled
-                            standardise=False)
-
-else:
-    if arg.labframe:
-        trafo = None
-    else:
-        trafo = boost_into_Zjet_cm_frame
-
-    if arg.input_choice == "jan2026":
-        if trafo:
-            trafo = lambda x: januar2026_input_choice(trafo(x))
-        else:
-            trafo = januar2026_input_choice
-
-    dataset = ZJetDataset(files[0],
-                          transform=trafo,
-                          target_transform=None,
-                          max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
-                          standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
-    dataset_untransformed = ZJetDataset(files[0],
-                          max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
-                          standardise=False)
-print(f"Dataset info: {dataset.get_file_info()}")
-
-# %% Hyperparameters
-batch_size    = arg.batch_size     # 128
-n_workers     = arg.nworkers       # Use multiple (default 4) workers for DataLoader
-
-# %% Get the test dataloader
-generator = torch.Generator().manual_seed(seed)
-
-split_ratios = [0.6, 0.2, 0.2]  # Train, Val, Test
-_, _, test_dataset = torch.utils.data.random_split(dataset, split_ratios, generator=generator)
-print(f"Test dataset size:       {len(test_dataset)}")
-
-# Identical random number generator for the untransformed dataset to get the same test/ train split as used during training.
-test_generator = torch.Generator().manual_seed(seed)
-_, _, test_dataset_untransformed = torch.utils.data.random_split(dataset_untransformed, split_ratios, generator=test_generator)
-
-
-test_dataloader = DataLoader(
-    test_dataset,
-    batch_size=batch_size,  # Larger batch size for efficiency
-    shuffle=False,
-    num_workers=n_workers,  # Use multiple workers for large files
-    pin_memory=True  # Faster GPU transfer
-)
-test_dataloader_untransformed = DataLoader(
-    test_dataset_untransformed,
-    batch_size=batch_size,  # Larger batch size for efficiency
-    shuffle=False,
-    num_workers=n_workers,  # Use multiple workers for large files
-    pin_memory=True  # Faster GPU transfer
-)
-
-# Test iteration (only first batch to avoid long output)
-for batch_idx, (batch_features, batch_labels) in enumerate(test_dataloader):
-    print(f"Batch {batch_idx}: features shape {batch_features.shape}, labels shape {batch_labels.shape}")
-    input_dim = batch_features.shape[1]
-    print(f"{input_dim = }")
-    break  # Only show first batch
-
-# %% Initialize the model and load the trained weights
-if arg.standardise:
-    model = model_dict[arg.model](input_dim=input_dim, external_stat=True)
-else:
-    model = model_dict[arg.model](input_dim=input_dim)
-
-if arg.model_weight_file.is_absolute():
-    model_weight_file = arg.model_weight_file
-    model_run_dir     = model_weight_file.parent
-else:
-    model_weight_file = model_dir / arg.model_weight_file
-    model_run_dir     = model_dir
-
-
-if torch.cuda.is_available():
-  summary(model.cuda(), input_size=(input_dim,))
-else:
-  summary(model, input_size=(input_dim,))
-
-model.load_state_dict(torch.load(model_weight_file, map_location=device, weights_only=True))
-model.to(device)
-
-# %% Histogram reading function
+# %% Helper functions for plotting and histogram handling
 def read_top_file_histograms(top_file_path):
     """
     Read histogram data from a .top file.
@@ -378,7 +182,6 @@ def r_plot(r_pred, r_true, weights, model_name="Model"):
     fig.tight_layout()
     return fig, axs
 
-
 def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:dict = None, log_scale=True, nbins=50, model_name="Model"):
     """
     Create a comparison plot of predicted vs true labels for a given observable.
@@ -471,9 +274,8 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
 
     return fig, axs
 
-
 # %% Testing loop
-def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untransformed, loss_fn, device, n_generated_events=0.2*1e7, model_name="Model"):
+def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untransformed, loss_fn, device, n_generated_events:int=0.2*1e7, model_name="Model", *args, **kwargs):
     """
     Test a trained machine learning model and generate comparison plots with POWHEG reference data.
     This function evaluates the model on test data, computes observables (invariant masses and cos(theta*)),
@@ -537,13 +339,16 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untran
                        "rLL_true":      np.zeros(size),
                        }
 
-    # TODO: Add model name into the plots.
-
     test_loss = 0
     with torch.no_grad():
         for batch, ((X, y), (X_untransformed, y_untransformed)) in enumerate(zip(dataloader, dataloader_untransformed)):
             X, y = X.to(device), y.to(device)
-            X_untransformed, y_untransformed = X_untransformed.to(device), y_untransformed.to(device)
+
+            if kwargs.get("input_choice", "") in ["jan2026",]:
+                X_untransformed, y_untransformed = X_untransformed.to(device), y_untransformed.to(device)
+            else:
+                X_untransformed, y_untransformed = X.to(device), y.to(device)
+
             if batch == 0:
                 batch_size = X.shape[0]
             y_first_weight_only = y[...,0].unsqueeze(-1)
@@ -594,7 +399,7 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untran
 
     print(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
 
-    with PdfPages(f"{model_run_dir}/test_histograms.pdf") as pdf:
+    with PdfPages(f"{model_dir}/test_histograms.pdf") as pdf:
         d = pdf.infodict()
         d['Title']        = f"Test results for model {model_name}"
         d['Author']       = 'You'
@@ -663,6 +468,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
         dataloader_untransformed: PyTorch DataLoader containing untransformed test data with features (X_untransformed) and targets (y_untransformed)
         loss_fn: Loss function used for evaluation
         device: PyTorch device (CPU or GPU) for computation
+        n_generated_events (int): Number of generated events for normalisation
     Returns:
         float: Average test loss per batch
     Side Effects:
@@ -679,6 +485,9 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
     print("Starting testing for Z+jet model...")
     size        = len(dataloader.dataset)  # Total number of samples in the dataset (= n_events).
     num_batches = len(dataloader)          # Number of batches in the dataloader.
+
+    # In the Z+jet case, the events are unweighted, so we can directly use the number of generated events for normalisation.
+    n_generated_events = size
 
     print(f"Analysing {size} events in total.")
 
@@ -704,8 +513,6 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
                        "cosmupjet":     np.zeros(size),
                      }
 
-    # TODO: Add model name into the plots.
-
     test_loss = 0
     with torch.no_grad():
         for batch, ((X, y), (X_untransformed, y_untransformed)) in enumerate(zip(dataloader, dataloader_untransformed)):
@@ -723,7 +530,6 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
             observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] = (pred[:,0] * total_xsec).cpu().numpy()
             observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     = (y[:,0]    * total_xsec).cpu().numpy()
             # The weights are calculated as an average over the number of genereated events in POWHEG-BOX-RES:
-            n_generated_events = size  # TODO: Check if this is correct for Z+jet case
             observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] /= n_generated_events
             observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     /= n_generated_events
 
@@ -743,7 +549,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
 
     print(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
 
-    with PdfPages(f"{model_run_dir}/test_histograms.pdf") as pdf:
+    with PdfPages(f"{model_dir}/test_histograms.pdf") as pdf:
         d = pdf.infodict()
         d['Title']        = f"Test results for model {model_name}"
         d['Author']       = 'You'
@@ -772,16 +578,217 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
 
     return test_loss
 
-# %% Run the test
-
-if __name__ == "__main__":
+def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, mlfiles, seed: int, test_dataset, split_ratios, batch_size=512, n_workers=0, n_generated_events: int = int(1e7), input_choice:str=None):
     start_time = time.time()
+
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+
+    if not use_zjet:
+        # ZZ case
+        labels = ["LL/UU", "UU"]
+        dataset_untransformed = MLEventsDataset(mlfiles,
+                                labels = labels,
+                                cache_events=True,
+                                standardise=False)
+    else:
+        # Z+jet case
+        dataset_untransformed = ZJetDataset(files[0],
+                                max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
+                                standardise=False)
+
+    # Identical random number generator for the untransformed dataset to get the same test/ train split as used during training.
+    test_generator = torch.Generator().manual_seed(seed)
+    _, _, test_dataset_untransformed = torch.utils.data.random_split(dataset_untransformed, split_ratios, generator=test_generator)
+
+    # Get the test dataloaders for the transformed and untransformed datasets
+    test_dataloader = DataLoader(
+        test_dataset,
+        batch_size=batch_size,  # Larger batch size for efficiency
+        shuffle=False,
+        num_workers=n_workers,  # Use multiple workers for large files
+        pin_memory=True  # Faster GPU transfer
+    )
+    test_dataloader_untransformed = DataLoader(
+        test_dataset_untransformed,
+        batch_size=batch_size,  # Larger batch size for efficiency
+        shuffle=False,
+        num_workers=n_workers,  # Use multiple workers for large files
+        pin_memory=True  # Faster GPU transfer
+    )
+
+    # Test iteration (only first batch to avoid long output)
+    for batch_idx, (batch_features, batch_labels) in enumerate(test_dataloader):
+        print(f"Batch {batch_idx}: features shape {batch_features.shape}, labels shape {batch_labels.shape}")
+        input_dim = batch_features.shape[1]
+        print(f"{input_dim = }")
+        break  # Only show first batch
+
+
     test_loss_fn = torch.nn.MSELoss()
 
-    if not arg.use_zjet:
-        test_loss = test_model_ZZ(model, model_dir, arg.histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, split_ratios[2] * arg.n_generated_events, model_name=arg.model)
+    if not use_zjet:
+        test_loss = test_model_ZZ(model, model_dir, histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, split_ratios[2] * n_generated_events, model_name=model_name, input_choice=input_choice)
     else:
-        test_loss = test_model_Zjet(model, model_dir, arg.histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, model_name=arg.model)
+        test_loss = test_model_Zjet(model, model_dir, histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, model_name=model_name)
 
     end_time = time.time()
     print(f"Testing completed in {end_time - start_time:.2f} seconds.")
+
+    return test_loss
+
+# %% Run the test
+if __name__ == "__main__":
+    print('numpy', np.__version__)
+    print('pandas', pd.__version__)
+    print('torch', torch.__version__)
+    # %%
+    parser = argparse.ArgumentParser(
+        description='Test the already trained neural network for polarisation tagging.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument("mlfiles", nargs='+', type=Path,        action="store",               help=".ml files to be used for training.")
+    parser.add_argument("model",              type=str,         action="store",               help=f"Model architecture to use. Options: {list(model_dict.keys())}.")
+    parser.add_argument("model_weight_file",  type=Path,        action="store",               help="Path to the .pt(y) file containing the trained model weights.")
+    parser.add_argument("-g", "--gpu",        type=int,         action="store", default=-1,   help="Specify manually which of the available gpus is supposed to be used.")
+    parser.add_argument("-b", "--batch_size", type=int,         action="store", default=512,  help="Batch size for training.")
+    parser.add_argument("-n", "--nworkers",   type=int,         action="store", default=0,    help="Number of workers for DataLoader.")
+    parser.add_argument("-t", "--test_mode",  dest="test_mode", action="store_true",          help="Run in test mode (only one data point to test implementation of the model).")
+    parser.add_argument("--inputdir",         type=Path,        action="store", default=None, help='Specify name of input directory.')
+    parser.add_argument("--histogram_dir",    type=Path,        action="store", default=None, help='Directory containing the .top histogram files for comparison (They are in the folder where also the events are.).')
+    parser.add_argument("--n_generated_events", type=lambda x: int(float(x)),       action="store", default=int(1e7), help="Number of generated events for comparison (1e7 for LO and LOwS and 5e6 for NLO).")
+    parser.add_argument("--useZjet",          dest="use_zjet",  action="store_true",          help="Use Z+jet dataset instead of default.")
+    parser.add_argument("--standardise",      dest="standardise", action="store_true",        help="Enable standardisation of features over the whole dataset (default).")
+    parser.add_argument("--input_choice",     type=str,   action="store", default=None,    help="Choice of input features. Options: Momenta, jan2026.")
+
+    # Create a mutually exclusive group for specifying the reference frame
+    frame_group = parser.add_mutually_exclusive_group()
+    frame_group.add_argument("--labframe",       dest="labframe", default=True, action="store_true",    help="Use lab frame instead of partonic CMS.")
+    frame_group.add_argument("--cmframe",        dest="labframe", default=True, action="store_false",   help="Use partonic CMS instead of lab frame.")
+
+    arg = parser.parse_args()
+
+    print("Arguments:")
+    for attr, value in vars(arg).items():
+        print(f"  {attr}: {value}")
+
+    # %% Specify the computation device (cpu or gpu).
+    # In torch/pytorch data and models need to be moved in the specific processing unit
+    # this code snippet allows to set the variable "device" according to available resource (cpu or cuda gpu)
+
+    if torch.cuda.is_available():
+        print('Number of devices: ', torch.cuda.device_count())
+        print(torch.cuda.get_device_name(0))
+
+    if torch.cuda.is_available():
+        if arg.gpu >= 0:
+            device = f"cuda:{arg.gpu}"
+        else:
+            device = "cuda"
+    else:
+        device = "cpu"
+    print(f"Computation device: {device}\n")
+
+    # Set CUDA device globally
+    if torch.cuda.is_available():
+        if arg.gpu >= 0:
+            torch.cuda.set_device(arg.gpu)
+            print(f"Set CUDA device to: {arg.gpu}")
+        else:
+            torch.cuda.set_device(0)
+            print(f"Set CUDA device to: 0")
+
+    # %% Model selection
+    model_name = arg.model
+    if model_name not in model_dict:
+        raise ValueError(f"Model '{model_name}' not recognized. Available models: {list(model_dict.keys())}")
+    else:
+        print(f"Using model architecture: {model_name}")
+
+    if arg.inputdir is not None:
+        model_dir = arg.inputdir
+    else:
+        model_dir = Path().cwd()
+
+    if arg.histogram_dir is None:
+        arg.histogram_dir = arg.mlfiles[0].parent
+
+# %% Data Handling
+    # Example usage for large files:
+    # files = Path("event_files/pwgevents-*.ml")
+    files = arg.mlfiles
+
+    if not arg.use_zjet:
+        if arg.labframe:
+            trafo = None
+        else:
+            trafo = boost_into_four_lepton_cm_frame
+
+        if arg.input_choice == "jan2026":
+            if trafo:
+                trafo = lambda x: januar2026_input_choice(trafo(x))
+            else:
+                trafo = januar2026_input_choice
+
+        labels = ["LL/UU", "UU"]
+        dataset = MLEventsDataset(files,
+                                labels = labels,
+                                transform=trafo,
+                                #   target_transform=scale_target,  # Scale target by 1000
+                                cache_events=True,  # Caching enabled
+                                standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
+
+    else:
+        if arg.labframe:
+            trafo = None
+        else:
+            trafo = boost_into_Zjet_cm_frame
+
+        if arg.input_choice == "jan2026":
+            if trafo:
+                trafo = lambda x: januar2026_input_choice(trafo(x))
+            else:
+                trafo = januar2026_input_choice
+
+        dataset = ZJetDataset(files[0],
+                            transform=trafo,
+                            target_transform=None,
+                            max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
+                            standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
+
+    print(f"Dataset info: {dataset.get_file_info()}")
+
+    # Set fixed random number seed to get the same test/ train split as used during training
+    print(Path.cwd())
+    with open(model_dir / "training_seed.txt", 'r') as f:
+        seed = int(f.readline().strip())
+
+    generator = torch.Generator().manual_seed(seed)
+
+    split_ratios = [0.6, 0.2, 0.2]  # Train, Val, Test
+    _, _, test_dataset = torch.utils.data.random_split(dataset, split_ratios, generator=generator)
+    print(f"Test dataset size:       {len(test_dataset)}")
+
+    # Initialize the model and load the trained weights
+    input_dim = dataset.input_shape[0]
+    if arg.standardise:
+        model = model_dict[arg.model](input_dim=input_dim, external_stat=True)
+    else:
+        model = model_dict[arg.model](input_dim=input_dim)
+
+    if arg.model_weight_file.is_absolute():
+        model_weight_file = arg.model_weight_file
+    else:
+        model_weight_file = model_dir / arg.model_weight_file
+
+    if torch.cuda.is_available():
+        summary(model.cuda(), input_size=(input_dim,))
+    else:
+        summary(model, input_size=(input_dim,))
+
+    model.load_state_dict(torch.load(model_weight_file, map_location=device, weights_only=True))
+    model.to(device)
+
+
+    test_loss = do_test_run(device, arg.use_zjet, model, model_name, model_dir, arg.histogram_dir, files, seed, test_dataset, split_ratios, batch_size=arg.batch_size, n_workers=arg.nworkers, n_generated_events=arg.n_generated_events, input_choice=arg.input_choice)
+

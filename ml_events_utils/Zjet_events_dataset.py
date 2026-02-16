@@ -149,6 +149,18 @@ class ZJetDataset(Dataset):
 
         return features, label
 
+    @property
+    def input_shape(self) -> torch.Size:
+        """Return the shape of the input features."""
+        features, _ = self[0]  # Get the first event's features
+        return features.shape  # 12 momentum features
+
+    @property
+    def label_shape(self) -> torch.Size:
+        """Return the shape of the labels."""
+        _, label = self[0]  # Get the first event's label
+        return label.shape  # Should be [1] for rL
+
     def get_feature_names(self):
         """Return the names of the 12 momentum features."""
         return ['Emu+', 'pxmu+', 'pymu+', 'pzmu+', 'Emu-', 'pxmu-', 'pymu-', 'pzmu-', 'Ej', 'pxj', 'pyj', 'pzj']

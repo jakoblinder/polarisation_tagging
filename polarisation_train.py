@@ -23,6 +23,7 @@ from ml_events_utils import boost_into_Zjet_cm_frame
 from ml_events_utils import train_loop, valid_loop
 from ml_events_utils import ZJetDataset
 from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output, FFNN_paper
+from polarisation_test import do_test_run
 from plot_training_history import plot_training_history
 import argparse
 
@@ -30,7 +31,7 @@ print('numpy', np.__version__)
 print('pandas', pd.__version__)
 print('torch', torch.__version__)
 
-
+start_time = time.time()
 
 # %%
 parser = argparse.ArgumentParser(
@@ -54,6 +55,8 @@ parser.add_argument("--replot",              dest="replot_only",  action="store_
 parser.add_argument("--useZjet",             dest="use_zjet",     action="store_true",    help="Use Z+jet dataset instead of default.")
 parser.add_argument("--standardise",         dest="standardise",  action="store_true",    help="Enable standardisation of features over the whole dataset (default).")
 parser.add_argument("--input_choice",        type=str,   action="store", default=None,    help="Choice of input features. Options: Momenta, jan2026.")
+parser.add_argument("--n_generated_events",  type=lambda x: int(float(x)),       action="store", default=int(1e7), help="Number of generated events for comparison (1e7 for LO and LOwS and 5e6 for NLO).")
+parser.add_argument("--dont_test",           dest="do_test",      action="store_false",   help="Run the test script after training with the best model weights found during training.")
 
 # Create a mutually exclusive group for specifying the reference frame
 frame_group = parser.add_mutually_exclusive_group()
@@ -178,7 +181,7 @@ print(f"Dataset info: {dataset.get_file_info()}")
 # %% Hyperparameters
 
 learning_rate = arg.learning_rate  # 1e-2
-batch_size    = arg.batch_size     # 128
+batch_size    = arg.batch_size     # 512
 epochs        = arg.epochs         # 1000
 n_workers     = arg.nworkers       # Use multiple (default 4) workers for DataLoader
 
@@ -186,7 +189,8 @@ n_workers     = arg.nworkers       # Use multiple (default 4) workers for DataLo
 
 generator = torch.Generator().manual_seed(seed)
 
-train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(dataset, [0.6, 0.2, 0.2], generator=generator)
+split_ratios = [0.6, 0.2, 0.2]  # 60% train, 20% validation, 20% test
+train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(dataset, split_ratios, generator=generator)
 
 print(f"Train dataset size:      {len(train_dataset)}")
 print(f"Validation dataset size: {len(val_dataset)}")
@@ -324,7 +328,7 @@ print(f"{pred.squeeze().shape = }")
 
 
 # Loss and metric
-loss = loss_fn(pred, yb)
+loss = loss_fn(pred, yb[:,0].unsqueeze(-1))
 # loss = loss_fn(pred, torch.unsqueeze(yb,1))  # Bring yb to shape (batch_size, 1) to match pred shape.
 # metric = binary_accuracy(pred, torch.unsqueeze(yb,1))
 
@@ -448,9 +452,6 @@ hist_loss     = np.array(hist_loss)
 hist_val_loss = np.array(hist_val_loss)
 hist_lr       = np.array(hist_lr)
 
-# np.savetxt(model_dir / f"{model_name}_train_loss.csv",     hist_loss,     delimiter=',')
-# np.savetxt(model_dir / f"{model_name}_val_loss.csv",       hist_val_loss, delimiter=',')
-# np.savetxt(model_dir / f"{model_name}_learning_rates.csv", hist_lr,       delimiter=',')
 
 # Save best model separately
 if best_model_state is not None:
@@ -519,3 +520,10 @@ elif not (arg.input_choice in ["jan2026",]):
     print(f"res = {res.item():.10e}")
     print(f"Expected LL/ UU weight: {0.91735652950215585:.10e}")
 
+end_time = time.time()
+elapsed_time = end_time - start_time
+print(f"\nTotal execution time: {elapsed_time:.2f} seconds")
+
+
+if arg.do_test:
+    do_test_run(device, arg.use_zjet, model, model_name, model_dir, files[0].parent, files, seed, test_dataset, split_ratios, batch_size=arg.batch_size, n_workers=arg.nworkers, n_generated_events=arg.n_generated_events, input_choice=arg.input_choice)
