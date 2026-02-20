@@ -38,25 +38,26 @@ parser = argparse.ArgumentParser(
     description='Train a neural network for polarisation tagging.',
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-parser.add_argument("mlfiles", nargs='*',    type=Path,  action="store", help=".ml files to be used for training. Not required when using --replot.")
-parser.add_argument("-m", "--model",         type=str,   action="store", default="FFNN_paper_BatchNorm", help=f"Model architecture to use. Options: {list(model_dict.keys())}.")
-parser.add_argument("-o", "--optimizer",     type=str,   action="store", default="paper", help="Optimizer to use. Options: SGD, Adam, RMSprop, paper, paper_momentum.")
-parser.add_argument("-g", "--gpu",           type=int,   action="store", default=-1,      help="Specify manually which of the available gpus is supposed to be used.")
-parser.add_argument("-e", "--epochs",        type=int,   action="store", default=1000,    help="Number of training epochs.")
-parser.add_argument("-b", "--batch_size",    type=int,   action="store", default=512,     help="Batch size for training.")
-parser.add_argument("-l", "--learning_rate", type=float, action="store", default=1e-2,    help="Learning rate for the optimizer.")
-parser.add_argument("-p", "--patience",      type=int,   action="store", default=25,      help="Early stopping patience.")
-parser.add_argument("-s", "--seed",          type=int,   action="store", default=42,      help="Random seed for reproducibility.")
-parser.add_argument("-n", "--nworkers",      type=int,   action="store", default=0,       help="Number of workers for DataLoader.")
-parser.add_argument("-t", "--test_mode",     dest="test_mode",    action="store_true",    help="Run in test mode (only one data point to test implementation of the model).")
-parser.add_argument("--no-cache-events",     dest="cache_events", action="store_false",   help="Disable caching of events in the dataset (defaul: Cache the events.).")
-parser.add_argument("--outputdir",           type=Path,  action='store', default=None,    help='Specify name of output directory.')
-parser.add_argument("--replot",              dest="replot_only",  action="store_true",    help="Only regenerate the training history plot from existing CSV files. The model and potentially the output directory need to be specified.")
-parser.add_argument("--useZjet",             dest="use_zjet",     action="store_true",    help="Use Z+jet dataset instead of default.")
-parser.add_argument("--standardise",         dest="standardise",  action="store_true",    help="Enable standardisation of features over the whole dataset (default).")
-parser.add_argument("--input_choice",        type=str,   action="store", default=None,    help="Choice of input features. Options: Momenta, jan2026.")
-parser.add_argument("--n_generated_events",  type=lambda x: int(float(x)),       action="store", default=int(1e7), help="Number of generated events for comparison (1e7 for LO and LOwS and 5e6 for NLO).")
-parser.add_argument("--dont_test",           dest="do_test",      action="store_false",   help="Run the test script after training with the best model weights found during training.")
+parser.add_argument("mlfiles", nargs='*',     type=Path,  action="store", help=".ml files to be used for training. Not required when using --replot.")
+parser.add_argument("-m", "--model",          type=str,   action="store", default="FFNN_paper_BatchNorm", help=f"Model architecture to use. Options: {list(model_dict.keys())}.")
+parser.add_argument("-o", "--optimizer",      type=str,   action="store", default="paper", help="Optimizer to use. Options: SGD, Adam, RMSprop, paper, paper_momentum.")
+parser.add_argument("-g", "--gpu",            type=int,   action="store", default=-1,      help="Specify manually which of the available gpus is supposed to be used.")
+parser.add_argument("-e", "--epochs",         type=int,   action="store", default=1000,    help="Number of training epochs.")
+parser.add_argument("-b", "--batch_size",     type=int,   action="store", default=512,     help="Batch size for training.")
+parser.add_argument("-l", "--learning_rate",  type=float, action="store", default=1e-2,    help="Learning rate for the optimizer.")
+parser.add_argument("-p", "--patience",       type=int,   action="store", default=25,      help="Early stopping patience.")
+parser.add_argument("-s", "--seed",           type=int,   action="store", default=42,      help="Random seed for reproducibility.")
+parser.add_argument("-n", "--nworkers",       type=int,   action="store", default=0,       help="Number of workers for DataLoader.")
+parser.add_argument("-t", "--test_mode",      dest="test_mode",    action="store_true",    help="Run in test mode (only one data point to test implementation of the model).")
+parser.add_argument("--no-cache-events",      dest="cache_events", action="store_false",   help="Disable caching of events in the dataset (defaul: Cache the events.).")
+parser.add_argument("--outputdir",            type=Path,  action='store', default=None,    help='Specify name of output directory.')
+parser.add_argument("--replot",               dest="replot_only",  action="store_true",    help="Only regenerate the training history plot from existing CSV files. The model and potentially the output directory need to be specified.")
+parser.add_argument("--useZjet",              dest="use_zjet",     action="store_true",    help="Use Z+jet dataset instead of default.")
+parser.add_argument("--standardise",          dest="standardise",  action="store_true",    help="Enable standardisation of features over the whole dataset (default).")
+parser.add_argument("--input_choice",         type=str,   action="store", default=None,    help="Choice of input features. Options: Momenta, jan2026.")
+parser.add_argument("--n_generated_events",   type=lambda x: int(float(x)),       action="store", default=int(1e7), help="Number of generated events for comparison (1e7 for LO and LOwS and 5e6 for NLO).")
+parser.add_argument("--dont_test",            dest="do_test",      action="store_false",   help="Run the test script after training with the best model weights found during training.")
+parser.add_argument("--penalties", nargs='*', type=str,   action="store", default=[],      help="Specify which penalty terms to include in the loss function. Options: cross_section, ZdecayAngles.")
 
 # Create a mutually exclusive group for specifying the reference frame
 frame_group = parser.add_mutually_exclusive_group()
@@ -362,6 +363,8 @@ best_model_state = None
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, mode='min', factor=0.5, patience=3,
 )
+# scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
+
 # Scheduler for multi step decay lr schedule
 # Decays the learning rate of each parameter group by gamma once the number of epoch reaches one of the milestones
 # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20,40,60], gamma=0.1)
@@ -382,13 +385,11 @@ with open(lr_file, 'w') as f:
 print(f"Starting training for {epochs} epochs...")
 print(f"Early stopping patience: {patience}")
 
+penalties = {penalty: True for penalty in arg.penalties}
 
-
-penalties = {
-    "cross_section": True,  # Enable penalty term to enforce correct cross section (average predicted value over the training set should be close to the average true label).
-}
-if not arg.use_zjet and not (arg.input_choice in ["jan2026",]):
-    penalties["ZdecayAngles"] = True
+# Ensure that Z decay angle penalty is disabled when using Z+jet dataset or the januar2026 input choice, as the relevant features are not included in these cases.
+if arg.use_zjet or (arg.input_choice in ["jan2026",]):
+    penalties["ZdecayAngles"] = False
 
 for epoch in range(epochs):
     epoch_start_time = time.time()
@@ -416,6 +417,7 @@ for epoch in range(epochs):
         f.write(f"{epoch+1},{current_lr:.10e}\n")
 
     # Learning rate scheduling
+    # scheduler.step()
     scheduler.step(valid_loss)
 
     # Early stopping check
