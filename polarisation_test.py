@@ -22,12 +22,12 @@ import argparse
 
 
 # %% Helper functions for plotting and histogram handling
-def read_top_file_histograms(top_file_path):
+def read_top_file_histograms(top_file_paths: dict) -> dict:
     """
     Read histogram data from a .top file.
 
     Args:
-        top_file_path (Path): Path to the .top file
+        top_file_paths (dict): Dictionary with keys as histogram names and values as paths to .top files
 
     Returns:
         dict: Dictionary with histogram names as keys, each containing:
@@ -37,66 +37,77 @@ def read_top_file_histograms(top_file_path):
             - 'uncertainties': numpy array of uncertainties
     """
     histogram_data = {}
+    observables    = {}
+    for run, top_file_path in top_file_paths.items():
+        histogram = {}
+        observables[run] = []
+        with open(top_file_path, 'r') as f:
+            current_histogram = None
 
-    with open(top_file_path, 'r') as f:
-        current_histogram = None
+            for line in f:
+                line = line.strip()
 
-        for line in f:
-            line = line.strip()
-
-            # Skip empty lines
-            if not line:
-                continue
-
-            # Check if this is a histogram header
-            if line.startswith('#') and 'index' in line:
-                # Extract histogram name (everything before 'index')
-                hist_name = line.split('index')[0].strip('# ').strip()
-                current_histogram = hist_name
-                histogram_data[current_histogram] = {
-                    'bin_left': [],
-                    'bin_right': [],
-                    'values': [],
-                    'uncertainties': [],
-                    'edges': []
-                }
-                continue
-
-            # Skip other comment lines
-            if line.startswith('#'):
-                continue
-
-            # Parse data lines
-            if current_histogram is not None:
-                try:
-                    # Split by whitespace and convert scientific notation
-                    parts = line.split()
-                    if len(parts) >= 4:
-                        bin_left = float(parts[0].replace('D', 'E'))
-                        bin_right = float(parts[1].replace('D', 'E'))
-                        value = float(parts[2].replace('D', 'E'))
-                        uncertainty = float(parts[3].replace('D', 'E'))
-
-                        histogram_data[current_histogram]['bin_left'].append(bin_left)
-                        histogram_data[current_histogram]['bin_right'].append(bin_right)
-                        histogram_data[current_histogram]['values'].append(value)
-                        histogram_data[current_histogram]['uncertainties'].append(uncertainty)
-                except ValueError:
-                    # Skip lines that can't be parsed as numbers
+                # Skip empty lines
+                if not line:
                     continue
 
-    # Convert lists to numpy arrays for easier manipulation
-    for hist_name in histogram_data:
-        for key in histogram_data[hist_name]:
-            histogram_data[hist_name][key] = np.array(histogram_data[hist_name][key])
-            histogram_data[hist_name]['edges'] = np.concatenate((
-                histogram_data[hist_name]['bin_left'],
-                histogram_data[hist_name]['bin_right'][-1:]
-            ))
+                # Check if this is a histogram header
+                if line.startswith('#') and 'index' in line:
+                    # Extract histogram name (everything before 'index')
+                    hist_name = line.split('index')[0].strip('# ').strip()
+                    current_histogram = hist_name
+                    observables[run].append(current_histogram)
+                    histogram[current_histogram] = {
+                        'bin_left': [],
+                        'bin_right': [],
+                        'values': [],
+                        'uncertainties': [],
+                        'edges': []
+                    }
+                    continue
 
-    return histogram_data
+                # Skip other comment lines
+                if line.startswith('#'):
+                    continue
 
-def print_integration_statistics(observable_dict, histogram_data: dict = {}, model: str = ""):
+                # Parse data lines
+                if current_histogram is not None:
+                    try:
+                        # Split by whitespace and convert scientific notation
+                        parts = line.split()
+                        if len(parts) >= 4:
+                            bin_left = float(parts[0].replace('D', 'E'))
+                            bin_right = float(parts[1].replace('D', 'E'))
+                            value = float(parts[2].replace('D', 'E'))
+                            uncertainty = float(parts[3].replace('D', 'E'))
+
+                            histogram[current_histogram]['bin_left'].append(bin_left)
+                            histogram[current_histogram]['bin_right'].append(bin_right)
+                            histogram[current_histogram]['values'].append(value)
+                            histogram[current_histogram]['uncertainties'].append(uncertainty)
+                    except ValueError:
+                        # Skip lines that can't be parsed as numbers
+                        continue
+
+        # Convert lists to numpy arrays for easier manipulation
+        for hist_name in histogram:
+            for key in histogram[hist_name]:
+                histogram[hist_name][key] = np.array(histogram[hist_name][key])
+                histogram[hist_name]['edges'] = np.concatenate((
+                    histogram[hist_name]['bin_left'],
+                    histogram[hist_name]['bin_right'][-1:]
+                ))
+
+        histogram_data[run] = histogram
+
+    observables_intersection = set.intersection(*[set(obs) for obs in observables.values()])
+    # So far the structure of histogram_data is {run: {histogram_name: {bin_left, bin_right, values, uncertainties, edges}}}.
+    # Change it to be {histogram_name: {run: {bin_left, bin_right, values, uncertainties, edges}}} for easier access in the plotting functions.
+    histogram_data_restructured = {observable: {run : histogram_data[run][observable] for run in top_file_paths.keys()} for observable in observables_intersection}
+
+    return histogram_data_restructured
+
+def print_integration_statistics(observable_dict, histogram_data: dict = {}, model: str = "", powheg_histogram_runs: list = ["LL",]):
     pred_integral = np.sum(observable_dict["weights_ypred"])
     true_integral = np.sum(observable_dict["weights_y"])
 
@@ -112,23 +123,23 @@ def print_integration_statistics(observable_dict, histogram_data: dict = {}, mod
     print(f"  True r_LL:          {true_integral:.6e}")
     print(f"  Predicted r_LL:     {pred_integral:.6e}")
     if histogram_data:
-        print(f"  POWHEG reweighting: {histogram_data['totxsec']['values'][0]:.6e}")
-        print(f"  Ratio (pred/PWG):   {pred_integral/histogram_data['totxsec']['values'][0]:.6f}")
+        for run in powheg_histogram_runs:
+            print(f"  POWHEG reweighting [{run}]: {histogram_data['totxsec'][run]['values'][0]:.6e}")
+        print(f"  Ratio (pred/PWG-[{powheg_histogram_runs[0]}]):   {pred_integral/histogram_data['totxsec'][powheg_histogram_runs[0]]['values'][0]:.6f}")
     print(f"  Ratio (pred/true):  {pred_integral/true_integral:.6f}")
 
     # Create a text-only plot for integration results
     fig, ax = plt.subplots(1, 1)
     ax.axis('off')  # Remove axes
 
-    text_content = f"""    True r_LL:          {true_integral:.6e}
-    Predicted r_LL:     {pred_integral:.6e}"""
+    text_content  = f"    True r_LL:               {true_integral:.6e}\n"
+    text_content += f"    Predicted r_LL:          {pred_integral:.6e}\n"
     if histogram_data:
-        text_content += f"""
-    POWHEG reweighting: {histogram_data['totxsec']['values'][0]:.6e}
-    Ratio (pred/PWG):   {pred_integral/histogram_data['totxsec']['values'][0]:.6f}"""
+        for run in powheg_histogram_runs:
+            text_content += f"    POWHEG reweighting [{run}]: {histogram_data['totxsec'][run]['values'][0]:.6e}\n"
 
-    text_content += f"""
-    Ratio (pred/true):  {pred_integral/true_integral:.6f}"""
+    text_content += f"Ratio (pred/PWG-[{powheg_histogram_runs[0]}]):   {pred_integral/histogram_data['totxsec'][powheg_histogram_runs[0]]['values'][0]:.6f}\n"
+    text_content += f"    Ratio (pred/true):       {pred_integral/true_integral:.6f}"
 
     ax.text(0.1, 0.5, text_content, fontsize=14, verticalalignment='center',
         bbox=dict(boxstyle="round,pad=0.5", facecolor="lightgray", alpha=0.8))
@@ -182,7 +193,7 @@ def r_plot(r_pred, r_true, weights, model_name="Model"):
     fig.tight_layout()
     return fig, axs
 
-def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:dict = None, log_scale=True, nbins=50, model_name="Model"):
+def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:dict = None, log_scale=True, nbins=50, model_name="Model", powheg_histogram_runs: list = ["LL",]):
     """
     Create a comparison plot of predicted vs true labels for a given observable.
     This function generates a step histogram plot comparing predicted labels, true labels,
@@ -215,7 +226,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     fig, axs = plt.subplots(2, 1, sharex=True, height_ratios=[3, 1])
 
     if powheg_histogram:
-        bins = powheg_histogram['edges']
+        bins = powheg_histogram[powheg_histogram_runs[0]]['edges']
     else:
         bins = np.linspace(observable_dict[observable_key].min(), observable_dict[observable_key].max(), nbins+1)
 
@@ -230,27 +241,43 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     true_sums /= bin_widths
     if powheg_histogram:
         # POWHEG histograms for comparison
-        powheg_sums = powheg_histogram['values']
+        powheg_sums = {}
+        for run in powheg_histogram_runs:
+            powheg_sums[run] = powheg_histogram[run]['values']
 
     # Plot as step histograms
     bin_centers = (bins[:-1] + bins[1:]) / 2
     axs[0].step(bin_centers, true_sums,   where='mid', label='True Labels',      color='green', linewidth=2, alpha=0.7)
     axs[0].plot(bin_centers, true_sums, 'x', color='green', markersize=8, alpha=0.7)
+
+    def powheg_color(reset_index=False):
+        if reset_index or "counter" not in powheg_color.__dict__:
+            powheg_color.__dict__["counter"] = 0
+        colors = ['blue', 'cyan', 'magenta', 'orange', 'purple']
+        while True:
+            i = powheg_color.__dict__["counter"] % len(colors)
+            powheg_color.__dict__["counter"] += 1
+            yield colors[i]
+
+    a = powheg_color(reset_index=True)
+
     if powheg_histogram:
-        axs[0].step(bin_centers, powheg_sums, where='mid', label='POWHEG Labels',    color='blue',  linewidth=2, alpha=0.7)
+        for run, color in zip(powheg_histogram_runs, powheg_color(reset_index=True)):
+            axs[0].step(bin_centers, powheg_sums[run], where='mid', label=f'POWHEG Labels {run}',    color=color,  linewidth=2, alpha=0.7)
     axs[0].step(bin_centers, pred_sums,   where='mid', label='Predicted Labels', color='red',   linewidth=2, alpha=0.7)
 
-    axs[1].step(bin_centers, pred_sums / np.maximum(true_sums, 1e-10), where='mid', color='green', linewidth=2, alpha=0.7)
+    axs[1].step(bin_centers, pred_sums / np.maximum(true_sums, 1e-10), where='mid', color='red', linewidth=2, alpha=0.7)
     if powheg_histogram:
-        axs[1].step(bin_centers, pred_sums / np.maximum(powheg_sums, 1e-10), where='mid', color='blue', linewidth=2, alpha=0.7, linestyle='--')
+        for run, color in zip(powheg_histogram_runs, powheg_color(reset_index=True)):
+            axs[1].step(bin_centers, powheg_sums[run] / np.maximum(true_sums, 1e-10), where='mid', color=color, linewidth=2, alpha=0.7, linestyle='--')
 
     axs[1].axhline(1.0, color='gray', linestyle='--', linewidth=1)
-    axs[1].set_ylabel("Predicted / X")
+    axs[1].set_ylabel("X / True")
 
     # Scale y axis logarithmically
     if log_scale:
         try:
-            if np.all(true_sums > 0) and np.all(pred_sums > 0) and (not powheg_histogram or np.all(powheg_sums > 0)):
+            if np.all(true_sums > 0) and np.all(pred_sums > 0) and (not powheg_histogram or np.all([np.all(sums > 0) for sums in powheg_sums.values()])):
                 axs[0].set_yscale('log')
             else:
                 print(f"Not all histogram values are positive for {observable_key} plot; skipping log scale.")
@@ -275,7 +302,18 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     return fig, axs
 
 # %% Testing loop
-def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untransformed, loss_fn, device, n_generated_events:int=0.2*1e7, model_name="Model", *args, **kwargs):
+def test_model_ZZ(model,
+                  model_dir,
+                  histogram_dir,
+                  dataloader,
+                  dataloader_untransformed,
+                  loss_fn,
+                  device,
+                  n_generated_events:int=0.2*1e7,
+                  model_name="Model",
+                  fitted_polarisation="LL",
+                  *args,
+                  **kwargs):
     """
     Test a trained machine learning model and generate comparison plots with POWHEG reference data.
     This function evaluates the model on test data, computes observables (invariant masses and cos(theta*)),
@@ -315,7 +353,23 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untran
     print(f"Analysing {n_generated_events} generated events which result in {size} events after applying cuts.")
 
     # Load the LL histogram for comparison plots
-    histogram_data = read_top_file_histograms(histogram_dir / "pwgLHEF_analysis-mean-W8.top")
+    powheg_histograms_paths = {"LL": histogram_dir / "pwgLHEF_analysis-mean-W8.top",
+                            #   "LT": histogram_dir / "pwgLHEF_analysis-mean-W9.top",
+                            #   "TL": histogram_dir / "pwgLHEF_analysis-mean-W10.top",
+                            #   "TT": histogram_dir / "pwgLHEF_analysis-mean-W11.top",
+                              "UU": histogram_dir / "pwgLHEF_analysis-mean-W12.top",
+                              }
+    histogram_data = read_top_file_histograms(powheg_histograms_paths)
+    # Normalise all runs to have the total cross section as the fitted polarisation run.
+    runs_wo_fitted_polarisation = list(next(iter(histogram_data.values()), {}).keys()).copy()
+    runs_wo_fitted_polarisation.remove(fitted_polarisation)
+    xsec_fitted_polarisation = histogram_data['totxsec'][fitted_polarisation]['values'][0]
+    for run in runs_wo_fitted_polarisation:
+        observables_in_run = list(histogram_data.keys())
+        observables_in_run.remove('totxsec')  # Don't rescale the total cross-section histogram itself, only the observable histograms.
+        for observable in observables_in_run:
+            histogram_data[observable][run]['values'] *= xsec_fitted_polarisation / histogram_data['totxsec'][run]['values'][0]
+
     print(f"Loaded {len(histogram_data)} histograms from .top file")
 
     # Move the model to the specified device (CPU or GPU)
@@ -330,13 +384,13 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untran
                        "invmass_Z1":    np.zeros(size),
                        "invmass_Z2":    np.zeros(size),
                        "cthep":         np.zeros(size),
-                       "cthep_mll_cut5":  np.zeros(size),
-                       "cthep_mll_cut10": np.zeros(size),
+                    #    "cthep_mll_cut5":  np.zeros(size),
+                    #    "cthep_mll_cut10": np.zeros(size),
                        "pt4l":          np.zeros(size),
                        "ptep":          np.zeros(size),
                        "yep":           np.zeros(size),
-                       "rLL_pred":      np.zeros(size),
-                       "rLL_true":      np.zeros(size),
+                       "r_pred":      np.zeros(size),
+                       "r_true":      np.zeros(size),
                        }
 
     test_loss = 0
@@ -367,8 +421,8 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untran
 
 
             # Compute observables
-            observable_dict["rLL_pred"][batch * batch_size : batch * batch_size + X.shape[0]] = pred[:,0].cpu().numpy()
-            observable_dict["rLL_true"][batch * batch_size : batch * batch_size + X.shape[0]] = y[:,0].cpu().numpy()
+            observable_dict["r_pred"][batch * batch_size : batch * batch_size + X.shape[0]] = pred[:,0].cpu().numpy()
+            observable_dict["r_true"][batch * batch_size : batch * batch_size + X.shape[0]] = y[:,0].cpu().numpy()
 
 
             # zl1, zl2, zl3, zl4 = e+, e-, mu+, mu-
@@ -391,8 +445,8 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untran
             # Note that pt4l is zero in the 4-lepton CM frame
             # observable_dict["pt4l"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta.sum(dim=1)).cpu().numpy()
 
-    observable_dict["cthep_mll_cut10"] = np.where(np.abs(observable_dict["invmass_Z1"] - 91.19) < 10, observable_dict["cthep"], 0.0)
-    observable_dict["cthep_mll_cut5"] = np.where(np.abs(observable_dict["invmass_Z1"] - 91.19) < 5, observable_dict["cthep"], 0.0)
+    # observable_dict["cthep_mll_cut10"] = np.where(np.abs(observable_dict["invmass_Z1"] - 91.19) < 10, observable_dict["cthep"], 0.0)
+    # observable_dict["cthep_mll_cut5"] = np.where(np.abs(observable_dict["invmass_Z1"] - 91.19) < 5, observable_dict["cthep"], 0.0)
 
     # Count number of zero values in the array
     test_loss /= num_batches
@@ -409,47 +463,47 @@ def test_model_ZZ(model, model_dir, histogram_dir, dataloader, dataloader_untran
         d['ModDate']      = datetime.today()
 
         # Integration statistics
-        fig, _ = print_integration_statistics(observable_dict, histogram_data, model=model_name)
+        fig, _ = print_integration_statistics(observable_dict, histogram_data, model=model_name, powheg_histogram_runs = [fitted_polarisation, ])
         pdf.savefig(fig)
         plt.close(fig)
 
         # Invariant mass Z1 comparison plot
-        fig, _ = comparison_plots(observable_dict, "invmass_Z1", histogram_data["mee"], model_name=model_name)
+        fig, _ = comparison_plots(observable_dict, "invmass_Z1", histogram_data["mee"], model_name=model_name, powheg_histogram_runs = [fitted_polarisation, ])
         pdf.savefig(fig)
         plt.close(fig)
 
         # Cos(theta*) comparison plot
-        fig, _ = comparison_plots(observable_dict, "cthep", histogram_data["cthep"], model_name=model_name)
+        fig, _ = comparison_plots(observable_dict, "cthep", histogram_data["cthep"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
         pdf.savefig(fig)
         plt.close(fig)
 
-        # Cos(theta*) with mll cut comparison plot
-        fig, axs = comparison_plots(observable_dict, "cthep_mll_cut10", histogram_data["cthep"], model_name=model_name)
-        axs[0].set_title("Cos(theta*) with mll cut |mll - mZ| < 10 GeV")
-        pdf.savefig(fig)
-        plt.close(fig)
+        # # Cos(theta*) with mll cut comparison plot
+        # fig, axs = comparison_plots(observable_dict, "cthep_mll_cut10", histogram_data["cthep"], model_name=model_name, powheg_histogram_runs = [fitted_polarisation, ])
+        # axs[0].set_title("Cos(theta*) with mll cut |mll - mZ| < 10 GeV")
+        # pdf.savefig(fig)
+        # plt.close(fig)
 
-        fig, axs = comparison_plots(observable_dict, "cthep_mll_cut5", histogram_data["cthep"], model_name=model_name)
-        axs[0].set_title("Cos(theta*) with mll cut |mll - mZ| < 5 GeV")
-        pdf.savefig(fig)
-        plt.close(fig)
+        # fig, axs = comparison_plots(observable_dict, "cthep_mll_cut5", histogram_data["cthep"], model_name=model_name, powheg_histogram_runs = [fitted_polarisation, ])
+        # axs[0].set_title("Cos(theta*) with mll cut |mll - mZ| < 5 GeV")
+        # pdf.savefig(fig)
+        # plt.close(fig)
 
         # Transverse momentum of positron
-        fig, _ = comparison_plots(observable_dict, "ptep", histogram_data["ptep"], model_name=model_name)
+        fig, _ = comparison_plots(observable_dict, "ptep", histogram_data["ptep"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
         pdf.savefig(fig)
         plt.close(fig)
 
         # Rapidity of positron
-        fig, _ = comparison_plots(observable_dict, "yep", histogram_data["yep"], model_name=model_name)
+        fig, _ = comparison_plots(observable_dict, "yep", histogram_data["yep"], model_name=model_name, powheg_histogram_runs = [fitted_polarisation, ])
         pdf.savefig(fig)
         plt.close(fig)
 
         # # Transverse momentum of 4-lepton system
-        # fig, _ = comparison_plots(observable_dict, "pt4l", histogram_data["pt4l"], model_name=model_name)
+        # fig, _ = comparison_plots(observable_dict, "pt4l", histogram_data["pt4l"], model_name=model_name, powheg_histogram_runs = [fitted_polarisation, ])
         # pdf.savefig(fig)
         # plt.close(fig)
 
-        fig, _ = r_plot(observable_dict["rLL_pred"], observable_dict["rLL_true"], observable_dict["weights_y"], model_name=model_name)
+        fig, _ = r_plot(observable_dict["r_pred"], observable_dict["r_true"], observable_dict["weights_y"], model_name=model_name)
         pdf.savefig(fig)
         plt.close(fig)
 
