@@ -454,8 +454,8 @@ class FourVectorAwareNet(nn.Module):
 
 model_dict = {
     "FFNN_BatchNorm": FFNN_BatchNorm,
-    "FFNN_BatchNorm_2extraLayers": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_BatchNorm_nextraLayers(input_dim, output_dim, n_extra_layers=2, *args, **kwargs),
-    "FFNN_BatchNorm_4extraLayers": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_BatchNorm_nextraLayers(input_dim, output_dim, n_extra_layers=4, *args, **kwargs),
+    "FFNN_BatchNorm_2extraLayers": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_BatchNorm_nextraLayers(input_dim, n_extra_layers=2, *args, **kwargs),
+    "FFNN_BatchNorm_4extraLayers": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_BatchNorm_nextraLayers(input_dim, n_extra_layers=4, *args, **kwargs),
     "FFNN_paper": FFNN_paper,
     "FFNN_paper_163264": FFNN_paper_163264,
     "FFNN_paper_BatchNorm": FFNN_paper_BatchNorm,

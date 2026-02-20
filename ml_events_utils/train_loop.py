@@ -2,10 +2,25 @@ import time
 import torch
 import torch.nn as nn
 import numpy as np
+import torch.nn.functional as F
 
 from ml_events_utils.analysis import costhetastar
 
-def train_loop(epoch: int, dataloader, model, loss_fn, optimizer, device, print_freq=100, penalties: dict = {}, *args, **kwargs):
+def train_loop(
+    epoch: int,
+    dataloader,
+    model,
+    loss_fn,
+    optimizer,
+    device,
+    print_freq=100,
+    penalties: dict = {},
+    eps: float = 1e-12,
+    target_col: int = 0,
+    weight_col: int = 1,
+    *args,
+    **kwargs,
+):
     """
     Executes the training loop for a given model, dataloader, loss function, and optimizer.
 
@@ -62,18 +77,38 @@ def train_loop(epoch: int, dataloader, model, loss_fn, optimizer, device, print_
     model.train()
 
     train_loss = 0.0
-
     for batch, (X, y) in enumerate(dataloader):
         X, y = X.to(device), y.to(device)
         if batch == 0:
             batch_size = X.shape[0]
+
         # Compute prediction and loss
         pred = model(X)
+        target = y[:, target_col].unsqueeze(-1)
         try:
-            # Note: y[:,0].unsqueeze(-1) is used to bring y to shape (batch_size, 1) to match pred shape for loss computation.
+            # Note: y[:,target_col].unsqueeze(-1) is used to bring y to shape (batch_size, 1) to match pred shape for loss computation.
             #       This can be necessary if the labels also contain additional information in other columns that are not used for the loss computation.
-            #       For example: y[:,0] = r_LL + LL/UU and y[:,1] = UU, but only r_LL is used for the loss.
-            loss = loss_fn(pred, y[:,0].unsqueeze(-1))
+            #       For example: y[:,0] = r_LL = LL/UU and y[:,1] = UU, but only r_LL is used for the loss.
+
+            # loss = loss_fn(pred, target)
+
+            # Choose event weights (usually UU). If the column doesn't exist, fall back to unweighted mean.
+            w = None
+            if (y.ndim >= 2) and (y.shape[1] > weight_col):
+                w = torch.abs(y[:, weight_col]).detach()  # shape (B,)
+
+            # compute per-sample loss (example for MSE; adapt similarly for L1/SmoothL1/etc.)
+            if isinstance(loss_fn, nn.MSELoss):
+                per_sample = F.mse_loss(pred, target, reduction="none")
+            elif isinstance(loss_fn, nn.L1Loss):
+                per_sample = F.l1_loss(pred, target, reduction="none")
+            else:
+                # fallback: require user to pass a loss_fn that already returns per-sample loss
+                per_sample = loss_fn(pred, target)
+
+            # Reduce loss to one scalar per event: (B, 1) -> (B,)
+            if torch.is_tensor(per_sample) and per_sample.ndim > 1:
+                per_sample = per_sample.view(per_sample.size(0), -1).mean(dim=1)
         except RuntimeError as e:
             print(f"RuntimeError during loss computation: {e}")
             print(f"pred shape: {pred.shape}, y shape: {y.shape}")
@@ -82,24 +117,17 @@ def train_loop(epoch: int, dataloader, model, loss_fn, optimizer, device, print_
             raise e
 
         # Compute possible penalty terms
-        penalty = torch.zeros_like(loss)
-
-        if penalties.get("cross_section", False):
-            sigma_true = y[:,0].mean()  # Average over all true labels in the training set
-            sigma_learned = pred.mean()  # Average over the predicted values
-            threshold = 0.01  # Threshold for closeness (in %)
-            importance = 1.0  # Weight of the penalty term in the total loss
-            epsilon = 1e-9  # Small constant to avoid division by zero
-            xsec_penalty = torch.abs(sigma_learned - sigma_true) / torch.clamp(torch.abs(sigma_true), min=epsilon) - threshold
-            xsec_penalty = importance * torch.clamp(xsec_penalty, min=0)
-            penalty += xsec_penalty
+        penalty_scalar = 0.0
 
         if penalties.get("ZdecayAngles", False):
-            importance = 1.0 + 0.01 * epoch**2  # Weight of the penalty term in the total loss
+            importance = 2.0 + 0.01 * epoch**2  # Weight of the penalty term in the total loss
             # The functional form of the normalised cthep distribution is
             #     (3/4)*sin(theta)^2 = (3/4)*(1-cthep^2).
+            if y.ndim < 2 or y.shape[1] <= 1:
+                raise ValueError("ZdecayAngles penalty expects y[:,1] to contain UU weights.")
+
             xsec_LL = pred[:,0] * y[:,1]
-            # xsec_LL = y[:,0] * y[:,1]
+            # xsec_LL = y[:,0] * y[:,event_weight_col]
             xsec_LL_norm = xsec_LL / xsec_LL.sum()
 
 
@@ -115,11 +143,11 @@ def train_loop(epoch: int, dataloader, model, loss_fn, optimizer, device, print_
             # Note that event though the normalization over only the batch size is going to be bad,
             # there is no way around that, since (3/4) * (1 - cthep**2) is only valid for the normalized distribution.
 
-            diff_cthep  = torch.mean(torch.abs(xsec_LL_norm) / torch.clamp(torch.abs(expected_cthep),  min=1e-9))
-            diff_cthmup = torch.mean(torch.abs(xsec_LL_norm) / torch.clamp(torch.abs(expected_cthmup), min=1e-9))
-
-            angle_penalty = importance * (diff_cthep + diff_cthmup)
-            penalty += angle_penalty
+            # Elementwise penalty per event (shape (B,))
+            diff_cthep  = torch.abs(xsec_LL_norm) / torch.clamp(torch.abs(expected_cthep),  min=1e-9)
+            diff_cthmup = torch.abs(xsec_LL_norm) / torch.clamp(torch.abs(expected_cthmup), min=1e-9)
+            angle_penalty = importance * (diff_cthep * diff_cthmup)
+            per_sample = per_sample + angle_penalty
 
             # # Plot the stuff as a sanity check.
             # bins = np.linspace(-1, +1, 50 + 1)
@@ -166,9 +194,23 @@ def train_loop(epoch: int, dataloader, model, loss_fn, optimizer, device, print_
             # plt.tight_layout()
             # plt.savefig(f"cthep_distribution_epoch_{epoch}.pdf")
 
+        if penalties.get("cross_section", False):
+            sigma_true    = torch.mean(   y[:,0] * y[:,1])  # Average over all true labels in the training set.
+            sigma_learned = torch.mean(pred[:,0] * y[:,1])  # Average over the predicted values.
+            threshold  = 0.005  # Threshold for closeness (in %)
+            importance = 2.0  # Weight of the penalty term in the total loss
+            xsec_penalty = torch.abs(sigma_learned - sigma_true) / torch.clamp(torch.abs(sigma_true), min=eps) - threshold
+            xsec_penalty = importance * torch.clamp(xsec_penalty, min=0)
+            penalty_scalar += xsec_penalty
+
+        # Weighted mean (if weights available), else plain mean.
+        if w is None:
+            loss = per_sample.mean()
+        else:
+            loss = (per_sample * w).sum() / torch.clamp(w.sum(), min=eps)
 
         # Compute the total loss
-        loss += penalty
+        loss += penalty_scalar
 
         train_loss += loss.item()
 
