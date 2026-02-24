@@ -31,6 +31,7 @@ parser.add_argument('--features',  '-f', type=str, choices=['ep', 'ct'])
 args = parser.parse_args()
 
 # initialisation and choice of LHE-ML dataset
+N_lhe = 100000
 sigma_uu = np.array([0.11245290E-01, 0.37648619E-05])
 sigma_ll = np.array([0.6574E-03, 0.0002E-03])
 data_dir = Path("../../events/ML_FILES/UU_LOwS")
@@ -41,6 +42,7 @@ if str(args.data) == 'reduced':
 #if str(data_dir).find("NLO") != -1:
 if str(args.order) == 'nlo':
     print(' You are parsing NLO QCD LHE events')
+    N_lhe = 50000
     sigma_uu = np.array([0.15183819E-01,0.71627436E-05])
     sigma_ll = np.array([0.8918E-03, 0.0003E-03])
     data_dir = Path("../../events/ML_FILES/UU_NLO")
@@ -50,6 +52,9 @@ if str(args.order) == 'nlo':
         nr_lhef = 6
 else:
     print(' You are parsing LO LHE events')
+
+# this is the number to divide sum of event weights to get correct normalisation
+N_tot = N_lhe * (nr_lhef-1)
 
 # access ml unpolarised events and various weights
 used_weights = {"UU", "LL", "LT", "TL", "TT"}
@@ -142,22 +147,22 @@ df["rLL"] = df["LL"] / df["UU"]
 #df["rLT"] = df["LT"] / df["UU"]
 #df["rTL"] = df["TL"] / df["UU"]
 #df["rTT"] = df["TT"] / df["UU"]
-df = df.drop(columns=["UU", "LL", "LT", "TL", "TT"]) # keep  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15"
+df = df.drop(columns=["LT", "TL", "TT"]) # keep  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15"
 print('size of the whole dataset (train + test) = ', len(df))
 
 # label events with basic hit-or-miss
-n_longit = 0
-err_longit = 0.0e+00
-df["label"] = 0
-x = np.random.rand(len(df))
-for i in range(0,len(df)):
-    err_longit += ((df["rLL"].iloc[i])*(1.0-(df["rLL"].iloc[i])))
-    if x[i] < df["rLL"].iloc[i]:
-        df.at[i,"label"] = 1
-        n_longit += 1
-#df = df.drop(columns=["rLT", "rTL", "rTT"])
-err_longit = err_longit**0.5/float(len(df))
-df = df.drop(columns=["label"])
+####   n_longit = 0
+####   err_longit = 0.0e+00
+####   df["label"] = 0
+####   x = np.random.rand(len(df))
+####   for i in range(0,len(df)):
+####       err_longit += ((df["rLL"].iloc[i])*(1.0-(df["rLL"].iloc[i])))
+####       if x[i] < df["rLL"].iloc[i]:
+####           df.at[i,"label"] = 1
+####           n_longit += 1
+####   #df = df.drop(columns=["rLT", "rTL", "rTT"])
+####   err_longit = err_longit**0.5/float(len(df))
+####   df = df.drop(columns=["label"])
 
 # test print
 print(df.tail(3))
@@ -176,7 +181,8 @@ elif args.features == 'ep':
 y = df["rLL"]   # target
 
 # split into training and testing datasets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=99)
+r_test = 1.0/3.0 
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=r_test, random_state=99)
 end2 = time.time()
 print("Elapsed (2nd step):", end2 - end1, "seconds. Now start training and testing steps...")
 
@@ -195,8 +201,6 @@ if args.model == 'all':
     print(' ... saved')
     end3 = time.time()
     print("Training step:", end3 - end2, "seconds. Now start testing...")
-
-
     
     # # tree-level bootstrap for model uncertainty
     # preds = np.array([tree.predict(X_test.values) for tree in model.estimators_])
@@ -223,19 +227,29 @@ if args.model == 'all':
     err_rfr = np.sqrt(np.sum(var_events))/float(len(y_pred))
 
 
+    z_uu = (df.loc[X_test.index, "UU"]).to_numpy()
+    z_ll = (df.loc[X_test.index, "LL"]).to_numpy()
+    w_pred = np.array([z_uu[i] * y_pred[i] for i in range(0,len(z_uu))])
+    w_err  = np.array([z_uu[i]**2 * var_events[i] for i in range(0,len(z_uu))])
+
+    
+#    print(' sigma(unp) = %.4f' % (1e+03*z_uu.sum()/(N_tot*r_test)))
+#    print(' sigma(LL) = %.4f' % (1e+03*z_ll.sum() /(N_tot*r_test)))
+
+    sigLLsim = np.array([(1e+3*sigma_ll[0]),(1e+3*sigma_ll[1])])
+    sigLLtrue = np.array([(1e+03*z_ll.sum() /(N_tot*r_test)),(1e+03*sigma_uu[1]*(y_test.sum()/len(y_test)))])
+    sigLLpred = np.array([(1e+03*w_pred.sum() /(N_tot*r_test)), (1e+03*w_err.sum())/(N_tot*r_test)])
+
     # RFR
     print(' total number of train events ............................ ', len(y_train))
     print(' total number of test events ............................. ', len(y_test))
-    print(' expected LL xsec (polarised simulation) ................. %.4f ' % (1e+3*sigma_ll[0]), ' +- %.4f (MC) fb' % (1e+3*sigma_ll[1]) )
-    print(' estimated LL xsec (true-rLL reweighting, test) .......... %.4f ' % (1e+3*sigma_uu[0]*(y_test.sum()/len(y_test))), ' +- %.4f (MC) fb' % (1e+3*sigma_uu[1]*(y_test.sum()/len(y_test))) )
-    print(' estimated LL xsec (true-rLL resampling, test+train) ..... %.4f ' % (1e+3*sigma_uu[0]*(float(n_longit)/float(len(df)))), ' +- %.4f (binomial) fb' % (1e+3*sigma_uu[0]*err_longit))
-    print(' estimated LL xsec (pred-rLL reweighting, test) .......... %.4f ' % (1e+3*sigma_uu[0]*(y_pred.sum()/len(y_test))), ' +- %.4f (regression model for out-of-bag train residuals) fb' % (1e+3*sigma_uu[0]* err_rfr))
+    print(' expected LL xsec (polarised simulation) ................. %.4f ' % (sigLLsim[0]), ' +- %.4f (MC) fb' % (sigLLsim[1]) )
+    print(' estimated LL xsec (true-rLL reweighting, test) .......... %.4f ' % (sigLLtrue[0]), ' +- %.4f (MC) fb' % (sigLLtrue[1]) )
+    print(' estimated LL xsec (pred-rLL reweighting, test) .......... %.4f ' % (sigLLpred[0]), ' +- %.4f (model) fb' % (sigLLpred[1]) )
     print("\nmse, correlation:", mse, corr, " \n")
 
-    sigLLsim = np.array([(1e+3*sigma_ll[0]),(1e+3*sigma_ll[1])])
-    sigLLtrue = np.array([(1e+3*sigma_uu[0]*(y_test.sum()/len(y_test))),(1e+3*sigma_uu[1]*(y_test.sum()/len(y_test)))])
-    sigLLpred = np.array([(1e+3*sigma_uu[0]*(y_pred.sum()/len(y_test))),(1e+3*sigma_uu[0]* err_rfr)])
-
+    #print(' estimated LL xsec (true-rLL resampling, test+train) ..... %.4f ' % (1e+3*sigma_uu[0]*(float(n_longit)/float(len(df)))), ' +- %.4f (binomial) fb' % (1e+3*sigma_uu[0]*err_longit))
+        
 
     result = permutation_importance(
         model,
@@ -276,11 +290,6 @@ if args.model == 'all':
     end5 = time.time()
 
 
-    # now plotting stuff
-    bins = 100 # for physical observables
-    norm_factor = 1e+03*sigma_uu[0]/float(len(y_pred))
-
-
     #fig, (ax1, ax3, ax4, ax2) = plt.subplots(4, 1, figsize=(7, 15))
     fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(11.5, 14))
     ax1 = axes[0, 0]
@@ -290,24 +299,42 @@ if args.model == 'all':
     ax5 = axes[2, 0]
     ax6 = axes[2, 1]
 
+
+
+    # z_uu = (df.loc[X_test.index, "UU"]).to_numpy()
+    # z_ll = (df.loc[X_test.index, "LL"]).to_numpy()
+    # w_pred = np.array([z_uu[i] * y_pred[i] for i in range(0,len(z_uu))])
+    # w_err  = np.array([z_uu[i]**2 * var_events[i] for i in range(0,len(z_uu))])
+
+    true_weights = z_ll*1e+03/(N_tot*r_test)
+    
+    # now plotting stuff
+    bins = 40 # for physical observables
+    norm_factor = 1e+03*sigma_uu[0]/float(len(y_pred))
+
     yep = df.loc[X_test.index, "kin_y_1"]
     ax1.set_title("Positron rapidity "+t_app)
-    hist_vals, bin_edges = np.histogram(yep, bins=bins, weights=y_pred)
+    hist_vals, bin_edges = np.histogram(yep, bins=bins, weights=w_pred)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
-    bin_indices = np.digitize(yep, bin_edges) - 1
-    bin_indices = np.clip(bin_indices, 0, bins-1)
+    bin_indices = np.clip(np.digitize(yep, bin_edges) - 1, 0, bins-1)
     bin_var = np.zeros(bins)
     bin_width = bin_edges[1] - bin_edges[0]
-
     for i, b in enumerate(bin_indices):
-        bin_var[b] += var_events[i]
+        bin_var[b] += w_err[i]
     bin_sigma = np.sqrt(bin_var)
-
-    ax1.hist(yep, weights=y_test*(norm_factor/bin_width), bins=bins, histtype="step", linewidth=1, color="blue", label="true")
+    ax1.hist(
+        yep,
+        weights=true_weights/bin_width,
+#        weights=y_test*(norm_factor/bin_width),
+        bins=bins, histtype="step",
+        linewidth=1,
+        color="blue",
+        label="true"
+    )
     ax1.fill_between(
         bin_centers,
-        (hist_vals - bin_sigma)*(norm_factor/bin_width),#_density,
-        (hist_vals + bin_sigma)*(norm_factor/bin_width),#_density,
+        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
         alpha=0.3,
         color='red',
         label="RFR pred.",
@@ -315,30 +342,27 @@ if args.model == 'all':
         step='mid'
     )
     ax1.set_xlim(-2.2,2.2)
-    #    ax1.hist(yep, weights=y_pred_2, bins=20, histtype="step", linewidth=1, color="green", label="pred. (LGBM)", density=True)
     ax1.legend(loc='best',   borderpad=0.5, framealpha=0.9, frameon=False, ncol = 1)
-
     ax1.set_xlabel("y$_{\\tt e^+}$")
     ax1.set_ylabel("d$\\sigma/$d$y_{\\tt e^+}$ [fb]")
-    #ax1.set_yscale("log")
 
 
     cth = df.loc[X_test.index, "cos_theta_p1_p12"]
     ax3.set_title("Positron decay angle "+t_app)
-    hist_vals, bin_edges = np.histogram(cth, bins=bins, weights=y_pred)
+    hist_vals, bin_edges = np.histogram(cth, bins=bins, weights=w_pred)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(cth, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
     bin_var = np.zeros(bins)
     for i, b in enumerate(bin_indices):
-        bin_var[b] += var_events[i]
+        bin_var[b] += w_err[i]
     bin_sigma = np.sqrt(bin_var)
     bin_width = bin_edges[1] - bin_edges[0]
-    ax3.hist(cth, weights=y_test*(norm_factor/bin_width), bins=bins, histtype="step", linewidth=1, color="blue", label="true")
+    ax3.hist(cth, weights=true_weights/bin_width, bins=bins, histtype="step", linewidth=1, color="blue", label="true")
     ax3.fill_between(
         bin_centers,
-        (hist_vals - bin_sigma)*(norm_factor/bin_width),#_density,
-        (hist_vals + bin_sigma)*(norm_factor/bin_width),#_density,
+        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
         alpha=0.3,
         color='red',
         label="RFR pred.",
@@ -367,20 +391,20 @@ if args.model == 'all':
 
     ptep = df.loc[X_test.index, "pt4l"]
     ax4.set_title("Four-lepton transverse momentum "+t_app)
-    hist_vals, bin_edges = np.histogram(ptep, range=(0.0,250.0), bins=bins, weights=y_pred)
+    hist_vals, bin_edges = np.histogram(ptep, range=(0.0,250.0), bins=bins, weights=w_pred)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(ptep, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
     bin_var = np.zeros(bins)
     bin_width = bin_edges[1] - bin_edges[0]
     for i, b in enumerate(bin_indices):
-        bin_var[b] += var_events[i]
+        bin_var[b] += w_err[i]
     bin_sigma = np.sqrt(bin_var)
-    ax4.hist(ptep, range=(0.0,250.0),  weights=y_test*(norm_factor/bin_width), bins=bins, histtype="step", linewidth=1, color="blue", label="true")
+    ax4.hist(ptep, range=(0.0,250.0),  weights=true_weights/bin_width, bins=bins, histtype="step", linewidth=1, color="blue", label="true")
     ax4.fill_between(
         bin_centers,
-        (hist_vals - bin_sigma)*(norm_factor/bin_width),#_density,
-        (hist_vals + bin_sigma)*(norm_factor/bin_width),#_density,
+        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
         alpha=0.3,
         color='red',
         label="RFR pred.",
