@@ -152,7 +152,7 @@ def r_plot(r_pred, r_true, weights, model_name="Model"):
     fig, axs = plt.subplots(1, 1)
 
     r_min, r_max = min(r_pred.min() ,r_true.min()), max(r_pred.max(), r_true.max())
-    bins = np.linspace(r_min, r_max, 51)
+    bins = np.linspace(r_min, r_max, 101)
 
     # Calculate bin widths for proper integration
     bin_widths = bins[1:] - bins[:-1]
@@ -386,6 +386,7 @@ def test_model_ZZ(model,
                        "cthep":         np.zeros(size),
                     #    "cthep_mll_cut5":  np.zeros(size),
                     #    "cthep_mll_cut10": np.zeros(size),
+                       "ptee":          np.zeros(size), # Transverse momentum of the Z(e+ e-) boson
                        "pt4l":          np.zeros(size),
                        "ptep":          np.zeros(size),
                        "yep":           np.zeros(size),
@@ -434,6 +435,7 @@ def test_model_ZZ(model,
 
             observable_dict["invmass_Z1"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = invmass_Z1.cpu().numpy()
             # observable_dict["invmass_Z2"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = invmass_Z2.cpu().numpy()
+            observable_dict["ptee"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta[:,0,:] + momenta[:,1,:]).cpu().numpy()
 
 
             ct1, ct2, ct3, ct4 = costhetastar(momenta)
@@ -468,7 +470,11 @@ def test_model_ZZ(model,
         plt.close(fig)
 
         # Invariant mass Z1 comparison plot
-        fig, _ = comparison_plots(observable_dict, "invmass_Z1", histogram_data["mee"], model_name=model_name, powheg_histogram_runs = [fitted_polarisation, ])
+        fig, _ = comparison_plots(observable_dict, "invmass_Z1", histogram_data["mee"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
+        pdf.savefig(fig)
+        plt.close(fig)
+        # pT of Z1 comparison plot
+        fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
         pdf.savefig(fig)
         plt.close(fig)
 
@@ -494,7 +500,7 @@ def test_model_ZZ(model,
         plt.close(fig)
 
         # Rapidity of positron
-        fig, _ = comparison_plots(observable_dict, "yep", histogram_data["yep"], model_name=model_name, powheg_histogram_runs = [fitted_polarisation, ])
+        fig, _ = comparison_plots(observable_dict, "yep", histogram_data["yep"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
         pdf.savefig(fig)
         plt.close(fig)
 
