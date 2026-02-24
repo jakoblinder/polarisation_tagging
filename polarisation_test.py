@@ -638,7 +638,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
 
     return test_loss
 
-def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, mlfiles, seed: int, test_dataset, split_ratios, batch_size=512, n_workers=0, n_generated_events: int = int(1e7), input_choice:str=None):
+def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, mlfiles, seed: int, test_dataset, split_ratios, polarisation:str = "LL", batch_size=512, n_workers=0, n_generated_events: int = int(1e7), input_choice:str=None):
     start_time = time.time()
 
     torch.manual_seed(seed)
@@ -646,7 +646,7 @@ def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, m
 
     if not use_zjet:
         # ZZ case
-        labels = ["LL/UU", "UU"]
+        labels = [f"{polarisation}/UU", "UU"]
         dataset_untransformed = MLEventsDataset(mlfiles,
                                 labels = labels,
                                 cache_events=True,
@@ -688,7 +688,7 @@ def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, m
     test_loss_fn = torch.nn.MSELoss()
 
     if not use_zjet:
-        test_loss = test_model_ZZ(model, model_dir, histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, split_ratios[2] * n_generated_events, model_name=model_name, input_choice=input_choice)
+        test_loss = test_model_ZZ(model, model_dir, histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, split_ratios[2] * n_generated_events, model_name=model_name, fitted_polarisation=polarisation, input_choice=input_choice)
     else:
         test_loss = test_model_Zjet(model, model_dir, histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, model_name=model_name)
 
@@ -719,7 +719,8 @@ if __name__ == "__main__":
     parser.add_argument("--n_generated_events", type=lambda x: int(float(x)),       action="store", default=int(1e7), help="Number of generated events for comparison (1e7 for LO and LOwS and 5e6 for NLO).")
     parser.add_argument("--useZjet",          dest="use_zjet",  action="store_true",          help="Use Z+jet dataset instead of default.")
     parser.add_argument("--standardise",      dest="standardise", action="store_true",        help="Enable standardisation of features over the whole dataset (default).")
-    parser.add_argument("--input_choice",     type=str,   action="store", default=None,    help="Choice of input features. Options: Momenta, jan2026.")
+    parser.add_argument("--input_choice",     type=str,         action="store", default=None, help="Choice of input features. Options: Momenta, jan2026.")
+    parser.add_argument("--polarisation",     type=str,         action="store", default="LL", help="Specify which polarisation to train on (Only relevant for ZZ). Options: LL, LT, TL, TT, UL, LU.")
 
     # Create a mutually exclusive group for specifying the reference frame
     frame_group = parser.add_mutually_exclusive_group()
@@ -790,7 +791,7 @@ if __name__ == "__main__":
             else:
                 trafo = januar2026_input_choice
 
-        labels = ["LL/UU", "UU"]
+        labels = [f"{arg.polarisation}/UU", "UU"]
         dataset = MLEventsDataset(files,
                                 labels = labels,
                                 transform=trafo,

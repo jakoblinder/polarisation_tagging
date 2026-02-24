@@ -58,6 +58,7 @@ parser.add_argument("--input_choice",         type=str,   action="store", defaul
 parser.add_argument("--n_generated_events",   type=lambda x: int(float(x)),       action="store", default=int(1e7), help="Number of generated events for comparison (1e7 for LO and LOwS and 5e6 for NLO).")
 parser.add_argument("--dont_test",            dest="do_test",      action="store_false",   help="Run the test script after training with the best model weights found during training.")
 parser.add_argument("--penalties", nargs='*', type=str,   action="store", default=[],      help="Specify which penalty terms to include in the loss function. Options: cross_section, ZdecayAngles.")
+parser.add_argument("--polarisation",         type=str,   action="store", default="LL",    help="Specify which polarisation to train on (Only relevant for ZZ). Options: LL, LT, TL, TT, UL, LU.")
 
 # Create a mutually exclusive group for specifying the reference frame
 frame_group = parser.add_mutually_exclusive_group()
@@ -155,7 +156,7 @@ if not arg.use_zjet:
             trafo = januar2026_input_choice
 
     dataset = MLEventsDataset(files,
-                            labels = ["LL/UU", "UU"],
+                            labels = [f"{arg.polarisation}/UU", "UU"],
                             transform=trafo,
                             #   target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
                             cache_events=arg.cache_events,  # Caching enabled
@@ -510,25 +511,25 @@ except Exception as e:
 # model = FFNN_BatchNorm(input_dim=input_dim, width= 100) # we do not specify ``weights``, i.e. create untrained model
 # model.load_state_dict(torch.load(f"{model_name}_model_weights_best.pt", weights_only=True))
 
-model.eval()
+# model.eval()
 
-if not arg.use_zjet and not (arg.input_choice in ["jan2026",]):
-    test_tensor = torch.tensor([ 1.445418701E+01, -2.611547450E+00,  8.079240742E+01,  8.211672667E+01,
-                                4.121475591E+00, -3.706903553E+01, -1.028783725E+01,  3.869030307E+01,
-                                2.206750721E+01, -9.725720987E+00,  1.263696046E+01,  2.722604071E+01,
-                                -4.064316981E+01,  4.940630397E+01, -3.490849930E+01,  7.287971904E+01])
+# if not arg.use_zjet and not (arg.input_choice in ["jan2026",]):
+#     test_tensor = torch.tensor([ 1.445418701E+01, -2.611547450E+00,  8.079240742E+01,  8.211672667E+01,
+#                                 4.121475591E+00, -3.706903553E+01, -1.028783725E+01,  3.869030307E+01,
+#                                 2.206750721E+01, -9.725720987E+00,  1.263696046E+01,  2.722604071E+01,
+#                                 -4.064316981E+01,  4.940630397E+01, -3.490849930E+01,  7.287971904E+01])
 
-    res = model(test_tensor.unsqueeze(0).to(device))
-    print(f"res = {res.item():.10e}")
-    print(f"Expected LL/ UU weight: {0.885049987E-03 / 0.248160008E-01:.10e}")
-elif not (arg.input_choice in ["jan2026",]):
-    test_tensor = torch.tensor([-12.130391188000001,  34.443724807000002, 262.44532550000002, 264.97370709000000,
-                                 59.635322049999999, -22.605515205000000, 283.59799611000000, 290.68058819999999,
-                                -47.504930862000002, -11.838209601000001, 171.64348498999999, 178.48906858000001])
+#     res = model(test_tensor.unsqueeze(0).to(device))
+#     print(f"res = {res.item():.10e}")
+#     print(f"Expected LL/ UU weight: {0.885049987E-03 / 0.248160008E-01:.10e}")
+# elif not (arg.input_choice in ["jan2026",]):
+#     test_tensor = torch.tensor([-12.130391188000001,  34.443724807000002, 262.44532550000002, 264.97370709000000,
+#                                  59.635322049999999, -22.605515205000000, 283.59799611000000, 290.68058819999999,
+#                                 -47.504930862000002, -11.838209601000001, 171.64348498999999, 178.48906858000001])
 
-    res = model(test_tensor.unsqueeze(0).to(device))
-    print(f"res = {res.item():.10e}")
-    print(f"Expected LL/ UU weight: {0.91735652950215585:.10e}")
+#     res = model(test_tensor.unsqueeze(0).to(device))
+#     print(f"res = {res.item():.10e}")
+#     print(f"Expected LL/ UU weight: {0.91735652950215585:.10e}")
 
 end_time = time.time()
 elapsed_time = end_time - start_time
@@ -536,4 +537,4 @@ print(f"\nTotal execution time: {elapsed_time:.2f} seconds")
 
 
 if arg.do_test:
-    do_test_run(device, arg.use_zjet, model, model_name, model_dir, files[0].parent, files, seed, test_dataset, split_ratios, batch_size=arg.batch_size, n_workers=arg.nworkers, n_generated_events=arg.n_generated_events, input_choice=arg.input_choice)
+    do_test_run(device, arg.use_zjet, model, model_name, model_dir, files[0].parent, files, seed, test_dataset, split_ratios, arg.polarisation, batch_size=arg.batch_size, n_workers=arg.nworkers, n_generated_events=arg.n_generated_events, input_choice=arg.input_choice)
