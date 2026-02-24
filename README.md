@@ -46,25 +46,27 @@ The dataset expects ML events files with the following structure:
  particle_3_momentum_data
  particle_4_momentum_data
 <rwgt>
-<weight id='UU'> weight_value </weight>
-<weight id='LL'> weight_value </weight>
-<weight id='LT'> weight_value </weight>
-<weight id='TL'> weight_value </weight>
-<weight id='TT'> weight_value </weight>
-<weight id='LL-11'> weight_value </weight>
-<weight id='LL-12'> weight_value </weight>
-<weight id='LL-21'> weight_value </weight>
-<weight id='LL-22'> weight_value </weight>
-<weight id='LL-15'> weight_value </weight>
-<weight id='LL-51'> weight_value </weight>
-<weight id='LL-55'> weight_value </weight>
-<weight id='UU-11'> weight_value </weight>
-<weight id='UU-12'> weight_value </weight>
-<weight id='UU-21'> weight_value </weight>
-<weight id='UU-22'> weight_value </weight>
-<weight id='UU-15'> weight_value </weight>
-<weight id='UU-51'> weight_value </weight>
-<weight id='UU-55'> weight_value </weight>
+<weight id='UU'>    weight_value </weight>  #  W8
+<weight id='LL'>    weight_value </weight>  #  W9
+<weight id='LT'>    weight_value </weight>  # W10
+<weight id='TL'>    weight_value </weight>  # W11
+<weight id='TT'>    weight_value </weight>  # W12
+<weight id='LU'>    weight_value </weight>  # W13
+<weight id='UL'>    weight_value </weight>  # W14
+<weight id='LL-11'> weight_value </weight>  # W15
+<weight id='LL-12'> weight_value </weight>  # W16
+<weight id='LL-21'> weight_value </weight>  # W17
+<weight id='LL-22'> weight_value </weight>  # W18
+<weight id='LL-15'> weight_value </weight>  # W19
+<weight id='LL-51'> weight_value </weight>  # W20
+<weight id='LL-55'> weight_value </weight>  # W21
+<weight id='UU-11'> weight_value </weight>  # W22
+<weight id='UU-12'> weight_value </weight>  # W23
+<weight id='UU-21'> weight_value </weight>  # W24
+<weight id='UU-22'> weight_value </weight>  # W25
+<weight id='UU-15'> weight_value </weight>  # W26
+<weight id='UU-51'> weight_value </weight>  # W27
+<weight id='UU-55'> weight_value </weight>  # W28
 </rwgt>
 </event>
 </MLEvents>
@@ -72,9 +74,9 @@ The dataset expects ML events files with the following structure:
 The indices in for example 'LL-12' denote the scale variation renscfact=1 & facscfact=2, whereas for example 'LL-51' corresponds to renscfact=0.5 & facscfact=1. ('LL' and 'LL-11' denote the same weight.)
 
 **Event files:**
-The event files for this project are stored on Nextcloud: [Download ZIP (Updated on 20.11.2025)](https://nextcloud.mpp.mpg.de/nextcloud/index.php/s/fJXHsAt2CF2Qqwy). Note that the gziped file has a size of 5 GB and extends to ~25 GB.
+The event files for this project are stored on Nextcloud: [Download ZIP (Updated on 24.02.2026)](). Note that the gziped file has a size of 14 GB and extends to ~67 GB.
 
-They contain a directory for LO (UU_LO), for LO including the radiation from the POWHEG Sudakov (UU_LOwS) and at NLO (UU_NLO). In each directory there are the histograms done at lhe level (`pwgLHEF_analysis-mean-W*.top`) and after showering with only qcd radiation being activated (`pwgoutput_py8_histos-mean-W*.top`). The definition of the weights can be found in the `powheg.input-save` file.
+They contain a directory for LO (UU_LO), for LO including the radiation from the POWHEG Sudakov (UU_LOwS) and at NLO (UU_NLO). In each directory there are the histograms done at lhe level (`pwgLHEF_analysis-mean-W*.top`) and after showering with only qcd radiation being activated (`pwgoutput_py8_histos-mean-W*.top`). The definition of the weights can be found in the `powheg.input-save` file. The first 7 weights correspond to the usual scale variation. Thus, for example, the UU lhe analysis histogram plots are found in `pwgLHEF_analysis-mean-W*.top` as indicate with the by the comment in the above block.
 
 The filtered events can be found in `pwgevents-????.ml` coming from POWHEG only, i.e. after stage 4. `output_shower_events-????.ml` are the filtered events created from the showered events.
 The events are part of the fiducial phase space and are written in the form `px`, `py`, `pz`, `E`.
@@ -83,11 +85,11 @@ The events are part of the fiducial phase space and are written in the form `px`
 
 The `.ml` files provided include already fiducial cuts according to the phase space defined in [TODO: Add reference.]. Thus, in order to get the correct cross section, for example, for the unpolarised cross section $\sigma_{\mathrm{UU}}$, the weight of each event coming from all `*.ml` needs to be summed and devided by the number of simulated events before applying the cuts. This number can be infered by `numevts` parameter ( = #number of events per file) in the respective `powheg.input-save` file and the number of seeds for the specific run. The number of generated events in total and for each file is:
 
-| File      | #seeds |         `numevts` | total number of simulated events |
-|:----------|-------:|-------------------|----------------------------------|
-| `UU_LO`   |    100 |          $10^{5}$ |                $10^{7}$          |
-| `UU_LOwS` |    100 |          $10^{5}$ |                $10^{7}$          |
-| `UU_NLO`  |    100 |  $5 \cdot 10^{4}$ |        $5 \cdot 10^{6}$          |
+| File      | #seeds   |         `numevts` | total number of simulated events |
+|:----------|---------:|-------------------|----------------------------------|
+| `UU_LO`   |    $500$ |  $4 \cdot 10^{4}$ |        $2 \cdot 10^{7}$          |
+| `UU_LOwS` |    $500$ |  $4 \cdot 10^{4}$ |        $2 \cdot 10^{7}$          |
+| `UU_NLO`  |   $2000$ |          $10^{4}$ |        $2 \cdot 10^{7}$          |
 
 **Other potentially interesting files**
 Some results where the models are test on both datasets, i.e. for ZZ and Z+jet can be found in [this (Updated on 13.01.2026)](https://nextcloud.mpp.mpg.de/nextcloud/index.php/s/CtQrZamtorfWYdC) directory. It also includes the above mentioned event files for ZZ. Interesting plots are for each run the `test_histograms.pdf` and potentially the `<model name>_training_history.pdf`, showing some distributions done on the test data set and the loss behaviour during the training of the models.
