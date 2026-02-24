@@ -174,16 +174,19 @@ print(df.tail(3))
 ##X = df[["cos_theta_p1_p12", "cos_theta_p3_p34"]]  # very few features
 #X = df[["ptZ1", "ptZ2", "yZ1", "yZ2", "phiZ1", "phiZ2", "cos_theta_p1_p12", "cos_theta_p3_p34"]]  # few features
 
-X = df[[]]
-if args.features == 'ct':
-    X = df[["ptZ1", "ptZ2", "yZ1", "yZ2", "cos_theta_p1_p12", "cos_theta_p3_p34"]]  # few features (including decay angles)
-elif args.features == 'ep':
-    X = df[["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15"]]  # {px, py, pz, E} basis of inut features, as in NN
+#X = df[[]]
+#if args.features == 'ct':
+#elif args.features == 'ep':
+
+X = df[["ptZ1", "ptZ2", "yZ1", "yZ2", "cos_theta_p1_p12", "cos_theta_p3_p34"]]  # few features (including decay angles)
+X2 = df[["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15"]]  # {px, py, pz, E} basis of inut features, as in NN
 y = df["rLL"]   # target
 
 # split into training and testing datasets
 r_test = 1.0/3.0 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=r_test, random_state=99)
+X2_train, X2_test, y2_train, y2_test = train_test_split(X2, y, test_size=r_test, random_state=99)
+
 end2 = time.time()
 print("Elapsed (2nd step):", end2 - end1, "seconds. Now start training and testing steps...")
 
@@ -196,9 +199,12 @@ if args.model == 'all':
     # define and train model
     model = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=99, n_jobs=40, oob_score=True, bootstrap=True) # parallelise over 40 workers (~12 trees per worker)
     model.fit(X_train, y_train)
+    model2 = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=99, n_jobs=40, oob_score=True, bootstrap=True) # parallelise over 40 workers (~12 trees per worker)
+    model2.fit(X2_train, y2_train)
     
-    print(' now save model ... ')
-    joblib.dump({"model": model, "features": X.columns.tolist()},"trained_RFR_"+ str(args.order) +"_train_events_"+ str(len(X_train)) +"_basis_" + str(args.features) + ".joblib")
+    print(' now save models ... ')
+    joblib.dump({"model": model, "features": X.columns.tolist()},"trained_RFR_"+ str(args.order) +"_train_events_"+ str(len(X_train)) +"_basis_ct.joblib")
+    joblib.dump({"model2": model2, "features": X2.columns.tolist()},"trained_RFR_"+ str(args.order) +"_train_events_"+ str(len(X2_train)) +"_basis_ep.joblib")
     print(' ... saved')
     end3 = time.time()
     print("Training step:", end3 - end2, "seconds. Now start testing...")
@@ -217,21 +223,31 @@ if args.model == 'all':
 
     # testing
     #y_pred = model.predict(X_test) # predict, allowing for out-of-range values
+
     y_pred = np.clip(model.predict(X_test), 0, 1) # predict, avoiding out-of-range values
+    y2_pred = np.clip(model2.predict(X2_test), 0, 1) # predict, avoiding out-of-range values
+
     mse = mean_squared_error(y_test, y_pred)
     corr = np.corrcoef(y_test, y_pred)[0,1]
+
 
     resid = y_train - model.oob_prediction_ # resid = y_train - model.predict(X_train) would bias the training residuals
     var_model = lgb.LGBMRegressor(objective="mse", force_row_wise=True, verbose=-1)
     var_model.fit(X_train, resid**2)
     var_events = np.clip(var_model.predict(X_test), 0, None)
-    err_rfr = np.sqrt(np.sum(var_events))/float(len(y_pred))
 
+    resid2 = y2_train - model2.oob_prediction_ # resid = y_train - model.predict(X_train) would bias the training residuals
+    var_model2 = lgb.LGBMRegressor(objective="mse", force_row_wise=True, verbose=-1)
+    var_model2.fit(X2_train, resid2**2)
+    var_events2 = np.clip(var_model2.predict(X2_test), 0, None)
 
     z_uu = (df.loc[X_test.index, "UU"]).to_numpy()
+    z_uu2 = (df.loc[X2_test.index, "UU"]).to_numpy()
     z_ll = (df.loc[X_test.index, "LL"]).to_numpy()
     w_pred = np.array([z_uu[i] * y_pred[i] for i in range(0,len(z_uu))])
+    w_pred2 = np.array([z_uu2[i] * y2_pred[i] for i in range(0,len(z_uu2))])
     w_err  = np.array([z_uu[i]**2 * var_events[i] for i in range(0,len(z_uu))])
+    w_err2  = np.array([z_uu2[i]**2 * var_events2[i] for i in range(0,len(z_uu2))])
 
     
 #    print(' sigma(unp) = %.4f' % (1e+03*z_uu.sum()/(N_tot*r_test)))
@@ -240,14 +256,16 @@ if args.model == 'all':
     sigLLsim = np.array([(1e+3*sigma_ll[0]),(1e+3*sigma_ll[1])])
     sigLLtrue = np.array([(1e+03*z_ll.sum() /(N_tot*r_test)),(1e+03*sigma_uu[1]*(y_test.sum()/len(y_test)))])
     sigLLpred = np.array([(1e+03*w_pred.sum() /(N_tot*r_test)), (1e+03*np.sqrt(w_err.sum()))/(N_tot*r_test)])
+    sigLLpred2 = np.array([(1e+03*w_pred2.sum() /(N_tot*r_test)), (1e+03*np.sqrt(w_err2.sum()))/(N_tot*r_test)])
 
     # RFR
     print(' total number of train events ............................ ', len(y_train))
     print(' total number of test events ............................. ', len(y_test))
     print(' expected LL xsec (polarised simulation) ................. %.4f ' % (sigLLsim[0]), ' +- %.4f (MC) fb' % (sigLLsim[1]) )
     print(' estimated LL xsec (true-rLL reweighting, test) .......... %.4f ' % (sigLLtrue[0]), ' +- %.4f (MC) fb' % (sigLLtrue[1]) )
-    print(' estimated LL xsec (pred-rLL reweighting, test) .......... %.4f ' % (sigLLpred[0]), ' +- %.4f (model) fb' % (sigLLpred[1]) )
-    print("\nmse, correlation:", mse, corr, " \n")
+    print(' estimated LL xsec (pred-rLL reweighting, test, ct) ...... %.4f ' % (sigLLpred[0]), ' +- %.4f (model) fb' % (sigLLpred[1]) )
+    print(' estimated LL xsec (pred-rLL reweighting, test, ep) ...... %.4f ' % (sigLLpred2[0]), ' +- %.4f (model) fb' % (sigLLpred2[1]) )
+    print("\nmse, correlation (ct):", mse, corr, " \n")
 
     #print(' estimated LL xsec (true-rLL resampling, test+train) ..... %.4f ' % (1e+3*sigma_uu[0]*(float(n_longit)/float(len(df)))), ' +- %.4f (binomial) fb' % (1e+3*sigma_uu[0]*err_longit))
         
@@ -263,6 +281,18 @@ if args.model == 'all':
     importances = result.importances_mean
     std = result.importances_std
     indices = np.argsort(importances)[::-1]
+
+    result2 = permutation_importance(
+        model2,
+        X2_test,
+        y2_test,
+        n_repeats=10,
+        random_state=99,
+        n_jobs=40
+    )
+    importances2 = result2.importances_mean
+    std2 = result2.importances_std
+    indices2 = np.argsort(importances2)[::-1]
 
 
     end4 = time.time()
@@ -314,6 +344,7 @@ if args.model == 'all':
     norm_factor = 1e+03*sigma_uu[0]/float(len(y_pred))
 
     yep = df.loc[X_test.index, "kin_y_1"]
+    yep2 = df.loc[X2_test.index, "kin_y_1"]
     ax1.set_title("Positron rapidity "+t_app)
     hist_vals, bin_edges = np.histogram(yep, bins=bins, weights=w_pred)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
@@ -332,13 +363,24 @@ if args.model == 'all':
         color="blue",
         label="true"
     )
+
+    ax1.hist(
+        yep2,
+        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        bins=bins, histtype="step",
+        linewidth=1.2,
+        color="green",
+        label="RFR$_{\\tt ep}$"
+    )
+    
+
     ax1.fill_between(
         bin_centers,
         (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
         (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
         alpha=0.3,
         color='red',
-        label="RFR pred.",
+        label="RFR$_{\\tt ct}$",
         edgecolor='red', facecolor='red',
         step='mid'
     )
@@ -349,6 +391,7 @@ if args.model == 'all':
 
 
     cth = df.loc[X_test.index, "cos_theta_p1_p12"]
+    cth2 = df.loc[X2_test.index, "cos_theta_p1_p12"]
     ax3.set_title("Positron decay angle "+t_app)
     hist_vals, bin_edges = np.histogram(cth, bins=bins, weights=w_pred)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
@@ -360,14 +403,25 @@ if args.model == 'all':
     bin_sigma = np.sqrt(bin_var)
     bin_width = bin_edges[1] - bin_edges[0]
     ax3.hist(cth, weights=true_weights/bin_width, bins=bins, histtype="step", linewidth=1, color="blue", label="true")
+
+    ax3.hist(
+        cth2,
+        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        bins=bins, histtype="step",
+        linewidth=1.2,
+        color="green",
+        label="RFR$_{\\tt ep}$"
+    )
+    
     ax3.fill_between(
         bin_centers,
         (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
         (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
         alpha=0.3,
         color='red',
-        label="RFR pred.",
-        edgecolor='red', facecolor='red',
+        label="RFR$_{\\tt ct}$",
+        edgecolor='red',
+        facecolor='red',
         step='mid'
     )
 #    ax3.hist(cth, weights=y_pred, bins=20, histtype="step", linewidth=1, color="red", label="RFR pred.", density=True)
@@ -378,8 +432,9 @@ if args.model == 'all':
     ax3.set_ylabel("d$\\sigma/$dcos$\\theta^*_{\\tt e^+}$ [fb]")
 
     ax2.set_title("$r_{\\tt LL}$ label "+t_app)
-    ax2.hist(y_test, range=(-0.05, 0.4), bins=40, histtype="step", linewidth=1, color="blue", label="true", density=True)
-    ax2.hist(y_pred, range=(-0.05, 0.4), bins=40, histtype="step", linewidth=1, color="red", label="RFR pred.", density=True)
+    ax2.hist(y_test, range=(-0.02, 0.4), bins=40, histtype="step", linewidth=1, color="blue", label="true", density=True)
+    ax2.hist(y_pred, range=(-0.02, 0.4), bins=40, histtype="step", linewidth=1, color="red", label="RFR$_{\\tt ct}$", density=True)
+    ax2.hist(y2_pred, range=(-0.02, 0.4), bins=40, histtype="step", linewidth=1, color="green", label="RFR$_{\\tt ep}$", density=True)
 #    ax2.hist(y_pred_2, range=(-0.05, 0.4), bins=40, histtype="step", linewidth=1, color="green", label="pred. (LGBM)", density=True)
     ax2.legend(loc='best',   borderpad=0.5, framealpha=0.9, frameon=False, ncol = 1)
     ax2.set_xlabel("r$_{\\tt LL}$")
@@ -388,9 +443,11 @@ if args.model == 'all':
 
     ax2.text(0.6, 0.50, f"$\\sigma$(LL, MC sim)   = {sigLLsim[0]:.4f}({(sigLLsim[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
     ax2.text(0.6, 0.46, f"$\\sigma$(LL, true rLL) = {sigLLtrue[0]:.4f}({(sigLLtrue[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
-    ax2.text(0.6, 0.42, f"$\\sigma$(LL, RFR pred) = {sigLLpred[0]:.4f}({(sigLLpred[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
+    ax2.text(0.6, 0.42, f"$\\sigma$(LL, RFR-ct) = {sigLLpred[0]:.4f}({(sigLLpred[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
+    ax2.text(0.6, 0.38, f"$\\sigma$(LL, RFR-ep) = {sigLLpred2[0]:.4f}({(sigLLpred2[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
 
     ptep = df.loc[X_test.index, "pt4l"]
+    ptep2 = df.loc[X2_test.index, "pt4l"]
     ax4.set_title("Four-lepton transverse momentum "+t_app)
     hist_vals, bin_edges = np.histogram(ptep, range=(0.0,250.0), bins=bins, weights=w_pred)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
@@ -402,14 +459,25 @@ if args.model == 'all':
         bin_var[b] += w_err[i]
     bin_sigma = np.sqrt(bin_var)
     ax4.hist(ptep, range=(0.0,250.0),  weights=true_weights/bin_width, bins=bins, histtype="step", linewidth=1, color="blue", label="true")
+    ax4.hist(
+        ptep2,
+        range=(0.0,250.0), 
+        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        bins=bins, histtype="step",
+        linewidth=1.2,
+        color="green",
+        label="RFR$_{\\tt ep}$"
+    )
+    
     ax4.fill_between(
         bin_centers,
         (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
         (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
         alpha=0.3,
         color='red',
-        label="RFR pred.",
-        edgecolor='red', facecolor='red',
+        label="RFR$_{\\tt ct}$",
+        edgecolor='red',
+        facecolor='red',
         step='mid'
     )
     ax4.set_xlim(0.5,249.5)
@@ -476,48 +544,50 @@ if args.model == 'all':
 
 
     
-    ax5.set_title("Permutation importance "+t_app)
+    ax5.set_title("Permutation importance for RFR$_{\\tt ct}$ "+t_app)
     ax5.bar(range(len(importances)), importances[indices], yerr=0, color="red", alpha = 0.35) #, yerr=std[indices])
-    if args.features == 'ct':
-        latex_labels = [
-            r"cos$\theta^*_{\mathrm{e}^+}$",
-            r"cos$\theta^*_{\mu^+}$",
-            r"$p_{\mathrm{T}, e^+e^-}$",
-            r"$p_{\mathrm{T}, \mu^+\mu^-}$",
-            r"$y_{\mathrm{ e}^+\mathrm{e}^-}$",
-            r"$y_{\mu^+\mu^-}$"
-            #r"$\phi_{\mathrm{ e}^+\mathrm{e}^-}$",
-            #r"$\phi_{\mu^+\mu^-}$"
-        ]
-        ax5.set_xticks(range(len(importances)),
+    latex_labels = [
+        r"cos$\theta^*_{\mathrm{e}^+}$",
+        r"cos$\theta^*_{\mu^+}$",
+        r"$p_{\mathrm{T}, e^+e^-}$",
+        r"$p_{\mathrm{T}, \mu^+\mu^-}$",
+        r"$y_{\mathrm{ e}^+\mathrm{e}^-}$",
+        r"$y_{\mu^+\mu^-}$"
+        #r"$\phi_{\mathrm{ e}^+\mathrm{e}^-}$",
+        #r"$\phi_{\mu^+\mu^-}$"
+    ]
+    ax5.set_xticks(range(len(importances)),
                        latex_labels,
-                       rotation=45,
-                       ha="right")
-    elif args.features == 'ep':
-        ax5.set_xticks(range(len(importances)),
-                       X_test.columns[indices],
                        rotation=45,
                        ha="right")
     ax5.set_ylabel("Decrease in performance")
 
+    ax6.set_title("Permutation importance for RFR$_{\\tt ep}$ "+t_app)
+    ax6.bar(range(len(importances)), importances[indices], yerr=0, color="red", alpha = 0.35) #, yerr=std[indices])
+    ax6.set_xticks(range(len(importances2)),
+                   X2_test.columns[indices2],
+                   rotation=45,
+                   ha="right")
+    ax6.set_ylabel("Decrease in performance")
 
-    ax6.set_title("True vs pred. $r_{\\tt LL}$ labels "+t_app)
-    #dr = y_pred - y_test
-    #ax6.hist2d(y_test, y_pred, bins=100, cmap="viridis")
-    #ax6.set_colorbar(label="events")
 
-    #ax6.scatter(y_test, y_pred, s=5, alpha=0.2, color='red')
-    hb = ax6.hexbin(y_test, y_pred, gridsize=40, cmap="viridis", mincnt=1, norm=colors.LogNorm())
-    plt.colorbar(hb, ax=ax6, label="events")
-    #ax6.axhline(0, color='blue', linestyle='--', linewidth=0.85)
-    ax6.set_ylabel("RFR pred.")
-    ax6.set_xlabel("true ")
-    ax6.set_xlim(-0.1,0.4)
-    ax6.set_ylim(-0.1,0.4)
-    ax6.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], "r--", linewidth=1)
+# uncomm for scatter plot #     ax6.set_title("True vs pred. $r_{\\tt LL}$ labels "+t_app)
+# uncomm for scatter plot #     #dr = y_pred - y_test
+# uncomm for scatter plot #     #ax6.hist2d(y_test, y_pred, bins=100, cmap="viridis")
+# uncomm for scatter plot #     #ax6.set_colorbar(label="events")
+# uncomm for scatter plot # 
+# uncomm for scatter plot #     #ax6.scatter(y_test, y_pred, s=5, alpha=0.2, color='red')
+# uncomm for scatter plot #     hb = ax6.hexbin(y_test, y_pred, gridsize=40, cmap="viridis", mincnt=1, norm=colors.LogNorm())
+# uncomm for scatter plot #     plt.colorbar(hb, ax=ax6, label="events")
+# uncomm for scatter plot #     #ax6.axhline(0, color='blue', linestyle='--', linewidth=0.85)
+# uncomm for scatter plot #     ax6.set_ylabel("RFR pred.")
+# uncomm for scatter plot #     ax6.set_xlabel("true ")
+# uncomm for scatter plot #     ax6.set_xlim(-0.1,0.4)
+# uncomm for scatter plot #     ax6.set_ylim(-0.1,0.4)
+# uncomm for scatter plot #     ax6.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], "r--", linewidth=1)
 
     plt.tight_layout()
-    fig.savefig("test_random_forest_regressor_"+ str(args.order) +"_test_events_" + str(len(y_pred)) + "_basis_" + str(args.features) + ".pdf")
+    fig.savefig("test_random_forest_regressor_"+ str(args.order) +"_test_events_" + str(len(y_pred)) + "_basis_both.pdf")
     plt.close()
 
 
