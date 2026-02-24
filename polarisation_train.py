@@ -191,6 +191,8 @@ n_workers     = arg.nworkers       # Use multiple (default 4) workers for DataLo
 generator = torch.Generator().manual_seed(seed)
 
 split_ratios = [0.6, 0.2, 0.2]  # 60% train, 20% validation, 20% test
+# split_ratios = [0.02, 0.02, 0.96]  # 2% train, 2% validation, 96% test
+# split_ratios = [0.005, 0.005, 0.99]  # 0.5% train, 0.5% validation, 99% test
 train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(dataset, split_ratios, generator=generator)
 
 print(f"Train dataset size:      {len(train_dataset)}")
@@ -243,16 +245,21 @@ if test_standardisation:
         batch_size=len(train_dataset),
         shuffle=False,
         num_workers=0,
-        pin_memory=True
+        pin_memory=False
     )
 
-    features, _ = next(iter(fulldataloader))
-    overall_mean   = features.mean(dim=0)
-    overall_stddev = features.std(dim=0)
-    del fulldataloader
+    features, labels = next(iter(fulldataloader))
+    features_overall_mean   = features.mean(dim=0)
+    print(f"\nFeature means over training set:\n{features_overall_mean}")
+    features_overall_stddev = features.std(dim=0)
+    print(f"\nFeature stddevs over training set:\n{features_overall_stddev}")
 
-    print(f"\nFeature means over training set:\n{overall_mean}")
-    print(f"\nFeature stddevs over training set:\n{overall_stddev}")
+    # TODO: Calculate correct mean by multiplying for ZZ with UU xsec before averaging.
+    xsec_estimate  = labels.sum(dim=0)
+    xsec_estimate /= (split_ratios[0] * arg.n_generated_events)
+    print(f"\nxSec estimate over training set:\n{xsec_estimate}")
+
+    del fulldataloader
 
     sys.exit(0)
 
