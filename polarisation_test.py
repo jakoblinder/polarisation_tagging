@@ -193,7 +193,7 @@ def r_plot(r_pred, r_true, weights, model_name="Model"):
     fig.tight_layout()
     return fig, axs
 
-def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:dict = None, log_scale=True, nbins=50, model_name="Model", powheg_histogram_runs: list = ["LL",]):
+def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:dict = None, log_scale=True, nbins=50, model_name="Model", powheg_histogram_runs: list = ["LL",], *args, **kwargs):
     """
     Create a comparison plot of predicted vs true labels for a given observable.
     This function generates a step histogram plot comparing predicted labels, true labels,
@@ -213,6 +213,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
             - 'values': Histogram values for comparison
         log_scale (bool, optional): Whether to use logarithmic scaling for the y-axis. Default is True.
         nbins (int, optional): Number of bins to use if powheg_histogram is not provided. Default is 50.
+        plotrLL (bool, optional): Whether to plot for directly r_LL distributions instead of the reweighted cross section. Default is False.
     Returns:
         tuple: Figure and axes objects (fig, axs) for the created plot
     Note:
@@ -234,10 +235,15 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     bin_widths = bins[1:] - bins[:-1]
 
     # Sum predicted labels in each invariant mass bin
-    pred_sums, _ = np.histogram(observable_dict[observable_key], bins=bins, weights=observable_dict["weights_ypred"])
+    if not kwargs.get("plotrLL", False):
+        pred_sums, _ = np.histogram(observable_dict[observable_key], bins=bins, weights=observable_dict["weights_ypred"])
+        # Sum true labels in each invariant mass bin
+        true_sums, _ = np.histogram(observable_dict[observable_key], bins=bins, weights=observable_dict["weights_y"])
+    else:
+        pred_sums, _ = np.histogram(observable_dict[observable_key], bins=bins, weights=observable_dict["r_pred"])
+        # Sum true labels in each invariant mass bin
+        true_sums, _ = np.histogram(observable_dict[observable_key], bins=bins, weights=observable_dict["r_true"])
     pred_sums /= bin_widths
-    # Sum true labels in each invariant mass bin
-    true_sums, _ = np.histogram(observable_dict[observable_key], bins=bins, weights=observable_dict["weights_y"])
     true_sums /= bin_widths
     if powheg_histogram:
         # POWHEG histograms for comparison
@@ -284,7 +290,10 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
         except ValueError as e:
             print(f"Could not set y scale to log for {observable_key} plot: {e}")
 
-    axs[0].set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} \mathrm{" + observable_key + r"}}$ [pb / [" + observable_key + "]]")
+    if not kwargs.get("plotrLL", False):
+        axs[0].set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} \mathrm{" + observable_key + r"}}$ [pb / [" + observable_key + "]]")
+    else:
+        axs[0].set_ylabel(r"$r$")
     axs[0].set_title(f"Predicted vs. True Labels - {model_name}")
     axs[0].legend()
     axs[0].grid(True, alpha=0.3)
@@ -356,7 +365,7 @@ def test_model_ZZ(model,
     powheg_histograms_paths = {"LL": histogram_dir / "pwgLHEF_analysis-mean-W8.top",
                             #   "LT": histogram_dir / "pwgLHEF_analysis-mean-W9.top",
                             #   "TL": histogram_dir / "pwgLHEF_analysis-mean-W10.top",
-                            #   "TT": histogram_dir / "pwgLHEF_analysis-mean-W11.top",
+                              "TT": histogram_dir / "pwgLHEF_analysis-mean-W11.top",
                               "UU": histogram_dir / "pwgLHEF_analysis-mean-W12.top",
                               }
     histogram_data = read_top_file_histograms(powheg_histograms_paths)
@@ -380,6 +389,7 @@ def test_model_ZZ(model,
 
     observable_dict = {"weights_y":     np.zeros(size),
                        "weights_ypred": np.zeros(size),
+                       ""
                        # Start observable arrays
                        "invmass_Z1":    np.zeros(size),
                        "invmass_Z2":    np.zeros(size),
@@ -473,8 +483,14 @@ def test_model_ZZ(model,
         fig, _ = comparison_plots(observable_dict, "invmass_Z1", histogram_data["mee"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
         pdf.savefig(fig)
         plt.close(fig)
+
         # pT of Z1 comparison plot
         fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
+        pdf.savefig(fig)
+        plt.close(fig)
+
+        # pT of Z1 with rLL plot
+        fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()), plotrLL=True)
         pdf.savefig(fig)
         plt.close(fig)
 
