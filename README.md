@@ -81,7 +81,7 @@ The events are part of the fiducial phase space and are written in the form `px`
 
 **Important note on the statistics in the provided datasets**
 
-The `.ml` files provided include already fiducial cuts according to the phase space defined in [TODO: Add reference.]. Thus, in order to get the correct cross section, for example, for the unpolarised cross section $\sigma_{\mathrm{UU}}$, the weight of each event coming from all `*.ml` needs to be summed and devided by the number of simulated events before applying the cuts. This number can be infered by `numevts` parameter in the respective `powheg.input-save` file and the number of seeds for the specific run. The number of generated events in total and for each file is:
+The `.ml` files provided include already fiducial cuts according to the phase space defined in [TODO: Add reference.]. Thus, in order to get the correct cross section, for example, for the unpolarised cross section $\sigma_{\mathrm{UU}}$, the weight of each event coming from all `*.ml` needs to be summed and devided by the number of simulated events before applying the cuts. This number can be infered by `numevts` parameter ( = #number of events per file) in the respective `powheg.input-save` file and the number of seeds for the specific run. The number of generated events in total and for each file is:
 
 | File      | #seeds |         `numevts` | total number of simulated events |
 |:----------|-------:|-------------------|----------------------------------|
