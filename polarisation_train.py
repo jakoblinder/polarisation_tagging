@@ -25,6 +25,9 @@ from ml_events_utils import ZJetDataset
 from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output, FFNN_paper
 from polarisation_test import do_test_run
 from plot_training_history import plot_training_history
+
+from ml_events_utils.ml_events_dataset import BalancedDataLoader
+
 import argparse
 
 print('numpy', np.__version__)
@@ -212,7 +215,7 @@ if arg.standardise:
 
 # Create DataLoader with multiple workers for better performance
 
-train_dataloader = DataLoader(
+train_dataloader = BalancedDataLoader(
     train_dataset,
     batch_size=batch_size,  # Larger batch size for efficiency
     shuffle=True,

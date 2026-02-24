@@ -7,6 +7,9 @@ from typing import Tuple, List, Dict, Union, Any, Optional, Callable
 from pathlib import Path
 from braceexpand import braceexpand
 
+from ml_events_utils.analysis import costhetastar
+
+
 class MLEventsDataset(Dataset):
     """
     Memory-efficient PyTorch Dataset for large ML events files.
@@ -397,3 +400,38 @@ def get_statistics_from_dataset(dataset: Dataset) -> Tuple[torch.Tensor, torch.T
     del fulldataloader
 
     return overall_mean, overall_stddev
+
+class BalancedDataLoader(DataLoader):
+    def __init__(self, dataset, batch_size:int=1, shuffle:bool=False, num_workers:int=0, pin_memory:bool=False,*args, **kwargs):
+        self.dataset     = dataset
+        self.batch_size  = batch_size
+        self.shuffle     = shuffle
+        if self.shuffle:
+            print("Warning: Shuffling is not compatible with the balanced sampling strategy.")
+            print("This option is ignored and the balanced sampling strategy is used instead.")
+        self.num_workers = num_workers
+        self.pin_memory  = pin_memory
+
+        # If sampler is not provided, create a new one
+        if 'sampler' not in kwargs:
+            # Weight by the inverse cthep distribution, i.e. 1/((3/4) * (1 - cthep**2)) to balance the dataset.
+
+            weights = np.ones(len(dataset))
+            for i in range(len(dataset)):
+                features, _ = dataset[i]
+                momenta = features.reshape(-1, 4)
+                cthep, _, cthmup, _ = costhetastar(momenta)
+
+                # Compute weight for this event based on cthep value
+                inv_weight = ( (3/4)*(1 - cthep**2) * (3/4)*(1 - cthmup**2) )
+                if np.abs(inv_weight) > 1e-9:  # Avoid division by zero or very small numbers
+                    weights[i] = 1.0 / inv_weight
+                else:
+                    weights[i] = 1e9
+
+            # Create a sampler that samples each class with equal probability
+            sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, num_samples=len(weights) // 2, replacement=False)
+        else:
+            sampler = kwargs['sampler']
+
+        super().__init__(dataset, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, sampler=sampler, *args, **kwargs)
