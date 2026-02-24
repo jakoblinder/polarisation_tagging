@@ -74,7 +74,7 @@ The dataset expects ML events files with the following structure:
 The indices in for example 'LL-12' denote the scale variation renscfact=1 & facscfact=2, whereas for example 'LL-51' corresponds to renscfact=0.5 & facscfact=1. ('LL' and 'LL-11' denote the same weight.)
 
 **Event files:**
-The event files for this project are stored on Nextcloud: [Download ZIP (Updated on 24.02.2026)](). Note that the gziped file has a size of 14 GB and extends to ~67 GB.
+The event files for this project are stored on Nextcloud: [Download ZIP (Updated on 24.02.2026)](https://nextcloud.mpp.mpg.de/nextcloud/index.php/s/ZY6nDHryzHemgrE). Note that the gziped file has a size of ~13 GB and extends to ~67 GB.
 
 They contain a directory for LO (UU_LO), for LO including the radiation from the POWHEG Sudakov (UU_LOwS) and at NLO (UU_NLO). In each directory there are the histograms done at lhe level (`pwgLHEF_analysis-mean-W*.top`) and after showering with only qcd radiation being activated (`pwgoutput_py8_histos-mean-W*.top`). The definition of the weights can be found in the `powheg.input-save` file. The first 7 weights correspond to the usual scale variation. Thus, for example, the UU lhe analysis histogram plots are found in `pwgLHEF_analysis-mean-W*.top` as indicate with the by the comment in the above block.
 
