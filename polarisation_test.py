@@ -362,11 +362,13 @@ def test_model_ZZ(model,
     print(f"Analysing {n_generated_events} generated events which result in {size} events after applying cuts.")
 
     # Load the LL histogram for comparison plots
-    powheg_histograms_paths = {"LL": histogram_dir / "pwgLHEF_analysis-mean-W8.top",
-                            #   "LT": histogram_dir / "pwgLHEF_analysis-mean-W9.top",
-                            #   "TL": histogram_dir / "pwgLHEF_analysis-mean-W10.top",
-                              "TT": histogram_dir / "pwgLHEF_analysis-mean-W11.top",
-                              "UU": histogram_dir / "pwgLHEF_analysis-mean-W12.top",
+    powheg_histograms_paths = {"UU": histogram_dir / "pwgLHEF_analysis-mean-W8.top",
+                               "LL": histogram_dir / "pwgLHEF_analysis-mean-W9.top",
+                               "LT": histogram_dir / "pwgLHEF_analysis-mean-W10.top",
+                               "TL": histogram_dir / "pwgLHEF_analysis-mean-W11.top",
+                               "TT": histogram_dir / "pwgLHEF_analysis-mean-W12.top",
+                               "LU": histogram_dir / "pwgLHEF_analysis-mean-W13.top",
+                               "UL": histogram_dir / "pwgLHEF_analysis-mean-W14.top",
                               }
     histogram_data = read_top_file_histograms(powheg_histograms_paths)
     # Normalise all runs to have the total cross section as the fitted polarisation run.
@@ -474,28 +476,30 @@ def test_model_ZZ(model,
         d['CreationDate'] = datetime.today()
         d['ModDate']      = datetime.today()
 
+        show_polarisation = [fitted_polarisation, "UU"]
+
         # Integration statistics
         fig, _ = print_integration_statistics(observable_dict, histogram_data, model=model_name, powheg_histogram_runs = [fitted_polarisation, ])
         pdf.savefig(fig)
         plt.close(fig)
 
         # Invariant mass Z1 comparison plot
-        fig, _ = comparison_plots(observable_dict, "invmass_Z1", histogram_data["mee"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
+        fig, _ = comparison_plots(observable_dict, "invmass_Z1", histogram_data["mee"], model_name=model_name, powheg_histogram_runs = show_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
         # pT of Z1 comparison plot
-        fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
+        fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = show_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
         # pT of Z1 with rLL plot
-        fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()), plotrLL=True)
+        fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = show_polarisation, plotrLL=True)
         pdf.savefig(fig)
         plt.close(fig)
 
         # Cos(theta*) comparison plot
-        fig, _ = comparison_plots(observable_dict, "cthep", histogram_data["cthep"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
+        fig, _ = comparison_plots(observable_dict, "cthep", histogram_data["cthep"], model_name=model_name, powheg_histogram_runs = show_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
@@ -511,12 +515,12 @@ def test_model_ZZ(model,
         # plt.close(fig)
 
         # Transverse momentum of positron
-        fig, _ = comparison_plots(observable_dict, "ptep", histogram_data["ptep"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
+        fig, _ = comparison_plots(observable_dict, "ptep", histogram_data["ptep"], model_name=model_name, powheg_histogram_runs = show_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
         # Rapidity of positron
-        fig, _ = comparison_plots(observable_dict, "yep", histogram_data["yep"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
+        fig, _ = comparison_plots(observable_dict, "yep", histogram_data["yep"], model_name=model_name, powheg_histogram_runs = show_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
