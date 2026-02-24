@@ -28,19 +28,21 @@ from routines import parse_ml_events, boostinv
 # parsing input argument (reduced or full dataset)
 parser = argparse.ArgumentParser(description="Which events do you want?")
 parser.add_argument('--data',    '-d', type=str, choices=['reduced', 'full'])
-parser.add_argument('--training','-t', type=str, choices=['long', 'short', 'lows', 'lo'])
+parser.add_argument('--training','-t', type=str, choices=['long', 'lows', 'lo'])
 parser.add_argument('--is_lo','-i', type=str, choices=['lo', 'nlo'])
 args = parser.parse_args()
 
 string_model = ""
 if str(args.training) == 'long':
-    string_model = "trained_RFR_nlo_train_events_801748_basis_ct.joblib"
-elif str(args.training) == 'short':
-    string_model = "trained_RFR_nlo_train_events_80158_basis_ct.joblib"
+#    string_model = "trained_RFR_nlo_train_events_801748_basis_ct.joblib"
+    string_model = "trained_RFR_nlo_train_events_797759_basis_ct.joblib"
+# elif str(args.training) == 'short':
+#     string_model = "trained_RFR_nlo_train_events_80158_basis_ct.joblib"
 elif str(args.training) == 'lows':
-    string_model = "trained_RFR_lo_train_events_63896_basis_ct.joblib"
+    string_model = "trained_RFR_lo_train_events_793238_basis_ct.joblib"
+#   string_model = "trained_RFR_lo_train_events_63896_basis_ct.joblib"
 elif str(args.training) == 'lo':
-    string_model = "trained_RFR_lo_train_events_63178_basis_ct.joblib"
+     string_model = "trained_RFR_lo_train_events_63178_basis_ct.joblib"
 
 
 # initialisation and choice of LHE-ML dataset
@@ -48,15 +50,20 @@ if str(args.is_lo) == 'lo':
     print(' You are parsing LOPS events')
 else:
     print(' You are parsing NLOPS events')
-sigma_uu = np.array([0.15183819E-01,0.71627436E-05])
+
+#sigma_uu = np.array([0.15183819E-01,0.71627436E-05])
 sigma_ll = np.array([0.8918E-03, 0.0003E-03])
+
 data_dir = Path("../../events/ML_FILES/UU_NLO")
 if str(args.is_lo) == 'lo':
     data_dir = Path("../../events/ML_FILES/UU_LOwS")
 nr_lhef = 51 
 if str(args.data) == 'reduced':
     nr_lhef = 6
+N_lhe = 50000
+N_tot = N_lhe * (nr_lhef-1)
 
+    
 # access ml unpolarised events and various weights
 used_weights = {"UU"} # not used
 all_events = []
@@ -140,7 +147,7 @@ df["yZ2"] = yv2
 df["phiZ1"] = phiv1
 df["phiZ2"] = phiv2
 df["pt4l"] = ptvv
-df = df.drop(columns=["UU"]) 
+
 print('size of the whole dataset = ', len(df))
 print(df.tail(3))
 
@@ -153,15 +160,27 @@ trained_model  = bundle["model"]
 input_features = bundle["features"] # ensure same order as for training
 X_test = df[input_features]
 y_pred = np.clip(trained_model.predict(X_test),0,1)
-print(' total number of test events ............................. ', len(y_pred))
-print(' expected LL xsec (polarised simulation) ................. %.4f ' % (1e+3*sigma_ll[0]), ' +- %.4f (MC) fb' % (1e+3*sigma_ll[1]) )
-print(' estimated LL xsec (pred-rLL reweighting, test) .......... %.4f ' % (1e+3*sigma_uu[0]*(y_pred.sum()/len(y_pred))))
 
 # model uncertainty from tree-to-tree fluctuations
 preds = np.array([tree.predict(X_test.to_numpy()) for tree in trained_model.estimators_])
 obs_mean = preds.mean(axis=1).mean()
 obs_unc  = preds.mean(axis=1).std(ddof=1)
-print(' estimated LL xsec (with uncertainty) .................... %.4f ' % (1e+3*sigma_uu[0]*obs_mean), ' +- (%.0f )' % (1e+7*sigma_uu[0]*obs_unc))
+
+
+z_uu = (df.loc[X_test.index, "UU"]).to_numpy()*1e+03/N_tot
+w_pred = np.array([z_uu[i] * y_pred[i] for i in range(0,len(z_uu))])
+#w_err  = np.array([z_uu[i]**2 * var_events[i] for i in range(0,len(z_uu))])
+sigLLpred = np.array([w_pred.sum(), 0.0]) # 1e+03*w_err.sum()/N_tot])
+
+sigLL_trees = (preds * z_uu).sum(axis=1)
+sigLL_mean = sigLL_trees.mean()
+sigLL_err = sigLL_trees.std(ddof=1)/np.sqrt(len(sigLL_trees))
+
+print(' total number of test events ............................. ', len(y_pred))
+print(' expected LL xsec (polarised simulation) ................. %.4f ' % (1e+3*sigma_ll[0]), ' +- %.4f (MC) fb' % (1e+3*sigma_ll[1]) )
+#print(' estimated LL xsec (without uncertainty) ................. %.4f ' % (sigLLpred[0]))
+print(' estimated LL xsec (with uncertainty) .................... %.4f ' % (sigLL_mean), '(%.0f )' % (1e+04*sigLL_err))
+#print(' estimated LL xsec (pred-rLL reweighting, test) .......... %.4f ' % (1e+3*sigma_uu[0]*(y_pred.sum()/len(y_pred))))
 
 
 endall = time.time()

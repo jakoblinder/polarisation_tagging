@@ -35,6 +35,7 @@ N_lhe = 100000
 sigma_uu = np.array([0.11245290E-01, 0.37648619E-05])
 sigma_ll = np.array([0.6574E-03, 0.0002E-03])
 data_dir = Path("../../events/ML_FILES/UU_LOwS")
+#data_dir = Path("../../events/ML_FILES/UU_LOwS")
 t_app = str("(LO, fiducial)")
 nr_lhef = 26
 if str(args.data) == 'reduced':
@@ -238,7 +239,7 @@ if args.model == 'all':
 
     sigLLsim = np.array([(1e+3*sigma_ll[0]),(1e+3*sigma_ll[1])])
     sigLLtrue = np.array([(1e+03*z_ll.sum() /(N_tot*r_test)),(1e+03*sigma_uu[1]*(y_test.sum()/len(y_test)))])
-    sigLLpred = np.array([(1e+03*w_pred.sum() /(N_tot*r_test)), (1e+03*w_err.sum())/(N_tot*r_test)])
+    sigLLpred = np.array([(1e+03*w_pred.sum() /(N_tot*r_test)), (1e+03*np.sqrt(w_err.sum()))/(N_tot*r_test)])
 
     # RFR
     print(' total number of train events ............................ ', len(y_train))
