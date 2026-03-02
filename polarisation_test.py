@@ -1,6 +1,8 @@
 from datetime import datetime
 import time
 import torch
+import argparse
+import logging
 
 import numpy as np
 import pandas as pd
@@ -13,13 +15,12 @@ from torch.utils.data import DataLoader
 from matplotlib.backends.backend_pdf import PdfPages
 
 from ml_events_utils.transforms import januar2026_input_choice
-from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepton_cm_frame  #, test_loop
+from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform, exp_target_transform  #, test_loop
 from ml_events_utils import ZJetDataset
 from ml_events_utils import boost_into_Zjet_cm_frame
 from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output, FFNN_paper
 from ml_events_utils.analysis import costhetastar, get_pt, get_rapidity, cosmujet
-import argparse
-
+from ml_events_utils import log_file, setup_file_logger
 
 # %% Helper functions for plotting and histogram handling
 def read_top_file_histograms(top_file_paths: dict) -> dict:
@@ -107,7 +108,7 @@ def read_top_file_histograms(top_file_paths: dict) -> dict:
 
     return histogram_data_restructured
 
-def print_integration_statistics(observable_dict, histogram_data: dict = {}, model: str = "", powheg_histogram_runs: list = ["LL",]):
+def print_integration_statistics(observable_dict, histogram_data: dict = {}, model: str = "", powheg_histogram_runs: list = ["LL",], fitted_polarisation: str = "LL"):
     pred_integral = np.sum(observable_dict["weights_ypred"])
     true_integral = np.sum(observable_dict["weights_y"])
 
@@ -119,14 +120,14 @@ def print_integration_statistics(observable_dict, histogram_data: dict = {}, mod
         title = f"Integrated cross-sections for model {model}"
     else:
         title = "Integrated cross-sections"
-    print(f"{title}:")
-    print(f"  True r_LL:          {true_integral:.6e}")
-    print(f"  Predicted r_LL:     {pred_integral:.6e}")
+    logger.info(f"{title}:")
+    logger.info(f"  True r_{fitted_polarisation}:          {true_integral:.6e}")
+    logger.info(f"  Predicted r_{fitted_polarisation}:     {pred_integral:.6e}")
     if histogram_data:
         for run in powheg_histogram_runs:
-            print(f"  POWHEG reweighting [{run}]: {histogram_data['totxsec'][run]['values'][0]:.6e}")
-        print(f"  Ratio (pred/PWG-[{powheg_histogram_runs[0]}]):   {pred_integral/histogram_data['totxsec'][powheg_histogram_runs[0]]['values'][0]:.6f}")
-    print(f"  Ratio (pred/true):  {pred_integral/true_integral:.6f}")
+            logger.info(f"  POWHEG reweighting [{run}]: {histogram_data['totxsec'][run]['values'][0]:.6e}")
+        logger.info(f"  Ratio (pred/PWG-[{powheg_histogram_runs[0]}]):   {pred_integral/histogram_data['totxsec'][powheg_histogram_runs[0]]['values'][0]:.6f}")
+    logger.info(f"  Ratio (pred/true):  {pred_integral/true_integral:.6f}")
 
     # Create a text-only plot for integration results
     fig, ax = plt.subplots(1, 1)
@@ -186,7 +187,7 @@ def r_plot(r_pred, r_true, weights, model_name="Model"):
     try:
         axs.set_xlim(xmin=r_min * 0.99, xmax=r_max * 1.01)
     except ValueError as e:
-        print(f"Could not set x limits for r plot: {e}")
+        logger.error(f"Could not set x limits for r plot: {e}")
 
     axs.set_xlabel("r")
 
@@ -286,9 +287,9 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
             if np.all(true_sums > 0) and np.all(pred_sums > 0) and (not powheg_histogram or np.all([np.all(sums > 0) for sums in powheg_sums.values()])):
                 axs[0].set_yscale('log')
             else:
-                print(f"Not all histogram values are positive for {observable_key} plot; skipping log scale.")
+                logger.info(f"Not all histogram values are positive for {observable_key} plot; skipping log scale.")
         except ValueError as e:
-            print(f"Could not set y scale to log for {observable_key} plot: {e}")
+            logger.error(f"Could not set y scale to log for {observable_key} plot: {e}")
 
     if not kwargs.get("plotrLL", False):
         axs[0].set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} \mathrm{" + observable_key + r"}}$ [pb / [" + observable_key + "]]")
@@ -302,7 +303,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     try:
         axs[1].set_xlim(xmin=observable_dict[observable_key].min() * 0.99, xmax=observable_dict[observable_key].max() * 1.01)
     except ValueError as e:
-        print(f"Could not set x limits for {observable_key} plot: {e}")
+        logger.error(f"Could not set x limits for {observable_key} plot: {e}")
 
     axs[1].set_xlabel(f"{observable_key}")
 
@@ -354,12 +355,12 @@ def test_model_ZZ(model,
         - Target y_untransformed with shape (batch_size, 1) where y_untransformed[:,0] are the rL weights.
     """
 
-    print("Starting testing for ZZ model...")
+    logger.info("Starting testing for ZZ model...")
     size        = len(dataloader.dataset)  # Total number of samples in the dataset (= n_events).
     num_batches = len(dataloader)          # Number of batches in the dataloader.
 
     n_generated_events = int(n_generated_events)
-    print(f"Analysing {n_generated_events} generated events which result in {size} events after applying cuts.")
+    logger.info(f"Analysing {n_generated_events} generated events which result in {size} events after applying cuts.")
 
     # Load the LL histogram for comparison plots
     powheg_histograms_paths = {"UU": histogram_dir / "pwgLHEF_analysis-mean-W8.top",
@@ -381,7 +382,7 @@ def test_model_ZZ(model,
         for observable in observables_in_run:
             histogram_data[observable][run]['values'] *= xsec_fitted_polarisation / histogram_data['totxsec'][run]['values'][0]
 
-    print(f"Loaded {len(histogram_data)} histograms from .top file")
+    logger.info(f"Loaded {len(histogram_data)} histograms from .top file")
 
     # Move the model to the specified device (CPU or GPU)
     model.to(device)
@@ -465,7 +466,7 @@ def test_model_ZZ(model,
     # Count number of zero values in the array
     test_loss /= num_batches
 
-    print(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
+    logger.info(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
 
     with PdfPages(f"{model_dir}/test_histograms.pdf") as pdf:
         d = pdf.infodict()
@@ -566,14 +567,14 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
         - Target y_untransformed with shape (batch_size, 1) where y_untransformed[:,0] are the rL weights.
     """
 
-    print("Starting testing for Z+jet model...")
+    logger.info("Starting testing for Z+jet model...")
     size        = len(dataloader.dataset)  # Total number of samples in the dataset (= n_events).
     num_batches = len(dataloader)          # Number of batches in the dataloader.
 
     # In the Z+jet case, the events are unweighted, so we can directly use the number of generated events for normalisation.
     n_generated_events = size
 
-    print(f"Analysing {size} events in total.")
+    logger.info(f"Analysing {size} events in total.")
 
     # Get the total unpolarised cross-section from the xsec.txt file
     with open(histogram_dir / "xsec.txt", 'r') as f:
@@ -582,7 +583,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
         xsec_line = lines[2].strip()  # "817.3(2) pb"
         # Extract the numerical value before the parentheses
         total_xsec = float(xsec_line.split('(')[0])
-    print(f"Total unpolarised cross-section from MG5: {total_xsec:.6e} pb")
+    logger.info(f"Total unpolarised cross-section from MG5: {total_xsec:.6e} pb")
 
     # Move the model to the specified device (CPU or GPU)
     model.to(device)
@@ -631,7 +632,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
 
     test_loss /= num_batches
 
-    print(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
+    logger.info(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
 
     with PdfPages(f"{model_dir}/test_histograms.pdf") as pdf:
         d = pdf.infodict()
@@ -705,9 +706,9 @@ def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, m
 
     # Test iteration (only first batch to avoid long output)
     for batch_idx, (batch_features, batch_labels) in enumerate(test_dataloader):
-        print(f"Batch {batch_idx}: features shape {batch_features.shape}, labels shape {batch_labels.shape}")
+        logger.info(f"Batch {batch_idx}: features shape {batch_features.shape}, labels shape {batch_labels.shape}")
         input_dim = batch_features.shape[1]
-        print(f"{input_dim = }")
+        logger.info(f"{input_dim = }")
         break  # Only show first batch
 
 
@@ -719,15 +720,17 @@ def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, m
         test_loss = test_model_Zjet(model, model_dir, histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, model_name=model_name)
 
     end_time = time.time()
-    print(f"Testing completed in {end_time - start_time:.2f} seconds.")
+    logger.info(f"Testing completed in {end_time - start_time:.2f} seconds.")
 
     return test_loss
 
 # %% Run the test
 if __name__ == "__main__":
-    print('numpy', np.__version__)
-    print('pandas', pd.__version__)
-    print('torch', torch.__version__)
+    logger = setup_file_logger(log_file=log_file, level="DEBUG", console=False, force=True)
+
+    logger.info(f"numpy:  {np.__version__}")
+    logger.info(f"pandas: {pd.__version__}")
+    logger.info(f"torch:  {torch.__version__}")
     # %%
     parser = argparse.ArgumentParser(
         description='Test the already trained neural network for polarisation tagging.',
@@ -755,17 +758,17 @@ if __name__ == "__main__":
 
     arg = parser.parse_args()
 
-    print("Arguments:")
+    logger.info("Arguments:")
     for attr, value in vars(arg).items():
-        print(f"  {attr}: {value}")
+        logger.info(f"  {attr}: {value}")
 
     # %% Specify the computation device (cpu or gpu).
     # In torch/pytorch data and models need to be moved in the specific processing unit
     # this code snippet allows to set the variable "device" according to available resource (cpu or cuda gpu)
 
     if torch.cuda.is_available():
-        print('Number of devices: ', torch.cuda.device_count())
-        print(torch.cuda.get_device_name(0))
+        logger.info('Number of devices: ', torch.cuda.device_count())
+        logger.info(torch.cuda.get_device_name(0))
 
     if torch.cuda.is_available():
         if arg.gpu >= 0:
@@ -774,23 +777,23 @@ if __name__ == "__main__":
             device = "cuda"
     else:
         device = "cpu"
-    print(f"Computation device: {device}\n")
+    logger.info(f"Computation device: {device}\n")
 
     # Set CUDA device globally
     if torch.cuda.is_available():
         if arg.gpu >= 0:
             torch.cuda.set_device(arg.gpu)
-            print(f"Set CUDA device to: {arg.gpu}")
+            logger.info(f"Set CUDA device to: {arg.gpu}")
         else:
             torch.cuda.set_device(0)
-            print(f"Set CUDA device to: 0")
+            logger.info(f"Set CUDA device to: 0")
 
     # %% Model selection
     model_name = arg.model
     if model_name not in model_dict:
         raise ValueError(f"Model '{model_name}' not recognized. Available models: {list(model_dict.keys())}")
     else:
-        print(f"Using model architecture: {model_name}")
+        logger.info(f"Using model architecture: {model_name}")
 
     if arg.inputdir is not None:
         model_dir = arg.inputdir
@@ -844,10 +847,10 @@ if __name__ == "__main__":
                             max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
                             standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
 
-    print(f"Dataset info: {dataset.get_file_info()}")
+    logger.info(f"Dataset info: {dataset.get_file_info()}")
 
     # Set fixed random number seed to get the same test/ train split as used during training
-    print(Path.cwd())
+    logger.info(Path.cwd())
     with open(model_dir / "training_seed.txt", 'r') as f:
         seed = int(f.readline().strip())
 
@@ -855,7 +858,7 @@ if __name__ == "__main__":
 
     split_ratios = [0.6, 0.2, 0.2]  # Train, Val, Test
     _, _, test_dataset = torch.utils.data.random_split(dataset, split_ratios, generator=generator)
-    print(f"Test dataset size:       {len(test_dataset)}")
+    logger.info(f"Test dataset size:       {len(test_dataset)}")
 
     # Initialize the model and load the trained weights
     input_dim = dataset.input_shape[0]
@@ -879,4 +882,7 @@ if __name__ == "__main__":
 
 
     test_loss = do_test_run(device, arg.use_zjet, model, model_name, model_dir, arg.histogram_dir, files, seed, test_dataset, split_ratios, batch_size=arg.batch_size, n_workers=arg.nworkers, n_generated_events=arg.n_generated_events, input_choice=arg.input_choice)
+
+else:
+    logger = logging.getLogger(__name__)
 

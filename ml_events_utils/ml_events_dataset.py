@@ -2,10 +2,14 @@ import pandas as pd
 import numpy as np
 import torch
 import re
+import logging
+
 from torch.utils.data import Dataset, DataLoader
 from typing import Tuple, List, Dict, Union, Any, Optional, Callable
 from pathlib import Path
 from braceexpand import braceexpand
+
+logger = logging.getLogger(__name__)
 
 class MLEventsDataset(Dataset):
     """
@@ -63,12 +67,12 @@ class MLEventsDataset(Dataset):
 
         self._cached_events = {} if cache_events else None
 
-        print(f"Found {len(self)} events in {self.file_path}")
+        logger.info(f"Found {len(self)} events in {self.file_path}")
 
         # Standardisation over the whole dataset:
         if standardise:
-            print("Computing dataset-wide feature standardisation.")
-            print("This may take a moment...")
+            logger.info("Computing dataset-wide feature standardisation.")
+            logger.info("This may take a moment...")
             fulldataloader = DataLoader(
                 self,
                 batch_size=len(self),

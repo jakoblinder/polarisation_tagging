@@ -5,9 +5,12 @@ Each line contains: ['Emu+', 'pxmu+', 'pymu+', 'pzmu+', 'Emu-', 'pxmu-', 'pymu-'
 
 import numpy as np
 import torch
+import logging
 from torch.utils.data import Dataset, DataLoader
 from typing import Tuple, List, Dict, Union, Any, Optional, Callable
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class ZJetDataset(Dataset):
@@ -43,8 +46,8 @@ class ZJetDataset(Dataset):
 
         # Standardisation over the whole dataset:
         if standardise:
-            print("Computing dataset-wide feature standardisation.")
-            print("This may take a moment...")
+            logger.info("Computing dataset-wide feature standardisation.")
+            logger.info("This may take a moment...")
             fulldataloader = DataLoader(
                 self,
                 batch_size=len(self),
@@ -72,7 +75,7 @@ class ZJetDataset(Dataset):
         of the MLEventsDataset. This is not important for the learning but we want to be able to use the same
         utility functions and models written for the MLEventsDataset.
         """
-        print(f"Loading Z+jet data from {self.file_path}")
+        logger.info(f"Loading Z+jet data from {self.file_path}")
 
         if not self.file_path.exists():
             raise FileNotFoundError(f"Data file not found: {self.file_path}")
@@ -91,7 +94,7 @@ class ZJetDataset(Dataset):
                 # Particles: mu+, mu-, jet; each has 4 components [E, px, py, pz]
                 # We want to reorder to [px, py, pz, E] for each particle
                 if len(values) != 13:
-                    print(f"Warning: Line {i+1} has {len(values)} values instead of 13, skipping")
+                    logger.warning(f"Warning: Line {i+1} has {len(values)} values instead of 13, skipping")
                     continue
                 else:
                     values = [
@@ -109,11 +112,11 @@ class ZJetDataset(Dataset):
         self.features = data[:, :12]  # First 12 columns are momentum features
         self.labels   = np.expand_dims(data[:, 12], axis=-1)   # Last column is rL label (fix shape to (N, 1))
 
-        print(f"Loaded {len(self.features)} events")
-        print(f"Feature shape: {self.features.shape}")
-        print(f"Label   shape: {self.labels.shape}")
-        print(f"Feature statistics - Mean: {self.features.mean():.3f}, Std: {self.features.std():.3f}")
-        print(f"Label   statistics - Mean: {self.labels.mean():.3f},   Std: {self.labels.std():.3f}, Min: {self.labels.min():.3f}, Max: {self.labels.max():.3f}")
+        logger.info(f"Loaded {len(self.features)} events")
+        logger.info(f"Feature shape: {self.features.shape}")
+        logger.info(f"Label   shape: {self.labels.shape}")
+        logger.info(f"Feature statistics - Mean: {self.features.mean():.3f}, Std: {self.features.std():.3f}")
+        logger.info(f"Label   statistics - Mean: {self.labels.mean():.3f},   Std: {self.labels.std():.3f}, Min: {self.labels.min():.3f}, Max: {self.labels.max():.3f}")
 
     def __len__(self):
         """Return the number of events in the dataset."""

@@ -1,9 +1,12 @@
 import torch
+import logging
+
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
 from .analysis import costhetastar
 
+logger = logging.getLogger(__name__)
 
 # Activation function for output layer:
 # For binary classification tasks, common choices are:
@@ -359,7 +362,7 @@ class LorentzBaseLayer(nn.Module):
         if N == 4:
             angles = torch.stack(costhetastar(vectors), dim=-1)
         else:
-          print("Warning: costhetastar not implemented for N != 4")
+          logger.info("Warning: costhetastar not implemented for N != 4")
           raise NotImplementedError
 
         # norm(p) (shape [B, N])
@@ -410,7 +413,7 @@ class FourVectorAwareNet(nn.Module):
 
         # Normalise input data if wished:
         if stat_norm is not None or external_stat:
-            print("FourVectorAwareNet: Data normalization is not applied, since the model works on 4-vectors directly.")
+            logger.info("FourVectorAwareNet: Data normalization is not applied, since the model works on 4-vectors directly.")
 
         self.predict_log = predict_log
 

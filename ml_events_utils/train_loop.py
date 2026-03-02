@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
+import logging
+
 from .transforms import exp_target_transform
 from .analysis import costhetastar
 
@@ -112,10 +114,10 @@ def train_loop(
             if torch.is_tensor(per_sample) and per_sample.ndim > 1:
                 per_sample = per_sample.view(per_sample.size(0), -1).mean(dim=1)
         except RuntimeError as e:
-            print(f"RuntimeError during loss computation: {e}")
-            print(f"pred shape: {pred.shape}, y shape: {y.shape}")
-            print(f"pred: {pred}")
-            print(f"y: {y}")
+            logger.error(f"RuntimeError during loss computation: {e}")
+            logger.error(f"pred shape: {pred.shape}, y shape: {y.shape}")
+            logger.error(f"pred: {pred}")
+            logger.error(f"y: {y}")
             raise e
 
         # Compute possible penalty terms
@@ -225,7 +227,7 @@ def train_loop(
 
         if (batch + 1) % print_freq == 0 and batch > 0:
             loss, current = loss.item(), batch * batch_size + len(X)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+            logger.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
     return train_loss / num_batches
 
@@ -251,6 +253,7 @@ def valid_loop(dataloader, model, loss_fn, device):
     valid_loss /= num_batches
     l1loss /= num_batches
 
-    print(f"Validation Error: \n Avg (per batch) valid loss: {valid_loss:>8f}, Avg L1 Loss: {l1loss:>8f}\n")
+    logger.info(f"Validation Error:")
+    logger.info(f"  Avg (per batch) valid loss: {valid_loss:>8f}, Avg L1 Loss: {l1loss:>8f}")
 
     return valid_loss
