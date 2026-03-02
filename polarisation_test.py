@@ -322,6 +322,7 @@ def test_model_ZZ(model,
                   n_generated_events:int=0.2*1e7,
                   model_name="Model",
                   fitted_polarisation="LL",
+                  showered:bool=False,
                   *args,
                   **kwargs):
     """
@@ -363,14 +364,24 @@ def test_model_ZZ(model,
     logger.info(f"Analysing {n_generated_events} generated events which result in {size} events after applying cuts.")
 
     # Load the LL histogram for comparison plots
-    powheg_histograms_paths = {"UU": histogram_dir / "pwgLHEF_analysis-mean-W8.top",
-                               "LL": histogram_dir / "pwgLHEF_analysis-mean-W9.top",
-                               "LT": histogram_dir / "pwgLHEF_analysis-mean-W10.top",
-                               "TL": histogram_dir / "pwgLHEF_analysis-mean-W11.top",
-                               "TT": histogram_dir / "pwgLHEF_analysis-mean-W12.top",
-                               "LU": histogram_dir / "pwgLHEF_analysis-mean-W13.top",
-                               "UL": histogram_dir / "pwgLHEF_analysis-mean-W14.top",
-                              }
+    if not showered:
+        powheg_histograms_paths = {"UU": histogram_dir / "pwgLHEF_analysis-mean-W8.top",
+                                   "LL": histogram_dir / "pwgLHEF_analysis-mean-W9.top",
+                                   "LT": histogram_dir / "pwgLHEF_analysis-mean-W10.top",
+                                   "TL": histogram_dir / "pwgLHEF_analysis-mean-W11.top",
+                                   "TT": histogram_dir / "pwgLHEF_analysis-mean-W12.top",
+                                   "LU": histogram_dir / "pwgLHEF_analysis-mean-W13.top",
+                                   "UL": histogram_dir / "pwgLHEF_analysis-mean-W14.top",
+                                  }
+    else:
+        powheg_histograms_paths = {"UU": histogram_dir / "pwgoutput_py8_histos-mean-W8.top",
+                                   "LL": histogram_dir / "pwgoutput_py8_histos-mean-W9.top",
+                                   "LT": histogram_dir / "pwgoutput_py8_histos-mean-W10.top",
+                                   "TL": histogram_dir / "pwgoutput_py8_histos-mean-W11.top",
+                                   "TT": histogram_dir / "pwgoutput_py8_histos-mean-W12.top",
+                                   "LU": histogram_dir / "pwgoutput_py8_histos-mean-W13.top",
+                                   "UL": histogram_dir / "pwgoutput_py8_histos-mean-W14.top",
+                                  }
     histogram_data = read_top_file_histograms(powheg_histograms_paths)
     # Normalise all runs to have the total cross section as the fitted polarisation run.
     runs_wo_fitted_polarisation = list(next(iter(histogram_data.values()), {}).keys()).copy()
@@ -663,7 +674,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
 
     return test_loss
 
-def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, mlfiles, seed: int, test_dataset, split_ratios, polarisation:str = "LL", batch_size=512, n_workers=0, n_generated_events: int = int(1e7), input_choice:str=None):
+def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, mlfiles, seed: int, test_dataset, split_ratios, polarisation:str = "LL", batch_size=512, n_workers=0, n_generated_events: int = int(1e7), input_choice:str=None, showered:bool=False):
     start_time = time.time()
 
     torch.manual_seed(seed)
@@ -715,7 +726,7 @@ def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, m
     test_loss_fn = torch.nn.MSELoss()
 
     if not use_zjet:
-        test_loss = test_model_ZZ(model, model_dir, histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, split_ratios[2] * n_generated_events, model_name=model_name, fitted_polarisation=polarisation, input_choice=input_choice)
+        test_loss = test_model_ZZ(model, model_dir, histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, split_ratios[2] * n_generated_events, model_name=model_name, fitted_polarisation=polarisation, input_choice=input_choice, showered=showered)
     else:
         test_loss = test_model_Zjet(model, model_dir, histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, model_name=model_name)
 

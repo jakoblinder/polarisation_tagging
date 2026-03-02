@@ -62,6 +62,7 @@ parser.add_argument("--n_generated_events",   type=lambda x: int(float(x)),     
 parser.add_argument("--dont_test",            dest="do_test",      action="store_false",   help="Run the test script after training with the best model weights found during training.")
 parser.add_argument("--penalties", nargs='*', type=str,   action="store", default=[],      help="Specify which penalty terms to include in the loss function. Options: cross_section, ZdecayAngles.")
 parser.add_argument("--polarisation",         type=str,   action="store", default="LL",    help="Specify which polarisation to train on (Only relevant for ZZ). Options: LL, LT, TL, TT, UL, LU.")
+parser.add_argument("--showered",             dest="showered",     action="store_true",    help="This run used showered events instead of parton level events (default: use parton level events). Important for plotting.")
 
 # Create a mutually exclusive group for specifying the reference frame
 frame_group = parser.add_mutually_exclusive_group()
@@ -318,8 +319,8 @@ optimizers = {
     "SGD":     torch.optim.SGD(    model.parameters(), lr=learning_rate),
     "Adam":    torch.optim.Adam(   model.parameters(), lr=learning_rate),
     "RMSprop": torch.optim.RMSprop(model.parameters(), lr=learning_rate),
-    "paper":   torch.optim.RMSprop(model.parameters(), lr=0.001, alpha=0.99, eps=1e-08, weight_decay=0.0, momentum=0.0),
-    "paper_momentum":   torch.optim.RMSprop(model.parameters(), lr=0.001, alpha=0.99, eps=1e-08, weight_decay=0.0, momentum=0.9)
+    "paper":   torch.optim.RMSprop(model.parameters(), lr=learning_rate, alpha=0.99, eps=1e-08, weight_decay=0.0, momentum=0.0),
+    "paper_momentum":   torch.optim.RMSprop(model.parameters(), lr=learning_rate, alpha=0.99, eps=1e-08, weight_decay=0.0, momentum=0.9)
 }
 
 # Initialize the optimizer
@@ -547,4 +548,4 @@ mllogger.info(f"\nTotal execution time: {elapsed_time:.2f} seconds")
 
 
 if arg.do_test:
-    do_test_run(device, arg.use_zjet, model, model_name, model_dir, files[0].parent, files, seed, test_dataset, split_ratios, arg.polarisation, batch_size=arg.batch_size, n_workers=arg.nworkers, n_generated_events=arg.n_generated_events, input_choice=arg.input_choice)
+    do_test_run(device, arg.use_zjet, model, model_name, model_dir, files[0].parent, files, seed, test_dataset, split_ratios, arg.polarisation, batch_size=arg.batch_size, n_workers=arg.nworkers, n_generated_events=arg.n_generated_events, input_choice=arg.input_choice, showered=arg.showered)
