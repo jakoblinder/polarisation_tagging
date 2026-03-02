@@ -85,23 +85,39 @@ def find_scale_var_ratios(labels):
 # Define logarithmic target transform to reduce outlier impact
 def log_target_transform(target):
     """Apply log transformation to target values to reduce outlier impact"""
+    if "negcounter" not in log_target_transform.__dict__:
+        log_target_transform.__dict__["negcounter"] = 0
+
     # Convert to torch tensor if it's not already
     if not isinstance(target, torch.Tensor):
         target = torch.tensor(target, dtype=torch.float32)
 
     # Add small epsilon to handle zero values and ensure positive input to log
     epsilon = 1e-10
+    shift   = 1.0
+
+    valid = torch.isfinite(target)
+    neg_count = (((target + shift) < epsilon) & valid).sum().item()
+    log_target_transform.__dict__["negcounter"] += neg_count
+
+    max_neg_weights = 1e4
+    if log_target_transform.__dict__["negcounter"] > max_neg_weights:
+        logger.error(f"More than {max_neg_weights} negative weight events in target + {shift}: {log_target_transform.__dict__['negcounter']}")
+        raise ValueError
+
+    return torch.log(torch.clamp(target + shift, min=epsilon))
     # Use log1p for better numerical stability: log(1 + x)
-    return torch.log(torch.clamp(target, min=epsilon))
     # return torch.log1p(torch.clamp(target, min=epsilon))
 
 def exp_target_transform(transformed_target):
     """Apply exponential transformation to revert log transformation on target values"""
+    shift   = 1.0
+    
     # Convert to torch tensor if it's not already
-    if not isinstance(transformed_target, torch.Tensor):
+    if not is(transformed_target, torch.Tensor):
         transformed_target = torch.tensor(transformed_target, dtype=torch.float32)
 
-    return torch.exp(transformed_target)  # - 1  # Revert log1p transformation
+    return torch.exp(transformed_target) - shift  # Revert log1p transformation
 
 def boost_into_Zjet_cm_frame(features):
     """
