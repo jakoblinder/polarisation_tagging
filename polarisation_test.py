@@ -149,6 +149,17 @@ def print_integration_statistics(observable_dict, histogram_data: dict = {}, mod
 
     return fig, ax
 
+def plot_r_distribution(r_pred, r_true, model_name="Model"):
+    fig, axs = plt.subplots(1, 1)
+    r_min, r_max = min(r_pred.min() ,r_true.min()), max(r_pred.max(), r_true.max())
+    bins = np.linspace(r_min, r_max, 101)
+    axs.hist(r_pred, bins=bins, alpha=0.5, label=f"Predicted {model_name}")
+    axs.hist(r_true, bins=bins, alpha=0.5, label="True")
+    axs.set_xlabel("r")
+    axs.set_ylabel("Events")
+    axs.legend()
+    return fig, axs
+
 def r_plot(r_pred, r_true, weights, model_name="Model"):
     fig, axs = plt.subplots(1, 1)
 
