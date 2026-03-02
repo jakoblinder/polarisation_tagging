@@ -5,11 +5,11 @@ import time
 import torch
 import copy
 import sys
+import argparse
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
 
 from pathlib import Path
 from torch import nn
@@ -18,20 +18,23 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ml_events_utils.transforms import januar2026_input_choice
-from ml_events_utils import MLEventsDataset, get_statistics_from_dataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform
+from ml_events_utils import MLEventsDataset, get_statistics_from_dataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform, exp_target_transform
 from ml_events_utils import boost_into_Zjet_cm_frame
 from ml_events_utils import train_loop, valid_loop
 from ml_events_utils import ZJetDataset
 from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output, FFNN_paper
+from ml_events_utils import log_file, setup_file_logger
 from polarisation_test import do_test_run
 from plot_training_history import plot_training_history
-import argparse
 
-print('numpy', np.__version__)
-print('pandas', pd.__version__)
-print('torch', torch.__version__)
 
-start_time = time.time()
+# if __name__ == "__main__":
+log_file = "output.log"
+mllogger = setup_file_logger(log_file, level="DEBUG", console=False, force=True)
+
+mllogger.info(f"numpy:  {np.__version__}")
+mllogger.info(f"pandas: {pd.__version__}")
+mllogger.info(f"torch:  {torch.__version__}")
 
 # %%
 parser = argparse.ArgumentParser(
@@ -44,7 +47,7 @@ parser.add_argument("-o", "--optimizer",      type=str,   action="store", defaul
 parser.add_argument("-g", "--gpu",            type=int,   action="store", default=-1,      help="Specify manually which of the available gpus is supposed to be used.")
 parser.add_argument("-e", "--epochs",         type=int,   action="store", default=1000,    help="Number of training epochs.")
 parser.add_argument("-b", "--batch_size",     type=int,   action="store", default=512,     help="Batch size for training.")
-parser.add_argument("-l", "--learning_rate",  type=float, action="store", default=1e-2,    help="Learning rate for the optimizer.")
+parser.add_argument("-l", "--learning_rate",  type=float, action="store", default=1e-3,    help="Learning rate for the optimizer.")
 parser.add_argument("-p", "--patience",       type=int,   action="store", default=25,      help="Early stopping patience.")
 parser.add_argument("-s", "--seed",           type=int,   action="store", default=42,      help="Random seed for reproducibility.")
 parser.add_argument("-n", "--nworkers",       type=int,   action="store", default=0,       help="Number of workers for DataLoader.")
@@ -59,6 +62,7 @@ parser.add_argument("--n_generated_events",   type=lambda x: int(float(x)),     
 parser.add_argument("--dont_test",            dest="do_test",      action="store_false",   help="Run the test script after training with the best model weights found during training.")
 parser.add_argument("--penalties", nargs='*', type=str,   action="store", default=[],      help="Specify which penalty terms to include in the loss function. Options: cross_section, ZdecayAngles.")
 parser.add_argument("--polarisation",         type=str,   action="store", default="LL",    help="Specify which polarisation to train on (Only relevant for ZZ). Options: LL, LT, TL, TT, UL, LU.")
+parser.add_argument("--showered",             dest="showered",     action="store_true",    help="This run used showered events instead of parton level events (default: use parton level events). Important for plotting.")
 
 # Create a mutually exclusive group for specifying the reference frame
 frame_group = parser.add_mutually_exclusive_group()
@@ -67,9 +71,13 @@ frame_group.add_argument("--cmframe",        dest="labframe", default=True, acti
 
 arg = parser.parse_args()
 
-print("Arguments:")
+mllogger.info("Arguments:")
 for attr, value in vars(arg).items():
-    print(f"  {attr}: {value}")
+    mllogger.info(f"  {attr}: {value}")
+
+
+start_time = time.time()
+
 
 # %%
 # from torch import nn
@@ -80,8 +88,8 @@ for attr, value in vars(arg).items():
 # this code snippet allows to set the variable "device" according to available resource (cpu or cuda gpu)
 
 if torch.cuda.is_available():
-  print('Number of devices: ', torch.cuda.device_count())
-  print(torch.cuda.get_device_name(0))
+  mllogger.info(f"Number of devices: {torch.cuda.device_count()}")
+  mllogger.info(str(torch.cuda.get_device_name(0)))
 
 if torch.cuda.is_available():
     if arg.gpu >= 0:
@@ -90,16 +98,16 @@ if torch.cuda.is_available():
         device = "cuda"
 else:
     device = "cpu"
-print(f"Computation device: {device}\n")
+mllogger.info(f"Computation device: {device}")
 
 # Set CUDA device globally
 if torch.cuda.is_available():
     if arg.gpu >= 0:
         torch.cuda.set_device(arg.gpu)
-        print(f"Set CUDA device to: {arg.gpu}")
+        mllogger.info(f"Set CUDA device to: {arg.gpu}")
     else:
         torch.cuda.set_device(0)
-        print(f"Set CUDA device to: 0")
+        mllogger.info(f"Set CUDA device to: 0")
 
 # Validate arguments
 if not arg.replot_only and len(arg.mlfiles) == 0:
@@ -112,13 +120,13 @@ np.random.seed(seed)
 
 # %% Replot mode - load existing data and regenerate plot
 if arg.replot_only:
-    print("Running in replot mode - loading existing training history...")
+    mllogger.info("Running in replot mode - loading existing training history...")
 
     # Determine model directory
     if arg.outputdir is not None:
         model_dir = arg.outputdir
         if not model_dir.exists():
-            print(f"Error: Directory {model_dir} does not exist!")
+            mllogger.error(f"Error: Directory {model_dir} does not exist!")
             sys.exit(1)
     else:
         # Try to infer from model name
@@ -128,9 +136,9 @@ if arg.replot_only:
     # Generate plot using the plotting function
     try:
         plot_training_history(model_dir, arg.model, use_log_scale=True)
-        print("Replot completed!")
+        mllogger.info("Replot completed!")
     except FileNotFoundError as e:
-        print(f"Error: {e}")
+        mllogger.error(f"Error: {e}")
         sys.exit(1)
 
     sys.exit(0)
@@ -141,7 +149,7 @@ if arg.replot_only:
 # files = Path("event_files/pwgevents-*.ml")
 files = arg.mlfiles
 
-print(f"Cache events: {arg.cache_events}")
+mllogger.info(f"Cache events: {arg.cache_events}")
 
 if not arg.use_zjet:
     if arg.labframe:
@@ -158,7 +166,8 @@ if not arg.use_zjet:
     dataset = MLEventsDataset(files,
                             labels = [f"{arg.polarisation}/UU", "UU"],
                             transform=trafo,
-                            #   target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
+                            target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
+                            inv_target_transform=exp_target_transform,  # Inverse transform to revert log transformation
                             cache_events=arg.cache_events,  # Caching enabled
                             standardise=False)  # Specify wether standardisation over the whole dataset is enabled (this changes the dataset).
 else:
@@ -178,7 +187,7 @@ else:
                           target_transform=None,
                           max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
                           standardise=False)  # Specify wether standardisation over the whole dataset is enabled (this changes the dataset).
-print(f"Dataset info: {dataset.get_file_info()}")
+mllogger.info(f"Dataset info: {dataset.get_file_info()}")
 
 # %% Hyperparameters
 
@@ -196,9 +205,9 @@ split_ratios = [0.6, 0.2, 0.2]  # 60% train, 20% validation, 20% test
 # split_ratios = [0.005, 0.005, 0.99]  # 0.5% train, 0.5% validation, 99% test
 train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(dataset, split_ratios, generator=generator)
 
-print(f"Train dataset size:      {len(train_dataset)}")
-print(f"Validation dataset size: {len(val_dataset)}")
-print(f"Test dataset size:       {len(test_dataset)}")
+mllogger.info(f"Train dataset size:      {len(train_dataset)}")
+mllogger.info(f"Validation dataset size: {len(val_dataset)}")
+mllogger.info(f"Test dataset size:       {len(test_dataset)}")
 
 
 if arg.standardise:
@@ -207,8 +216,8 @@ if arg.standardise:
         "mean": overall_mean,
         "stddev": overall_stddev
     }
-    print(f"\nFeature means over training set (verification):\n{overall_mean}")
-    print(f"\nFeature stddevs over training set (verification):\n{overall_stddev}")
+    mllogger.info(f"Feature means over training set (verification):\n{overall_mean}")
+    mllogger.info(f"Feature stddevs over training set (verification):\n{overall_stddev}")
 
 
 # Create DataLoader with multiple workers for better performance
@@ -229,13 +238,13 @@ val_dataloader = DataLoader(
     pin_memory=True         # Faster GPU transfer
 )
 
-print(f"\nDataLoader created with batch_size={batch_size}, num_workers={n_workers}")
+mllogger.info(f"\nDataLoader created with batch_size={batch_size}, num_workers={n_workers}")
 
 # Test iteration (only first batch to avoid long output)
 for batch_idx, (batch_features, batch_labels) in enumerate(train_dataloader):
-    print(f"Batch {batch_idx}: features shape {batch_features.shape}, labels shape {batch_labels.shape}")
+    mllogger.info(f"Batch {batch_idx}: features shape {batch_features.shape}, labels shape {batch_labels.shape}")
     input_dim = batch_features.shape[1]
-    print(f"{input_dim = }")
+    mllogger.info(f"{input_dim = }")
     break  # Only show first batch
 
 # %% Test standardisation statistics
@@ -251,14 +260,14 @@ if test_standardisation:
 
     features, labels = next(iter(fulldataloader))
     features_overall_mean   = features.mean(dim=0)
-    print(f"\nFeature means over training set:\n{features_overall_mean}")
+    mllogger.info(f"\nFeature means over training set:\n{features_overall_mean}")
     features_overall_stddev = features.std(dim=0)
-    print(f"\nFeature stddevs over training set:\n{features_overall_stddev}")
+    mllogger.info(f"\nFeature stddevs over training set:\n{features_overall_stddev}")
 
     # TODO: Calculate correct mean by multiplying for ZZ with UU xsec before averaging.
     xsec_estimate  = labels.sum(dim=0)
     xsec_estimate /= (split_ratios[0] * arg.n_generated_events)
-    print(f"\nxSec estimate over training set:\n{xsec_estimate}")
+    mllogger.info(f"\nxSec estimate over training set:\n{xsec_estimate}")
 
     del fulldataloader
 
@@ -283,19 +292,21 @@ else:
 
 
 # if torch.cuda.device_count() > 1:
-#   print("Let's use", torch.cuda.device_count(), "GPUs!")
+#   mllogger.info("Let's use", torch.cuda.device_count(), "GPUs!")
 #   model = nn.DataParallel(model)
 
 if torch.cuda.is_available():
 #   summary(model.cuda(), input_size=(1,input_dim))
-  summary(model.cuda(), input_size=(input_dim,))
+    model_summary = summary(model.cuda(), input_size=(input_dim,))
 else:
 #   summary(model, input_size=(1,input_dim))
-  summary(model, input_size=(input_dim,))
+    model_summary = summary(model, input_size=(input_dim,))
+
+mllogger.info(model_summary)
 
 model.to(device)
-# print(f"Model {model_name} is on GPU: {next(model.parameters()).is_cuda}")
-print(f"Model {model_name} device: {next(model.parameters()).device}")
+# mllogger.info(f"Model {model_name} is on GPU: {next(model.parameters()).is_cuda}")
+mllogger.info(f"Model {model_name} device: {next(model.parameters()).device}")
 
 # Create directory for this model's outputs
 if arg.outputdir is not None:
@@ -308,13 +319,13 @@ optimizers = {
     "SGD":     torch.optim.SGD(    model.parameters(), lr=learning_rate),
     "Adam":    torch.optim.Adam(   model.parameters(), lr=learning_rate),
     "RMSprop": torch.optim.RMSprop(model.parameters(), lr=learning_rate),
-    "paper":   torch.optim.RMSprop(model.parameters(), lr=0.001, alpha=0.99, eps=1e-08, weight_decay=0.0, momentum=0.0),
-    "paper_momentum":   torch.optim.RMSprop(model.parameters(), lr=0.001, alpha=0.99, eps=1e-08, weight_decay=0.0, momentum=0.9)
+    "paper":   torch.optim.RMSprop(model.parameters(), lr=learning_rate, alpha=0.99, eps=1e-08, weight_decay=0.0, momentum=0.0),
+    "paper_momentum":   torch.optim.RMSprop(model.parameters(), lr=learning_rate, alpha=0.99, eps=1e-08, weight_decay=0.0, momentum=0.9)
 }
 
 # Initialize the optimizer
 optimizer = optimizers[arg.optimizer]
-print(f"Using optimizer: {optimizer}")
+mllogger.info(f"Using optimizer:\n{optimizer}")
 
 
 # %% Test implementation on one batch before to train
@@ -328,13 +339,13 @@ xb, yb = next(iter(train_dataloader))
 xb = xb.type(torch.float).to(device)
 yb = yb.type(torch.float).to(device)
 
-print(f"{xb.shape = }")
-print(f"{yb.shape = }")
+mllogger.info(f"{xb.shape = }")
+mllogger.info(f"{yb.shape = }")
 
 # Prediction
 pred = model(xb)
-print('output shape: ', pred.shape)
-print(f"{pred.squeeze().shape = }")
+mllogger.info(f'output shape: {pred.shape}')
+mllogger.info(f"{pred.squeeze().shape = }")
 
 
 # Loss and metric
@@ -342,12 +353,12 @@ loss = loss_fn(pred, yb[:,0].unsqueeze(-1))
 # loss = loss_fn(pred, torch.unsqueeze(yb,1))  # Bring yb to shape (batch_size, 1) to match pred shape.
 # metric = binary_accuracy(pred, torch.unsqueeze(yb,1))
 
-print('loss: ', loss.item())
-# print('metric: ', metric.item())
+mllogger.info(f'loss: {loss.item()}')
+# mllogger.info('metric: ', metric.item())
 
 
 if arg.test_mode:
-    print("Exiting script now after testing implementation of the model on one point.")
+    mllogger.info("Exiting script now after testing implementation of the model on one point.")
     sys.exit(0)
 
 
@@ -390,8 +401,8 @@ with open(val_loss_file, 'w') as f:
 with open(lr_file, 'w') as f:
     f.write("epoch,learning_rate\n")
 
-print(f"Starting training for {epochs} epochs...")
-print(f"Early stopping patience: {patience}")
+mllogger.info(f"Starting training for {epochs} epochs...")
+mllogger.info(f"Early stopping patience: {patience}")
 
 penalties = {penalty: True for penalty in arg.penalties}
 
@@ -403,9 +414,9 @@ for epoch in range(epochs):
     epoch_start_time = time.time()
     current_lr = optimizer.param_groups[0]['lr']
 
-    print(f"\nEpoch {epoch + 1}/{epochs}")
-    print(f"Learning Rate: {current_lr:.2e}")
-    print("-" * 50)
+    mllogger.info(f"Epoch {epoch + 1}/{epochs}")
+    mllogger.info(f"Learning Rate: {current_lr:.2e}")
+    mllogger.info("-" * 50)
 
     # Training phase
     train_loss = train_loop(epoch, train_dataloader, model, loss_fn, optimizer, device, print_freq = 2500, penalties=penalties)
@@ -434,19 +445,19 @@ for epoch in range(epochs):
         patience_counter = 0
         # Save best model state
         best_model_state = copy.deepcopy(model.state_dict())
-        print(f"✓ New best validation loss: {best_val_loss:.6f}")
+        mllogger.info(f"✓ New best validation loss: {best_val_loss:.6f}")
     else:
         patience_counter += 1
-        print(f"No improvement. Patience: {patience_counter}/{patience}")
+        mllogger.info(f"No improvement. Patience: {patience_counter}/{patience}")
 
     epoch_time = time.time() - epoch_start_time
-    print(f"Epoch time: {epoch_time:.2f} seconds")
-    print(f"Train Loss: {train_loss:.6f} | Val Loss: {valid_loss:.6f}")
+    mllogger.info(f"Epoch time: {epoch_time:.2f} seconds")
+    mllogger.info(f"Train Loss: {train_loss:.6f} | Val Loss: {valid_loss:.6f}")
 
     # Early stopping
     if patience_counter >= patience:
-        print(f"\nEarly stopping triggered after {epoch+1} epochs")
-        print(f"Best validation loss: {best_val_loss:.6f}")
+        mllogger.info(f"\nEarly stopping triggered after {epoch+1} epochs")
+        mllogger.info(f"Best validation loss: {best_val_loss:.6f}")
         break
 
 # Save final model
@@ -456,7 +467,7 @@ torch.save(model.state_dict(), model_filename)
 # Load best model weights
 if best_model_state is not None:
     model.load_state_dict(best_model_state)
-    print(f"\nLoaded best model with validation loss: {best_val_loss:.6f}")
+    mllogger.info(f"\nLoaded best model with validation loss: {best_val_loss:.6f}")
 
 
 hist_loss     = np.array(hist_loss)
@@ -468,28 +479,28 @@ hist_lr       = np.array(hist_lr)
 if best_model_state is not None:
     best_model_filename = model_dir / f"{model_name}_model_weights_best.pt"
     torch.save(best_model_state, best_model_filename)
-    print(f"Best model saved as: {best_model_filename}")
+    mllogger.info(f"Best model saved as: {best_model_filename}")
 
 
-print(f"Final model saved as: {model_filename}")
-print("Training completed!")
+mllogger.info(f"Final model saved as: {model_filename}")
+mllogger.info("Training completed!")
 
 # Print training summary
-print(f"\nTraining Summary:")
-print(f"Total epochs: {len(hist_loss)}")
-print(f"Final train loss: {hist_loss[-1]:.6f}")
-print(f"Final validation loss: {hist_val_loss[-1]:.6f}")
-print(f"Best validation loss: {best_val_loss:.6f}")
+mllogger.info(f"Training Summary:")
+mllogger.info(f"Total epochs: {len(hist_loss)}")
+mllogger.info(f"Final train loss: {hist_loss[-1]:.6f}")
+mllogger.info(f"Final validation loss: {hist_val_loss[-1]:.6f}")
+mllogger.info(f"Best validation loss: {best_val_loss:.6f}")
 
 # %% Plot loss
 
-print(f"Plotting training history, using best model weights: {best_model_state is not None}")
+mllogger.info(f"Plotting training history, using best model weights: {best_model_state is not None}")
 
 # Generate plot using the plotting function
 try:
     plot_training_history(model_dir, model_name, use_log_scale=True)
 except Exception as e:
-    print(f"Warning: Could not generate plot: {e}")
+    mllogger.warning(f"Could not generate plot: {e}")
 
 # %% Check network on random event:
 # ```
@@ -520,21 +531,21 @@ except Exception as e:
 #                                 -4.064316981E+01,  4.940630397E+01, -3.490849930E+01,  7.287971904E+01])
 
 #     res = model(test_tensor.unsqueeze(0).to(device))
-#     print(f"res = {res.item():.10e}")
-#     print(f"Expected LL/ UU weight: {0.885049987E-03 / 0.248160008E-01:.10e}")
+#     mllogger.info(f"res = {res.item():.10e}")
+#     mllogger.info(f"Expected LL/ UU weight: {0.885049987E-03 / 0.248160008E-01:.10e}")
 # elif not (arg.input_choice in ["jan2026",]):
 #     test_tensor = torch.tensor([-12.130391188000001,  34.443724807000002, 262.44532550000002, 264.97370709000000,
 #                                  59.635322049999999, -22.605515205000000, 283.59799611000000, 290.68058819999999,
 #                                 -47.504930862000002, -11.838209601000001, 171.64348498999999, 178.48906858000001])
 
 #     res = model(test_tensor.unsqueeze(0).to(device))
-#     print(f"res = {res.item():.10e}")
-#     print(f"Expected LL/ UU weight: {0.91735652950215585:.10e}")
+#     mllogger.info(f"res = {res.item():.10e}")
+#     mllogger.info(f"Expected LL/ UU weight: {0.91735652950215585:.10e}")
 
 end_time = time.time()
 elapsed_time = end_time - start_time
-print(f"\nTotal execution time: {elapsed_time:.2f} seconds")
+mllogger.info(f"\nTotal execution time: {elapsed_time:.2f} seconds")
 
 
 if arg.do_test:
-    do_test_run(device, arg.use_zjet, model, model_name, model_dir, files[0].parent, files, seed, test_dataset, split_ratios, arg.polarisation, batch_size=arg.batch_size, n_workers=arg.nworkers, n_generated_events=arg.n_generated_events, input_choice=arg.input_choice)
+    do_test_run(device, arg.use_zjet, model, model_name, model_dir, files[0].parent, files, seed, test_dataset, split_ratios, arg.polarisation, batch_size=arg.batch_size, n_workers=arg.nworkers, n_generated_events=arg.n_generated_events, input_choice=arg.input_choice, showered=arg.showered)

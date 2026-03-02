@@ -1,5 +1,8 @@
 import torch
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 
 def boostinv(qx, pboost):
     """

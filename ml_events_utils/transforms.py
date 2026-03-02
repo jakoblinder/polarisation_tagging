@@ -1,8 +1,10 @@
 # Utility package to scale target values
 import torch
+import logging
 import numpy as np
 from .analysis import costhetastar, get_pt, get_rapidity, get_phi
 
+logger = logging.getLogger(__name__)
 
 def boostinv(qx, pboost):
     """
@@ -90,7 +92,16 @@ def log_target_transform(target):
     # Add small epsilon to handle zero values and ensure positive input to log
     epsilon = 1e-10
     # Use log1p for better numerical stability: log(1 + x)
-    return torch.log1p(torch.clamp(target, min=epsilon))
+    return torch.log(torch.clamp(target, min=epsilon))
+    # return torch.log1p(torch.clamp(target, min=epsilon))
+
+def exp_target_transform(transformed_target):
+    """Apply exponential transformation to revert log transformation on target values"""
+    # Convert to torch tensor if it's not already
+    if not isinstance(transformed_target, torch.Tensor):
+        transformed_target = torch.tensor(transformed_target, dtype=torch.float32)
+
+    return torch.exp(transformed_target)  # - 1  # Revert log1p transformation
 
 def boost_into_Zjet_cm_frame(features):
     """

@@ -3,8 +3,12 @@ import torch
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
+import logging
 
-from ml_events_utils.analysis import costhetastar
+from .transforms import exp_target_transform
+from .analysis import costhetastar
+
+logger = logging.getLogger(__name__)
 
 def train_loop(
     epoch: int,
@@ -110,17 +114,18 @@ def train_loop(
             if torch.is_tensor(per_sample) and per_sample.ndim > 1:
                 per_sample = per_sample.view(per_sample.size(0), -1).mean(dim=1)
         except RuntimeError as e:
-            print(f"RuntimeError during loss computation: {e}")
-            print(f"pred shape: {pred.shape}, y shape: {y.shape}")
-            print(f"pred: {pred}")
-            print(f"y: {y}")
+            logger.error(f"RuntimeError during loss computation: {e}")
+            logger.error(f"pred shape: {pred.shape}, y shape: {y.shape}")
+            logger.error(f"pred: {pred}")
+            logger.error(f"y: {y}")
             raise e
 
         # Compute possible penalty terms
         penalty_scalar = 0.0
 
         if penalties.get("ZdecayAngles", False):
-            importance = 2.0 + 0.01 * epoch**2  # Weight of the penalty term in the total loss
+            threshold  = 0.01  # Threshold for closeness (in %)
+            importance = 0.001 * (1 + (epoch // 10)**2)  # Weight of the penalty term in the total loss
             # The functional form of the normalised cthep distribution is
             #     (3/4)*sin(theta)^2 = (3/4)*(1-cthep^2).
             if y.ndim < 2 or y.shape[1] <= 1:
@@ -144,9 +149,10 @@ def train_loop(
             # there is no way around that, since (3/4) * (1 - cthep**2) is only valid for the normalized distribution.
 
             # Elementwise penalty per event (shape (B,))
-            diff_cthep  = torch.abs(xsec_LL_norm) / torch.clamp(torch.abs(expected_cthep),  min=1e-9)
-            diff_cthmup = torch.abs(xsec_LL_norm) / torch.clamp(torch.abs(expected_cthmup), min=1e-9)
-            angle_penalty = importance * (diff_cthep * diff_cthmup)
+            diff_cthep  = torch.abs(xsec_LL_norm) / torch.clamp(torch.abs(expected_cthep),  min=eps)
+            diff_cthmup = torch.abs(xsec_LL_norm) / torch.clamp(torch.abs(expected_cthmup), min=eps)
+
+            angle_penalty = importance * (torch.clamp(diff_cthep - threshold, min=0) + torch.clamp(diff_cthmup - threshold, min=0))
             per_sample = per_sample + angle_penalty
 
             # # Plot the stuff as a sanity check.
@@ -195,10 +201,11 @@ def train_loop(
             # plt.savefig(f"cthep_distribution_epoch_{epoch}.pdf")
 
         if penalties.get("cross_section", False):
-            sigma_true    = torch.mean(   y[:,0] * y[:,1])  # Average over all true labels in the training set.
-            sigma_learned = torch.mean(pred[:,0] * y[:,1])  # Average over the predicted values.
+            sigma_true    = torch.mean(exp_target_transform(   y[:,0]) * exp_target_transform(y[:,1]))  # Average over all true labels in the training set.
+            sigma_learned = torch.mean(exp_target_transform(pred[:,0]) * exp_target_transform(y[:,1]))  # Average over the predicted values.
             threshold  = 0.005  # Threshold for closeness (in %)
-            importance = 2.0  # Weight of the penalty term in the total loss
+            importance = 0.001  # Weight of the penalty term in the total loss
+            importance *= (1 + (epoch // 10)**2)  # Optionally increase the importance of the penalty term as training progresses.
             xsec_penalty = torch.abs(sigma_learned - sigma_true) / torch.clamp(torch.abs(sigma_true), min=eps) - threshold
             xsec_penalty = importance * torch.clamp(xsec_penalty, min=0)
             penalty_scalar += xsec_penalty
@@ -223,7 +230,7 @@ def train_loop(
 
         if (batch + 1) % print_freq == 0 and batch > 0:
             loss, current = loss.item(), batch * batch_size + len(X)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+            logger.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
     return train_loss / num_batches
 
@@ -249,6 +256,7 @@ def valid_loop(dataloader, model, loss_fn, device):
     valid_loss /= num_batches
     l1loss /= num_batches
 
-    print(f"Validation Error: \n Avg (per batch) valid loss: {valid_loss:>8f}, Avg L1 Loss: {l1loss:>8f}\n")
+    logger.info(f"Validation Error:")
+    logger.info(f"  Avg (per batch) valid loss: {valid_loss:>8f}, Avg L1 Loss: {l1loss:>8f}")
 
     return valid_loss

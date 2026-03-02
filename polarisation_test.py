@@ -1,6 +1,8 @@
 from datetime import datetime
 import time
 import torch
+import argparse
+import logging
 
 import numpy as np
 import pandas as pd
@@ -13,13 +15,12 @@ from torch.utils.data import DataLoader
 from matplotlib.backends.backend_pdf import PdfPages
 
 from ml_events_utils.transforms import januar2026_input_choice
-from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepton_cm_frame  #, test_loop
+from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform, exp_target_transform  #, test_loop
 from ml_events_utils import ZJetDataset
 from ml_events_utils import boost_into_Zjet_cm_frame
 from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output, FFNN_paper
 from ml_events_utils.analysis import costhetastar, get_pt, get_rapidity, cosmujet
-import argparse
-
+from ml_events_utils import log_file, setup_file_logger
 
 # %% Helper functions for plotting and histogram handling
 def read_top_file_histograms(top_file_paths: dict) -> dict:
@@ -107,7 +108,7 @@ def read_top_file_histograms(top_file_paths: dict) -> dict:
 
     return histogram_data_restructured
 
-def print_integration_statistics(observable_dict, histogram_data: dict = {}, model: str = "", powheg_histogram_runs: list = ["LL",]):
+def print_integration_statistics(observable_dict, histogram_data: dict = {}, model: str = "", powheg_histogram_runs: list = ["LL",], fitted_polarisation: str = "LL"):
     pred_integral = np.sum(observable_dict["weights_ypred"])
     true_integral = np.sum(observable_dict["weights_y"])
 
@@ -119,21 +120,21 @@ def print_integration_statistics(observable_dict, histogram_data: dict = {}, mod
         title = f"Integrated cross-sections for model {model}"
     else:
         title = "Integrated cross-sections"
-    print(f"{title}:")
-    print(f"  True r_LL:          {true_integral:.6e}")
-    print(f"  Predicted r_LL:     {pred_integral:.6e}")
+    logger.info(f"{title}:")
+    logger.info(f"  True r_{fitted_polarisation}:          {true_integral:.6e}")
+    logger.info(f"  Predicted r_{fitted_polarisation}:     {pred_integral:.6e}")
     if histogram_data:
         for run in powheg_histogram_runs:
-            print(f"  POWHEG reweighting [{run}]: {histogram_data['totxsec'][run]['values'][0]:.6e}")
-        print(f"  Ratio (pred/PWG-[{powheg_histogram_runs[0]}]):   {pred_integral/histogram_data['totxsec'][powheg_histogram_runs[0]]['values'][0]:.6f}")
-    print(f"  Ratio (pred/true):  {pred_integral/true_integral:.6f}")
+            logger.info(f"  POWHEG reweighting [{run}]: {histogram_data['totxsec'][run]['values'][0]:.6e}")
+        logger.info(f"  Ratio (pred/PWG-[{powheg_histogram_runs[0]}]):   {pred_integral/histogram_data['totxsec'][powheg_histogram_runs[0]]['values'][0]:.6f}")
+    logger.info(f"  Ratio (pred/true):  {pred_integral/true_integral:.6f}")
 
     # Create a text-only plot for integration results
     fig, ax = plt.subplots(1, 1)
     ax.axis('off')  # Remove axes
 
-    text_content  = f"    True r_LL:               {true_integral:.6e}\n"
-    text_content += f"    Predicted r_LL:          {pred_integral:.6e}\n"
+    text_content  = f"    True r_{fitted_polarisation}:               {true_integral:.6e}\n"
+    text_content += f"    Predicted r_{fitted_polarisation}:          {pred_integral:.6e}\n"
     if histogram_data:
         for run in powheg_histogram_runs:
             text_content += f"    POWHEG reweighting [{run}]: {histogram_data['totxsec'][run]['values'][0]:.6e}\n"
@@ -147,6 +148,17 @@ def print_integration_statistics(observable_dict, histogram_data: dict = {}, mod
     ax.set_title(f'{title}', fontsize=16, fontweight='bold')
 
     return fig, ax
+
+def plot_r_distribution(r_pred, r_true, model_name="Model"):
+    fig, axs = plt.subplots(1, 1)
+    r_min, r_max = min(r_pred.min() ,r_true.min()), max(r_pred.max(), r_true.max())
+    bins = np.linspace(r_min, r_max, 101)
+    axs.hist(r_pred, bins=bins, alpha=0.5, label=f"Predicted {model_name}")
+    axs.hist(r_true, bins=bins, alpha=0.5, label="True")
+    axs.set_xlabel("r")
+    axs.set_ylabel("Events")
+    axs.legend()
+    return fig, axs
 
 def r_plot(r_pred, r_true, weights, model_name="Model"):
     fig, axs = plt.subplots(1, 1)
@@ -186,7 +198,7 @@ def r_plot(r_pred, r_true, weights, model_name="Model"):
     try:
         axs.set_xlim(xmin=r_min * 0.99, xmax=r_max * 1.01)
     except ValueError as e:
-        print(f"Could not set x limits for r plot: {e}")
+        logger.error(f"Could not set x limits for r plot: {e}")
 
     axs.set_xlabel("r")
 
@@ -286,9 +298,9 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
             if np.all(true_sums > 0) and np.all(pred_sums > 0) and (not powheg_histogram or np.all([np.all(sums > 0) for sums in powheg_sums.values()])):
                 axs[0].set_yscale('log')
             else:
-                print(f"Not all histogram values are positive for {observable_key} plot; skipping log scale.")
+                logger.info(f"Not all histogram values are positive for {observable_key} plot; skipping log scale.")
         except ValueError as e:
-            print(f"Could not set y scale to log for {observable_key} plot: {e}")
+            logger.error(f"Could not set y scale to log for {observable_key} plot: {e}")
 
     if not kwargs.get("plotrLL", False):
         axs[0].set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} \mathrm{" + observable_key + r"}}$ [pb / [" + observable_key + "]]")
@@ -302,7 +314,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     try:
         axs[1].set_xlim(xmin=observable_dict[observable_key].min() * 0.99, xmax=observable_dict[observable_key].max() * 1.01)
     except ValueError as e:
-        print(f"Could not set x limits for {observable_key} plot: {e}")
+        logger.error(f"Could not set x limits for {observable_key} plot: {e}")
 
     axs[1].set_xlabel(f"{observable_key}")
 
@@ -321,6 +333,7 @@ def test_model_ZZ(model,
                   n_generated_events:int=0.2*1e7,
                   model_name="Model",
                   fitted_polarisation="LL",
+                  showered:bool=False,
                   *args,
                   **kwargs):
     """
@@ -354,20 +367,32 @@ def test_model_ZZ(model,
         - Target y_untransformed with shape (batch_size, 1) where y_untransformed[:,0] are the rL weights.
     """
 
-    print("Starting testing for ZZ model...")
+    logger.info("Starting testing for ZZ model...")
     size        = len(dataloader.dataset)  # Total number of samples in the dataset (= n_events).
     num_batches = len(dataloader)          # Number of batches in the dataloader.
 
     n_generated_events = int(n_generated_events)
-    print(f"Analysing {n_generated_events} generated events which result in {size} events after applying cuts.")
+    logger.info(f"Analysing {n_generated_events} generated events which result in {size} events after applying cuts.")
 
     # Load the LL histogram for comparison plots
-    powheg_histograms_paths = {"LL": histogram_dir / "pwgLHEF_analysis-mean-W8.top",
-                            #   "LT": histogram_dir / "pwgLHEF_analysis-mean-W9.top",
-                            #   "TL": histogram_dir / "pwgLHEF_analysis-mean-W10.top",
-                              "TT": histogram_dir / "pwgLHEF_analysis-mean-W11.top",
-                              "UU": histogram_dir / "pwgLHEF_analysis-mean-W12.top",
-                              }
+    if not showered:
+        powheg_histograms_paths = {"UU": histogram_dir / "pwgLHEF_analysis-mean-W8.top",
+                                   "LL": histogram_dir / "pwgLHEF_analysis-mean-W9.top",
+                                   "LT": histogram_dir / "pwgLHEF_analysis-mean-W10.top",
+                                   "TL": histogram_dir / "pwgLHEF_analysis-mean-W11.top",
+                                   "TT": histogram_dir / "pwgLHEF_analysis-mean-W12.top",
+                                   "LU": histogram_dir / "pwgLHEF_analysis-mean-W13.top",
+                                   "UL": histogram_dir / "pwgLHEF_analysis-mean-W14.top",
+                                  }
+    else:
+        powheg_histograms_paths = {"UU": histogram_dir / "pwgoutput_py8_histos-mean-W8.top",
+                                   "LL": histogram_dir / "pwgoutput_py8_histos-mean-W9.top",
+                                   "LT": histogram_dir / "pwgoutput_py8_histos-mean-W10.top",
+                                   "TL": histogram_dir / "pwgoutput_py8_histos-mean-W11.top",
+                                   "TT": histogram_dir / "pwgoutput_py8_histos-mean-W12.top",
+                                   "LU": histogram_dir / "pwgoutput_py8_histos-mean-W13.top",
+                                   "UL": histogram_dir / "pwgoutput_py8_histos-mean-W14.top",
+                                  }
     histogram_data = read_top_file_histograms(powheg_histograms_paths)
     # Normalise all runs to have the total cross section as the fitted polarisation run.
     runs_wo_fitted_polarisation = list(next(iter(histogram_data.values()), {}).keys()).copy()
@@ -379,7 +404,7 @@ def test_model_ZZ(model,
         for observable in observables_in_run:
             histogram_data[observable][run]['values'] *= xsec_fitted_polarisation / histogram_data['totxsec'][run]['values'][0]
 
-    print(f"Loaded {len(histogram_data)} histograms from .top file")
+    logger.info(f"Loaded {len(histogram_data)} histograms from .top file")
 
     # Move the model to the specified device (CPU or GPU)
     model.to(device)
@@ -424,16 +449,16 @@ def test_model_ZZ(model,
             test_loss += loss_fn(pred, y_first_weight_only).item()
 
             # Store weights for integration
-            observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] = (pred[:,0] * y[:,1]).cpu().numpy()
-            observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     = (y[:,0]    * y[:,1]).cpu().numpy()
+            observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] = (exp_target_transform(pred[:,0]) * exp_target_transform(y[:,1])).cpu().numpy()
+            observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     = (exp_target_transform(y[:,0])    * exp_target_transform(y[:,1])).cpu().numpy()
             # The weights are calculated as an average over the number of genereated events in POWHEG-BOX-RES:
             observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] /= n_generated_events
             observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     /= n_generated_events
 
 
             # Compute observables
-            observable_dict["r_pred"][batch * batch_size : batch * batch_size + X.shape[0]] = pred[:,0].cpu().numpy()
-            observable_dict["r_true"][batch * batch_size : batch * batch_size + X.shape[0]] = y[:,0].cpu().numpy()
+            observable_dict["r_pred"][batch * batch_size : batch * batch_size + X.shape[0]] = exp_target_transform(pred[:,0]).cpu().numpy()
+            observable_dict["r_true"][batch * batch_size : batch * batch_size + X.shape[0]] = exp_target_transform(y[:,0]).cpu().numpy()
 
 
             # zl1, zl2, zl3, zl4 = e+, e-, mu+, mu-
@@ -463,7 +488,7 @@ def test_model_ZZ(model,
     # Count number of zero values in the array
     test_loss /= num_batches
 
-    print(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
+    logger.info(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
 
     with PdfPages(f"{model_dir}/test_histograms.pdf") as pdf:
         d = pdf.infodict()
@@ -474,28 +499,30 @@ def test_model_ZZ(model,
         d['CreationDate'] = datetime.today()
         d['ModDate']      = datetime.today()
 
+        show_polarisation = [fitted_polarisation, "UU"]
+
         # Integration statistics
-        fig, _ = print_integration_statistics(observable_dict, histogram_data, model=model_name, powheg_histogram_runs = [fitted_polarisation, ])
+        fig, _ = print_integration_statistics(observable_dict, histogram_data, model=model_name, powheg_histogram_runs = [fitted_polarisation, ], fitted_polarisation=fitted_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
         # Invariant mass Z1 comparison plot
-        fig, _ = comparison_plots(observable_dict, "invmass_Z1", histogram_data["mee"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
+        fig, _ = comparison_plots(observable_dict, "invmass_Z1", histogram_data["mee"], model_name=model_name, powheg_histogram_runs = show_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
         # pT of Z1 comparison plot
-        fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
+        fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = show_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
         # pT of Z1 with rLL plot
-        fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()), plotrLL=True)
+        fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = show_polarisation, plotrLL=True)
         pdf.savefig(fig)
         plt.close(fig)
 
         # Cos(theta*) comparison plot
-        fig, _ = comparison_plots(observable_dict, "cthep", histogram_data["cthep"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
+        fig, _ = comparison_plots(observable_dict, "cthep", histogram_data["cthep"], model_name=model_name, powheg_histogram_runs = show_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
@@ -511,12 +538,12 @@ def test_model_ZZ(model,
         # plt.close(fig)
 
         # Transverse momentum of positron
-        fig, _ = comparison_plots(observable_dict, "ptep", histogram_data["ptep"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
+        fig, _ = comparison_plots(observable_dict, "ptep", histogram_data["ptep"], model_name=model_name, powheg_histogram_runs = show_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
         # Rapidity of positron
-        fig, _ = comparison_plots(observable_dict, "yep", histogram_data["yep"], model_name=model_name, powheg_histogram_runs = list(powheg_histograms_paths.keys()))
+        fig, _ = comparison_plots(observable_dict, "yep", histogram_data["yep"], model_name=model_name, powheg_histogram_runs = show_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
@@ -526,6 +553,10 @@ def test_model_ZZ(model,
         # plt.close(fig)
 
         fig, _ = r_plot(observable_dict["r_pred"], observable_dict["r_true"], observable_dict["weights_y"], model_name=model_name)
+        pdf.savefig(fig)
+        plt.close(fig)
+
+        fig, _ = plot_r_distribution(observable_dict["r_pred"], observable_dict["r_true"], model_name=model_name)
         pdf.savefig(fig)
         plt.close(fig)
 
@@ -558,14 +589,14 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
         - Target y_untransformed with shape (batch_size, 1) where y_untransformed[:,0] are the rL weights.
     """
 
-    print("Starting testing for Z+jet model...")
+    logger.info("Starting testing for Z+jet model...")
     size        = len(dataloader.dataset)  # Total number of samples in the dataset (= n_events).
     num_batches = len(dataloader)          # Number of batches in the dataloader.
 
     # In the Z+jet case, the events are unweighted, so we can directly use the number of generated events for normalisation.
     n_generated_events = size
 
-    print(f"Analysing {size} events in total.")
+    logger.info(f"Analysing {size} events in total.")
 
     # Get the total unpolarised cross-section from the xsec.txt file
     with open(histogram_dir / "xsec.txt", 'r') as f:
@@ -574,7 +605,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
         xsec_line = lines[2].strip()  # "817.3(2) pb"
         # Extract the numerical value before the parentheses
         total_xsec = float(xsec_line.split('(')[0])
-    print(f"Total unpolarised cross-section from MG5: {total_xsec:.6e} pb")
+    logger.info(f"Total unpolarised cross-section from MG5: {total_xsec:.6e} pb")
 
     # Move the model to the specified device (CPU or GPU)
     model.to(device)
@@ -623,7 +654,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
 
     test_loss /= num_batches
 
-    print(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
+    logger.info(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
 
     with PdfPages(f"{model_dir}/test_histograms.pdf") as pdf:
         d = pdf.infodict()
@@ -654,7 +685,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
 
     return test_loss
 
-def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, mlfiles, seed: int, test_dataset, split_ratios, polarisation:str = "LL", batch_size=512, n_workers=0, n_generated_events: int = int(1e7), input_choice:str=None):
+def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, mlfiles, seed: int, test_dataset, split_ratios, polarisation:str = "LL", batch_size=512, n_workers=0, n_generated_events: int = int(1e7), input_choice:str=None, showered:bool=False):
     start_time = time.time()
 
     torch.manual_seed(seed)
@@ -664,9 +695,11 @@ def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, m
         # ZZ case
         labels = [f"{polarisation}/UU", "UU"]
         dataset_untransformed = MLEventsDataset(mlfiles,
-                                labels = labels,
-                                cache_events=True,
-                                standardise=False)
+                                                # target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
+                                                # inv_target_transform=exp_target_transform,  # Inverse transform to revert log transformation
+                                                labels = labels,
+                                                cache_events=True,
+                                                standardise=False)
     else:
         # Z+jet case
         dataset_untransformed = ZJetDataset(files[0],
@@ -695,29 +728,31 @@ def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, m
 
     # Test iteration (only first batch to avoid long output)
     for batch_idx, (batch_features, batch_labels) in enumerate(test_dataloader):
-        print(f"Batch {batch_idx}: features shape {batch_features.shape}, labels shape {batch_labels.shape}")
+        logger.info(f"Batch {batch_idx}: features shape {batch_features.shape}, labels shape {batch_labels.shape}")
         input_dim = batch_features.shape[1]
-        print(f"{input_dim = }")
+        logger.info(f"{input_dim = }")
         break  # Only show first batch
 
 
     test_loss_fn = torch.nn.MSELoss()
 
     if not use_zjet:
-        test_loss = test_model_ZZ(model, model_dir, histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, split_ratios[2] * n_generated_events, model_name=model_name, fitted_polarisation=polarisation, input_choice=input_choice)
+        test_loss = test_model_ZZ(model, model_dir, histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, split_ratios[2] * n_generated_events, model_name=model_name, fitted_polarisation=polarisation, input_choice=input_choice, showered=showered)
     else:
         test_loss = test_model_Zjet(model, model_dir, histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, model_name=model_name)
 
     end_time = time.time()
-    print(f"Testing completed in {end_time - start_time:.2f} seconds.")
+    logger.info(f"Testing completed in {end_time - start_time:.2f} seconds.")
 
     return test_loss
 
 # %% Run the test
 if __name__ == "__main__":
-    print('numpy', np.__version__)
-    print('pandas', pd.__version__)
-    print('torch', torch.__version__)
+    logger = setup_file_logger(log_file=log_file, level="DEBUG", console=False, force=True)
+
+    logger.info(f"numpy:  {np.__version__}")
+    logger.info(f"pandas: {pd.__version__}")
+    logger.info(f"torch:  {torch.__version__}")
     # %%
     parser = argparse.ArgumentParser(
         description='Test the already trained neural network for polarisation tagging.',
@@ -745,17 +780,17 @@ if __name__ == "__main__":
 
     arg = parser.parse_args()
 
-    print("Arguments:")
+    logger.info("Arguments:")
     for attr, value in vars(arg).items():
-        print(f"  {attr}: {value}")
+        logger.info(f"  {attr}: {value}")
 
     # %% Specify the computation device (cpu or gpu).
     # In torch/pytorch data and models need to be moved in the specific processing unit
     # this code snippet allows to set the variable "device" according to available resource (cpu or cuda gpu)
 
     if torch.cuda.is_available():
-        print('Number of devices: ', torch.cuda.device_count())
-        print(torch.cuda.get_device_name(0))
+        logger.info('Number of devices: ', torch.cuda.device_count())
+        logger.info(torch.cuda.get_device_name(0))
 
     if torch.cuda.is_available():
         if arg.gpu >= 0:
@@ -764,23 +799,23 @@ if __name__ == "__main__":
             device = "cuda"
     else:
         device = "cpu"
-    print(f"Computation device: {device}\n")
+    logger.info(f"Computation device: {device}\n")
 
     # Set CUDA device globally
     if torch.cuda.is_available():
         if arg.gpu >= 0:
             torch.cuda.set_device(arg.gpu)
-            print(f"Set CUDA device to: {arg.gpu}")
+            logger.info(f"Set CUDA device to: {arg.gpu}")
         else:
             torch.cuda.set_device(0)
-            print(f"Set CUDA device to: 0")
+            logger.info(f"Set CUDA device to: 0")
 
     # %% Model selection
     model_name = arg.model
     if model_name not in model_dict:
         raise ValueError(f"Model '{model_name}' not recognized. Available models: {list(model_dict.keys())}")
     else:
-        print(f"Using model architecture: {model_name}")
+        logger.info(f"Using model architecture: {model_name}")
 
     if arg.inputdir is not None:
         model_dir = arg.inputdir
@@ -809,11 +844,12 @@ if __name__ == "__main__":
 
         labels = [f"{arg.polarisation}/UU", "UU"]
         dataset = MLEventsDataset(files,
-                                labels = labels,
-                                transform=trafo,
-                                #   target_transform=scale_target,  # Scale target by 1000
-                                cache_events=True,  # Caching enabled
-                                standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
+                                  labels = labels,
+                                  transform=trafo,
+                                  target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
+                                  inv_target_transform=exp_target_transform,  # Inverse transform to revert log transformation
+                                  cache_events=True,  # Caching enabled
+                                  standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
 
     else:
         if arg.labframe:
@@ -833,10 +869,10 @@ if __name__ == "__main__":
                             max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
                             standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
 
-    print(f"Dataset info: {dataset.get_file_info()}")
+    logger.info(f"Dataset info: {dataset.get_file_info()}")
 
     # Set fixed random number seed to get the same test/ train split as used during training
-    print(Path.cwd())
+    logger.info(Path.cwd())
     with open(model_dir / "training_seed.txt", 'r') as f:
         seed = int(f.readline().strip())
 
@@ -844,7 +880,7 @@ if __name__ == "__main__":
 
     split_ratios = [0.6, 0.2, 0.2]  # Train, Val, Test
     _, _, test_dataset = torch.utils.data.random_split(dataset, split_ratios, generator=generator)
-    print(f"Test dataset size:       {len(test_dataset)}")
+    logger.info(f"Test dataset size:       {len(test_dataset)}")
 
     # Initialize the model and load the trained weights
     input_dim = dataset.input_shape[0]
@@ -868,4 +904,7 @@ if __name__ == "__main__":
 
 
     test_loss = do_test_run(device, arg.use_zjet, model, model_name, model_dir, arg.histogram_dir, files, seed, test_dataset, split_ratios, batch_size=arg.batch_size, n_workers=arg.nworkers, n_generated_events=arg.n_generated_events, input_choice=arg.input_choice)
+
+else:
+    logger = logging.getLogger(__name__)
 

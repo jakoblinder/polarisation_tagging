@@ -1,9 +1,12 @@
 import torch
+import logging
+
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
 from .analysis import costhetastar
 
+logger = logging.getLogger(__name__)
 
 # Activation function for output layer:
 # For binary classification tasks, common choices are:
@@ -239,6 +242,62 @@ class FFNN_paper_163264(FFNN_paper):
     def __init__(self, input_dim, output_dim = 1, *args, **kwargs):
         super().__init__(input_dim, output_dim, emb_dim = [16, 32, 64], *args, **kwargs)
 
+class FFNN_EMB_Selection(nn.Module):
+  def __init__(self, input_dim, output_dim = 1, emb_dim = [1000] * 3, stat_norm: dict = None, external_stat: bool = False):
+    """
+    Initialize a multi-layer perceptron neural network.
+    Args:
+        input_dim (int): Dimension of the input features.
+        output_dim (int, optional): Dimension of the output layer. Defaults to 1.
+        emb_dim (list, optional): List of embedding dimensions for hidden layers.
+            Defaults to [1000] * 3.
+        stat_norm (dict, optional): Dictionary containing normalization statistics
+            with 'mean' and 'stddev' keys for input data normalization. If None,
+            no normalization is applied. Defaults to None.
+    """
+    super().__init__()
+    self.input_dim  = input_dim
+    self.output_dim = output_dim
+    self.emb_dim    = emb_dim
+
+     # Normalise input data if wished:
+    if stat_norm is not None:
+        self.data_norm = DataNorm(input_dim, stat_norm['mean'], stat_norm['stddev'])
+    elif external_stat:
+        self.data_norm = DataNorm(input_dim)  # Weights to be set externally.
+    else:
+        self.data_norm = nn.Identity()
+
+    # Multilayer Perceptron block:
+    self.input_block = nn.Sequential(
+      # nn.BatchNorm1d(self.input_dim),
+      nn.Linear(self.input_dim, self.emb_dim[0]),
+      nn.ReLU(),
+    )
+
+    # The following hidden block takes the dimensions from emb_dim and first goes up and then down again. The number of layers is determined by the length of emb_dim.
+    #  For example, if emb_dim = [100, 200, 400], the hidden block will have the following layers:
+    #  Linear(100, 200) -> ReLU -> Linear(200, 400) -> ReLU -> Linear(400, 200) -> ReLU -> Linear(200, 100) -> ReLU
+    hlayers = []
+    for i in range(len(self.emb_dim) - 1):
+      hlayers.append(nn.Linear(self.emb_dim[i], self.emb_dim[i+1]))
+      hlayers.append(nn.ReLU())
+    for i in range(len(self.emb_dim) - 1, 0, -1):
+      hlayers.append(nn.Linear(self.emb_dim[i], self.emb_dim[i-1]))
+      hlayers.append(nn.ReLU())
+
+    self.hidden_block = nn.Sequential(*hlayers)
+
+    # Output layer:
+    self.out_block = nn.Linear(self.emb_dim[0], self.output_dim)
+
+  def forward(self, x):
+    x = self.data_norm(x)
+    out = self.input_block(x)
+    out = self.hidden_block(out)
+    out = self.out_block(out)
+    return out
+
 class FFNN_paper_BatchNorm(FFNN_paper):
     """
     Same as FFNN_paper but with BatchNorm in input block.
@@ -359,7 +418,7 @@ class LorentzBaseLayer(nn.Module):
         if N == 4:
             angles = torch.stack(costhetastar(vectors), dim=-1)
         else:
-          print("Warning: costhetastar not implemented for N != 4")
+          logger.info("Warning: costhetastar not implemented for N != 4")
           raise NotImplementedError
 
         # norm(p) (shape [B, N])
@@ -410,7 +469,7 @@ class FourVectorAwareNet(nn.Module):
 
         # Normalise input data if wished:
         if stat_norm is not None or external_stat:
-            print("FourVectorAwareNet: Data normalization is not applied, since the model works on 4-vectors directly.")
+            logger.info("FourVectorAwareNet: Data normalization is not applied, since the model works on 4-vectors directly.")
 
         self.predict_log = predict_log
 
@@ -465,5 +524,10 @@ model_dict = {
     "FFNN_paper_2extraLayers_BatchNorm": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_paper_nextraLayers_BatchNorm(input_dim, output_dim, n_extra_layers=2, *args, **kwargs),
     "FFNN_paper_4extraLayers_BatchNorm": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_paper_nextraLayers_BatchNorm(input_dim, output_dim, n_extra_layers=4, *args, **kwargs),
     "FFNN_paper_8extraLayers_BatchNorm": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_paper_nextraLayers_BatchNorm(input_dim, output_dim, n_extra_layers=8, *args, **kwargs),
-    "FourVectorAwareNet": FourVectorAwareNet
+    "FFNN_EMB_512_256_128_64_32": lambda input_dim, output_dim=1, emb_dim=[512,256,128,64,32], *args, **kwargs: FFNN_EMB_Selection(input_dim, output_dim=output_dim, emb_dim=emb_dim, *args, **kwargs),
+    "FFNN_EMB_1024_512_256_128_64_32": lambda input_dim, output_dim=1, emb_dim=[1024,512,256,128,64,32], *args, **kwargs: FFNN_EMB_Selection(input_dim, output_dim=output_dim, emb_dim=emb_dim, *args, **kwargs),
+    "FFNN_EMB_1024_512_256_128_64": lambda input_dim, output_dim=1, emb_dim=[1024,512,256,128,64], *args, **kwargs: FFNN_EMB_Selection(input_dim, output_dim=output_dim, emb_dim=emb_dim, *args, **kwargs),
+    "FFNN_EMB_32_64_128_256_512": lambda input_dim, output_dim=1, emb_dim=[32,64,128,256,512], *args, **kwargs: FFNN_EMB_Selection(input_dim, output_dim=output_dim, emb_dim=emb_dim, *args, **kwargs),
+    "FFNN_EMB_32_64_128_256_512_1024": lambda input_dim, output_dim=1, emb_dim=[32,64,128,256,512,1024], *args, **kwargs: FFNN_EMB_Selection(input_dim, output_dim=output_dim, emb_dim=emb_dim, *args, **kwargs),
+    "FourVectorAwareNet": FourVectorAwareNet,
 }
