@@ -111,10 +111,10 @@ def log_target_transform(target):
 
 def exp_target_transform(transformed_target):
     """Apply exponential transformation to revert log transformation on target values"""
-    shift   = 1.0
+    shift = 1.0
     
     # Convert to torch tensor if it's not already
-    if not is(transformed_target, torch.Tensor):
+    if not isinstance(transformed_target, torch.Tensor):
         transformed_target = torch.tensor(transformed_target, dtype=torch.float32)
 
     return torch.exp(transformed_target) - shift  # Revert log1p transformation
