@@ -124,7 +124,8 @@ def train_loop(
         penalty_scalar = 0.0
 
         if penalties.get("ZdecayAngles", False):
-            importance = 2.0 + 0.01 * epoch**2  # Weight of the penalty term in the total loss
+            threshold  = 0.01  # Threshold for closeness (in %)
+            importance = 0.001 * (1 + (epoch // 10)**2)  # Weight of the penalty term in the total loss
             # The functional form of the normalised cthep distribution is
             #     (3/4)*sin(theta)^2 = (3/4)*(1-cthep^2).
             if y.ndim < 2 or y.shape[1] <= 1:
@@ -148,9 +149,10 @@ def train_loop(
             # there is no way around that, since (3/4) * (1 - cthep**2) is only valid for the normalized distribution.
 
             # Elementwise penalty per event (shape (B,))
-            diff_cthep  = torch.abs(xsec_LL_norm) / torch.clamp(torch.abs(expected_cthep),  min=1e-9)
-            diff_cthmup = torch.abs(xsec_LL_norm) / torch.clamp(torch.abs(expected_cthmup), min=1e-9)
-            angle_penalty = importance * (diff_cthep * diff_cthmup)
+            diff_cthep  = torch.abs(xsec_LL_norm) / torch.clamp(torch.abs(expected_cthep),  min=eps)
+            diff_cthmup = torch.abs(xsec_LL_norm) / torch.clamp(torch.abs(expected_cthmup), min=eps)
+
+            angle_penalty = importance * (torch.clamp(diff_cthep - threshold, min=0) + torch.clamp(diff_cthmup - threshold, min=0))
             per_sample = per_sample + angle_penalty
 
             # # Plot the stuff as a sanity check.
@@ -202,7 +204,8 @@ def train_loop(
             sigma_true    = torch.mean(exp_target_transform(   y[:,0]) * exp_target_transform(y[:,1]))  # Average over all true labels in the training set.
             sigma_learned = torch.mean(exp_target_transform(pred[:,0]) * exp_target_transform(y[:,1]))  # Average over the predicted values.
             threshold  = 0.005  # Threshold for closeness (in %)
-            importance = 2.0  # Weight of the penalty term in the total loss
+            importance = 0.001  # Weight of the penalty term in the total loss
+            importance *= (1 + (epoch // 10)**2)  # Optionally increase the importance of the penalty term as training progresses.
             xsec_penalty = torch.abs(sigma_learned - sigma_true) / torch.clamp(torch.abs(sigma_true), min=eps) - threshold
             xsec_penalty = importance * torch.clamp(xsec_penalty, min=0)
             penalty_scalar += xsec_penalty
