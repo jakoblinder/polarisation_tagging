@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ml_events_utils.transforms import januar2026_input_choice
-from ml_events_utils import MLEventsDataset, get_statistics_from_dataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform
+from ml_events_utils import MLEventsDataset, get_statistics_from_dataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform, exp_target_transform
 from ml_events_utils import boost_into_Zjet_cm_frame
 from ml_events_utils import train_loop, valid_loop
 from ml_events_utils import ZJetDataset
@@ -44,7 +44,7 @@ parser.add_argument("-o", "--optimizer",      type=str,   action="store", defaul
 parser.add_argument("-g", "--gpu",            type=int,   action="store", default=-1,      help="Specify manually which of the available gpus is supposed to be used.")
 parser.add_argument("-e", "--epochs",         type=int,   action="store", default=1000,    help="Number of training epochs.")
 parser.add_argument("-b", "--batch_size",     type=int,   action="store", default=512,     help="Batch size for training.")
-parser.add_argument("-l", "--learning_rate",  type=float, action="store", default=1e-2,    help="Learning rate for the optimizer.")
+parser.add_argument("-l", "--learning_rate",  type=float, action="store", default=1e-3,    help="Learning rate for the optimizer.")
 parser.add_argument("-p", "--patience",       type=int,   action="store", default=25,      help="Early stopping patience.")
 parser.add_argument("-s", "--seed",           type=int,   action="store", default=42,      help="Random seed for reproducibility.")
 parser.add_argument("-n", "--nworkers",       type=int,   action="store", default=0,       help="Number of workers for DataLoader.")
@@ -158,7 +158,8 @@ if not arg.use_zjet:
     dataset = MLEventsDataset(files,
                             labels = [f"{arg.polarisation}/UU", "UU"],
                             transform=trafo,
-                            #   target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
+                            target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
+                            inv_target_transform=exp_target_transform,  # Inverse transform to revert log transformation
                             cache_events=arg.cache_events,  # Caching enabled
                             standardise=False)  # Specify wether standardisation over the whole dataset is enabled (this changes the dataset).
 else:

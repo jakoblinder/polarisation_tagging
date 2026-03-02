@@ -132,8 +132,8 @@ def print_integration_statistics(observable_dict, histogram_data: dict = {}, mod
     fig, ax = plt.subplots(1, 1)
     ax.axis('off')  # Remove axes
 
-    text_content  = f"    True r_LL:               {true_integral:.6e}\n"
-    text_content += f"    Predicted r_LL:          {pred_integral:.6e}\n"
+    text_content  = f"    True r_{fitted_polarisation}:               {true_integral:.6e}\n"
+    text_content += f"    Predicted r_{fitted_polarisation}:          {pred_integral:.6e}\n"
     if histogram_data:
         for run in powheg_histogram_runs:
             text_content += f"    POWHEG reweighting [{run}]: {histogram_data['totxsec'][run]['values'][0]:.6e}\n"
@@ -426,16 +426,16 @@ def test_model_ZZ(model,
             test_loss += loss_fn(pred, y_first_weight_only).item()
 
             # Store weights for integration
-            observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] = (pred[:,0] * y[:,1]).cpu().numpy()
-            observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     = (y[:,0]    * y[:,1]).cpu().numpy()
+            observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] = (exp_target_transform(pred[:,0]) * exp_target_transform(y[:,1])).cpu().numpy()
+            observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     = (exp_target_transform(y[:,0])    * exp_target_transform(y[:,1])).cpu().numpy()
             # The weights are calculated as an average over the number of genereated events in POWHEG-BOX-RES:
             observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] /= n_generated_events
             observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     /= n_generated_events
 
 
             # Compute observables
-            observable_dict["r_pred"][batch * batch_size : batch * batch_size + X.shape[0]] = pred[:,0].cpu().numpy()
-            observable_dict["r_true"][batch * batch_size : batch * batch_size + X.shape[0]] = y[:,0].cpu().numpy()
+            observable_dict["r_pred"][batch * batch_size : batch * batch_size + X.shape[0]] = exp_target_transform(pred[:,0]).cpu().numpy()
+            observable_dict["r_true"][batch * batch_size : batch * batch_size + X.shape[0]] = exp_target_transform(y[:,0]).cpu().numpy()
 
 
             # zl1, zl2, zl3, zl4 = e+, e-, mu+, mu-
@@ -479,7 +479,7 @@ def test_model_ZZ(model,
         show_polarisation = [fitted_polarisation, "UU"]
 
         # Integration statistics
-        fig, _ = print_integration_statistics(observable_dict, histogram_data, model=model_name, powheg_histogram_runs = [fitted_polarisation, ])
+        fig, _ = print_integration_statistics(observable_dict, histogram_data, model=model_name, powheg_histogram_runs = [fitted_polarisation, ], fitted_polarisation=fitted_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
@@ -530,6 +530,10 @@ def test_model_ZZ(model,
         # plt.close(fig)
 
         fig, _ = r_plot(observable_dict["r_pred"], observable_dict["r_true"], observable_dict["weights_y"], model_name=model_name)
+        pdf.savefig(fig)
+        plt.close(fig)
+
+        fig, _ = plot_r_distribution(observable_dict["r_pred"], observable_dict["r_true"], model_name=model_name)
         pdf.savefig(fig)
         plt.close(fig)
 
@@ -668,9 +672,11 @@ def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, m
         # ZZ case
         labels = [f"{polarisation}/UU", "UU"]
         dataset_untransformed = MLEventsDataset(mlfiles,
-                                labels = labels,
-                                cache_events=True,
-                                standardise=False)
+                                                # target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
+                                                # inv_target_transform=exp_target_transform,  # Inverse transform to revert log transformation
+                                                labels = labels,
+                                                cache_events=True,
+                                                standardise=False)
     else:
         # Z+jet case
         dataset_untransformed = ZJetDataset(files[0],
@@ -813,11 +819,12 @@ if __name__ == "__main__":
 
         labels = [f"{arg.polarisation}/UU", "UU"]
         dataset = MLEventsDataset(files,
-                                labels = labels,
-                                transform=trafo,
-                                #   target_transform=scale_target,  # Scale target by 1000
-                                cache_events=True,  # Caching enabled
-                                standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
+                                  labels = labels,
+                                  transform=trafo,
+                                  target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
+                                  inv_target_transform=exp_target_transform,  # Inverse transform to revert log transformation
+                                  cache_events=True,  # Caching enabled
+                                  standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
 
     else:
         if arg.labframe:

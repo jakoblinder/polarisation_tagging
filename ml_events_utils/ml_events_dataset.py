@@ -17,6 +17,7 @@ class MLEventsDataset(Dataset):
                  labels: List[str],
                  transform: Optional[Callable] = None,
                  target_transform: Optional[Callable] = None,
+                 inv_target_transform: Optional[Callable] = None,
                  cache_events: bool = False,
                  standardise: bool = False) -> None:
         """
@@ -47,9 +48,11 @@ class MLEventsDataset(Dataset):
         if not self.eventfiles:
             raise FileNotFoundError(f"No event files found for path: {file_path}")
 
-        self.labels           = sorted([label.upper() for label in labels])
+        # self.labels           = sorted([label.upper() for label in labels])
+        self.labels           = labels
         self.transform        = transform
         self.target_transform = target_transform
+        self.inv_target_transform = inv_target_transform
         self.cache_events     = cache_events
 
         # Build index of event positions specific to each file for lazy loading.

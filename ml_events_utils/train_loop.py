@@ -3,8 +3,10 @@ import torch
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
+from .transforms import exp_target_transform
+from .analysis import costhetastar
 
-from ml_events_utils.analysis import costhetastar
+logger = logging.getLogger(__name__)
 
 def train_loop(
     epoch: int,
@@ -195,8 +197,8 @@ def train_loop(
             # plt.savefig(f"cthep_distribution_epoch_{epoch}.pdf")
 
         if penalties.get("cross_section", False):
-            sigma_true    = torch.mean(   y[:,0] * y[:,1])  # Average over all true labels in the training set.
-            sigma_learned = torch.mean(pred[:,0] * y[:,1])  # Average over the predicted values.
+            sigma_true    = torch.mean(exp_target_transform(   y[:,0]) * exp_target_transform(y[:,1]))  # Average over all true labels in the training set.
+            sigma_learned = torch.mean(exp_target_transform(pred[:,0]) * exp_target_transform(y[:,1]))  # Average over the predicted values.
             threshold  = 0.005  # Threshold for closeness (in %)
             importance = 2.0  # Weight of the penalty term in the total loss
             xsec_penalty = torch.abs(sigma_learned - sigma_true) / torch.clamp(torch.abs(sigma_true), min=eps) - threshold
