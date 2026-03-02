@@ -43,7 +43,7 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("mlfiles", nargs='*',     type=Path,  action="store", help=".ml files to be used for training. Not required when using --replot.")
 parser.add_argument("-m", "--model",          type=str,   action="store", default="FFNN_paper_BatchNorm", help=f"Model architecture to use. Options: {list(model_dict.keys())}.")
-parser.add_argument("-o", "--optimizer",      type=str,   action="store", default="paper", help="Optimizer to use. Options: SGD, Adam, RMSprop, paper, paper_momentum.")
+parser.add_argument("-o", "--optimizer",      type=str,   action="store", default="paper", help="Optimizer to use. Options: SGD, Adam, AdamW, RMSprop, paper, paper_momentum.")
 parser.add_argument("-g", "--gpu",            type=int,   action="store", default=-1,      help="Specify manually which of the available gpus is supposed to be used.")
 parser.add_argument("-e", "--epochs",         type=int,   action="store", default=1000,    help="Number of training epochs.")
 parser.add_argument("-b", "--batch_size",     type=int,   action="store", default=512,     help="Batch size for training.")
@@ -318,6 +318,7 @@ else:
 optimizers = {
     "SGD":     torch.optim.SGD(    model.parameters(), lr=learning_rate),
     "Adam":    torch.optim.Adam(   model.parameters(), lr=learning_rate),
+    "AdamW":   torch.optim.AdamW(  model.parameters(), lr=learning_rate, weight_decay=1e-4),
     "RMSprop": torch.optim.RMSprop(model.parameters(), lr=learning_rate),
     "paper":   torch.optim.RMSprop(model.parameters(), lr=learning_rate, alpha=0.99, eps=1e-08, weight_decay=0.0, momentum=0.0),
     "paper_momentum":   torch.optim.RMSprop(model.parameters(), lr=learning_rate, alpha=0.99, eps=1e-08, weight_decay=0.0, momentum=0.9)
