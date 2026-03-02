@@ -34,7 +34,7 @@ args = parser.parse_args()
 N_lhe = 100000
 sigma_uu = np.array([0.11245290E-01, 0.37648619E-05])
 sigma_ll = np.array([0.6574E-03, 0.0002E-03])
-data_dir = Path("../../events/ML_FILES/UU_LOwS")
+data_dir = Path("../../events/ML_FILES/UU_LO")
 #data_dir = Path("../../events/ML_FILES/UU_LOwS")
 t_app = str("(LO, fiducial)")
 nr_lhef = 26
@@ -431,16 +431,47 @@ if args.model == 'all':
     ax3.set_xlabel("cos$\\theta^*_{\\tt e^+}$")
     ax3.set_ylabel("d$\\sigma/$dcos$\\theta^*_{\\tt e^+}$ [fb]")
 
+
+
+
+
+    
     ax2.set_title("$r_{\\tt LL}$ label "+t_app)
-    ax2.hist(y_test, range=(-0.02, 0.4), bins=40, histtype="step", linewidth=1, color="blue", label="true", density=True)
-    ax2.hist(y_pred, range=(-0.02, 0.4), bins=40, histtype="step", linewidth=1, color="red", label="RFR$_{\\tt ct}$", density=True)
-    ax2.hist(y2_pred, range=(-0.02, 0.4), bins=40, histtype="step", linewidth=1, color="green", label="RFR$_{\\tt ep}$", density=True)
-#    ax2.hist(y_pred_2, range=(-0.05, 0.4), bins=40, histtype="step", linewidth=1, color="green", label="pred. (LGBM)", density=True)
-    ax2.legend(loc='best',   borderpad=0.5, framealpha=0.9, frameon=False, ncol = 1)
+    ax2.hist(
+        y_test,
+        weights=z_uu,
+        range=(-0.02, 0.4), bins=40,
+        histtype="step",
+        linewidth=1,
+        color="blue",
+        label="true",
+        density=True
+    )
+    ax2.hist(
+        y2_pred,
+        weights=z_uu,
+        range=(-0.02, 0.4), bins=40,
+        histtype="step",
+        linewidth=1.2,
+        color="green",
+        label="RFR$_{\\tt ep}$",
+        density=True
+    )
+    ax2.hist(
+        y_pred,
+        weights=z_uu,
+        range=(-0.02, 0.4), bins=40,
+        histtype="step",
+        linewidth=1.2,
+        color="red",
+        label="RFR$_{\\tt ct}$",
+        density=True
+    )
+    ax2.legend(loc='best', borderpad=0.5, framealpha=0.9, frameon=False, ncol = 1)
     ax2.set_xlabel("r$_{\\tt LL}$")
     ax2.set_ylabel("Normalised distribution")
-    #ax2.set_yscale("log")
-
+    
+    
     ax2.text(0.6, 0.50, f"$\\sigma$(LL, MC sim)   = {sigLLsim[0]:.4f}({(sigLLsim[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
     ax2.text(0.6, 0.46, f"$\\sigma$(LL, true rLL) = {sigLLtrue[0]:.4f}({(sigLLtrue[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
     ax2.text(0.6, 0.42, f"$\\sigma$(LL, RFR-ct) = {sigLLpred[0]:.4f}({(sigLLpred[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
@@ -557,13 +588,14 @@ if args.model == 'all':
         #r"$\phi_{\mu^+\mu^-}$"
     ]
     ax5.set_xticks(range(len(importances)),
-                       latex_labels,
-                       rotation=45,
-                       ha="right")
+                   X_test.columns[indices],
+                   #latex_labels,
+                   rotation=45,
+                   ha="right")
     ax5.set_ylabel("Decrease in performance")
 
     ax6.set_title("Permutation importance for RFR$_{\\tt ep}$ "+t_app)
-    ax6.bar(range(len(importances)), importances[indices], yerr=0, color="red", alpha = 0.35) #, yerr=std[indices])
+    ax6.bar(range(len(importances2)), importances2[indices2], yerr=0, color="red", alpha = 0.35) #, yerr=std[indices])
     ax6.set_xticks(range(len(importances2)),
                    X2_test.columns[indices2],
                    rotation=45,
