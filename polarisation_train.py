@@ -247,8 +247,10 @@ for batch_idx, (batch_features, batch_labels) in enumerate(train_dataloader):
     mllogger.info(f"{input_dim = }")
     break  # Only show first batch
 
-# %% Test standardisation statistics
-test_standardisation = False
+# %% Test statistics
+test_standardisation   = False
+count_negative_weights = False
+
 if test_standardisation:
     fulldataloader = DataLoader(
         train_dataset,
@@ -260,15 +262,43 @@ if test_standardisation:
 
     features, labels = next(iter(fulldataloader))
     features_overall_mean   = features.mean(dim=0)
-    mllogger.info(f"\nFeature means over training set:\n{features_overall_mean}")
+    mllogger.info(f"Feature means over training set:\n{features_overall_mean}")
     features_overall_stddev = features.std(dim=0)
-    mllogger.info(f"\nFeature stddevs over training set:\n{features_overall_stddev}")
+    mllogger.info(f"Feature stddevs over training set:\n{features_overall_stddev}")
 
     # TODO: Calculate correct mean by multiplying for ZZ with UU xsec before averaging.
     xsec_estimate  = labels.sum(dim=0)
     xsec_estimate /= (split_ratios[0] * arg.n_generated_events)
-    mllogger.info(f"\nxSec estimate over training set:\n{xsec_estimate}")
+    mllogger.info(f"xSec estimate over training set:\n{xsec_estimate}")
 
+    del fulldataloader
+
+    sys.exit(0)
+
+if count_negative_weights:
+    fulldataloader = DataLoader(
+        dataset,
+        batch_size=len(dataset),
+        shuffle=False,
+        num_workers=0,
+        pin_memory=False
+    )
+
+    features, labels = next(iter(fulldataloader))
+    features, labels = features.to(device), labels.to(device)
+
+    mllogger.info(f"Shape of features: {features.shape}")
+    mllogger.info(f"Shape of labels:   {labels.shape}")
+
+    valid_fraction = torch.isfinite(labels[..., 0]).type(torch.float).mean().item()
+    neg_fraction        = ((labels[..., 0]) < 0.).type(torch.float).mean().item()
+    small_fraction      = ((0 < labels[..., 0]) & (labels[..., 0] < 1e-10)).type(torch.float).mean().item()
+    neg_fraction_log1   = (labels[..., 0] < (1e-10 - 1.0)).type(torch.float).mean().item()
+
+    mllogger.info(f"Valid fraction:    {valid_fraction}")
+    mllogger.info(f"Negative fraction: {neg_fraction}")
+    mllogger.info(f"Small fraction:    {small_fraction}")
+    mllogger.info(f"Negative log1 fraction: {neg_fraction_log1}")
     del fulldataloader
 
     sys.exit(0)
@@ -545,7 +575,7 @@ except Exception as e:
 
 end_time = time.time()
 elapsed_time = end_time - start_time
-mllogger.info(f"\nTotal execution time: {elapsed_time:.2f} seconds")
+mllogger.info(f"Total execution time: {elapsed_time:.2f} seconds")
 
 
 if arg.do_test:
