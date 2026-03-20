@@ -3,6 +3,7 @@ import time
 import torch
 import argparse
 import logging
+import sys
 
 import numpy as np
 import pandas as pd
@@ -10,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 from pathlib import Path
-from torchsummary import summary
+from torchinfo import summary
 from torch.utils.data import DataLoader
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -21,6 +22,7 @@ from ml_events_utils import boost_into_Zjet_cm_frame
 from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output, FFNN_paper
 from ml_events_utils.analysis import costhetastar, get_pt, get_rapidity, cosmujet
 from ml_events_utils import log_file, setup_file_logger
+from ml_events_utils import Settings
 
 # %% Helper functions for plotting and histogram handling
 def read_top_file_histograms(top_file_paths: dict) -> dict:
@@ -685,8 +687,23 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
 
     return test_loss
 
-def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, mlfiles, seed: int, test_dataset, split_ratios, polarisation:str = "LL", batch_size=512, n_workers=0, n_generated_events: int = int(1e7), input_choice:str=None, showered:bool=False):
+def do_test_run(run_settings: Settings, model, test_dataset):
     start_time = time.time()
+
+    device = run_settings.device.value
+    use_zjet = run_settings.use_zjet.value
+    model_name = run_settings.model.value
+    model_dir = run_settings.model_dir.value
+    histogram_dir = run_settings.histogram_dir.value
+    mlfiles = run_settings.mlfiles.value
+    seed = run_settings.seed.value
+    split_ratios = run_settings.split_ratios.value
+    polarisation = run_settings.polarisation.value
+    batch_size = run_settings.batch_size.value
+    n_workers = run_settings.nworkers.value
+    n_generated_events = run_settings.n_generated_events.value
+    input_choice = run_settings.input_choice.value
+    showered = run_settings.showered.value
 
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -702,7 +719,7 @@ def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, m
                                                 standardise=False)
     else:
         # Z+jet case
-        dataset_untransformed = ZJetDataset(files[0],
+        dataset_untransformed = ZJetDataset(mlfiles[0],
                                 max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
                                 standardise=False)
 
@@ -746,13 +763,8 @@ def do_test_run(device, use_zjet, model, model_name, model_dir, histogram_dir, m
 
     return test_loss
 
-# %% Run the test
-if __name__ == "__main__":
-    logger = setup_file_logger(log_file=log_file, level="DEBUG", console=False, force=True)
 
-    logger.info(f"numpy:  {np.__version__}")
-    logger.info(f"pandas: {pd.__version__}")
-    logger.info(f"torch:  {torch.__version__}")
+def build_parser() -> argparse.ArgumentParser:
     # %%
     parser = argparse.ArgumentParser(
         description='Test the already trained neural network for polarisation tagging.',
@@ -777,24 +789,24 @@ if __name__ == "__main__":
     frame_group = parser.add_mutually_exclusive_group()
     frame_group.add_argument("--labframe",       dest="labframe", default=True, action="store_true",    help="Use lab frame instead of partonic CMS.")
     frame_group.add_argument("--cmframe",        dest="labframe", default=True, action="store_false",   help="Use partonic CMS instead of lab frame.")
+    return parser
 
-    arg = parser.parse_args()
 
-    logger.info("Arguments:")
-    for attr, value in vars(arg).items():
-        logger.info(f"  {attr}: {value}")
+def namespace_from_settings(run_settings: Settings) -> argparse.Namespace:
+    return argparse.Namespace(**{key: parameter.value for key, parameter in run_settings.items()})
 
+
+def select_device(gpu: int) -> str:
     # %% Specify the computation device (cpu or gpu).
     # In torch/pytorch data and models need to be moved in the specific processing unit
     # this code snippet allows to set the variable "device" according to available resource (cpu or cuda gpu)
-
     if torch.cuda.is_available():
         logger.info('Number of devices: ', torch.cuda.device_count())
         logger.info(torch.cuda.get_device_name(0))
 
     if torch.cuda.is_available():
-        if arg.gpu >= 0:
-            device = f"cuda:{arg.gpu}"
+        if gpu >= 0:
+            device = f"cuda:{gpu}"
         else:
             device = "cuda"
     else:
@@ -803,12 +815,22 @@ if __name__ == "__main__":
 
     # Set CUDA device globally
     if torch.cuda.is_available():
-        if arg.gpu >= 0:
-            torch.cuda.set_device(arg.gpu)
-            logger.info(f"Set CUDA device to: {arg.gpu}")
+        if gpu >= 0:
+            torch.cuda.set_device(gpu)
+            logger.info(f"Set CUDA device to: {gpu}")
         else:
             torch.cuda.set_device(0)
             logger.info(f"Set CUDA device to: 0")
+    return device
+
+
+def run_testing(run_settings: Settings):
+    arg = namespace_from_settings(run_settings)
+
+    run_settings.log_to_logger(logger, header="Arguments:")
+
+    device = select_device(arg.gpu)
+    run_settings.set("device", device, overwrite=True)
 
     # %% Model selection
     model_name = arg.model
@@ -825,7 +847,10 @@ if __name__ == "__main__":
     if arg.histogram_dir is None:
         arg.histogram_dir = arg.mlfiles[0].parent
 
-# %% Data Handling
+    run_settings.set("model_dir", model_dir, overwrite=True)
+    run_settings.set("histogram_dir", arg.histogram_dir, overwrite=True)
+
+    # %% Data Handling
     # Example usage for large files:
     # files = Path("event_files/pwgevents-*.ml")
     files = arg.mlfiles
@@ -876,9 +901,12 @@ if __name__ == "__main__":
     with open(model_dir / "training_seed.txt", 'r') as f:
         seed = int(f.readline().strip())
 
+    run_settings.set("seed", seed, overwrite=True)
     generator = torch.Generator().manual_seed(seed)
 
-    split_ratios = [0.6, 0.2, 0.2]  # Train, Val, Test
+    split_ratios = run_settings.split_ratios.value if hasattr(run_settings, "split_ratios") else [0.6, 0.2, 0.2]
+    run_settings.set("split_ratios", split_ratios, overwrite=True)
+
     _, _, test_dataset = torch.utils.data.random_split(dataset, split_ratios, generator=generator)
     logger.info(f"Test dataset size:       {len(test_dataset)}")
 
@@ -895,15 +923,41 @@ if __name__ == "__main__":
         model_weight_file = model_dir / arg.model_weight_file
 
     if torch.cuda.is_available():
-        summary(model.cuda(), input_size=(input_dim,))
+        model_summary = str(summary(model.cuda(), input_size=(input_dim,), verbose=0))
     else:
-        summary(model, input_size=(input_dim,))
+        model_summary = str(summary(model, input_size=(input_dim,), verbose=0))
+
+    logger.info(f"\n{model_summary}")
 
     model.load_state_dict(torch.load(model_weight_file, map_location=device, weights_only=True))
     model.to(device)
 
+    return do_test_run(run_settings, model, test_dataset)
 
-    test_loss = do_test_run(device, arg.use_zjet, model, model_name, model_dir, arg.histogram_dir, files, seed, test_dataset, split_ratios, batch_size=arg.batch_size, n_workers=arg.nworkers, n_generated_events=arg.n_generated_events, input_choice=arg.input_choice)
+
+def prepare_run_settings(arg: argparse.Namespace) -> Settings:
+    run_settings = Settings(argparse=arg)
+    run_settings.set("split_ratios", [0.6, 0.2, 0.2])
+    run_settings.set("showered", False)
+    return run_settings
+
+# %% Run the test
+if __name__ == "__main__":
+    logger = setup_file_logger(log_file=log_file, level="DEBUG", console=False, force=True)
+
+    logger.info(f"numpy:  {np.__version__}")
+    logger.info(f"pandas: {pd.__version__}")
+    logger.info(f"torch:  {torch.__version__}")
+
+    parser       = build_parser()
+    arg          = parser.parse_args()
+    run_settings = prepare_run_settings(arg)
+
+    try:
+        run_testing(run_settings)
+    except Exception as exc:
+        logger.error(f"Testing failed: {exc}")
+        sys.exit(1)
 
 else:
     logger = logging.getLogger(__name__)
