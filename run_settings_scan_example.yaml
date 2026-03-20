@@ -1,0 +1,196 @@
+# Example base settings for hyperparameter scans.
+#
+# Usage examples:
+# - Random scan:
+#   python run_hyperparam_scan.py run_settings_scan_example.yaml --n-trials 20 --output-root scan_runs
+#
+# - Optuna scan on 4 GPUs:
+#   python run_hyperparam_scan_optuna.py run_settings_scan_example.yaml --study-name pol_scan --storage sqlite:///pol_scan.db --n-trials 120 --gpus 0 1 2 3 --output-root scan_runs_optuna
+#
+# Notes on "fit":
+# - fit: false      -> keep fixed value
+# - fit: scalar     -> force this fixed value during scan
+# - fit: [a, b]     -> range sampling (numeric) OR categorical if not numeric pair
+# - fit: {choices}  -> categorical sampling
+# - fit: {min,max,...} -> numeric sampling (supports type, step, log)
+
+parameters:
+  mlfiles:
+    name: mlfiles
+    value:
+      -
+        __type__: path
+        value: /ptmp/mpp/jlinder/ML_Giovanni/polarisation_tagging/examplary_eventfiles/example_1.ml
+    fit: false
+
+  model:
+    name: model
+    value: FFNN_paper_BatchNorm
+    fit:
+      choices:
+        - FFNN_paper_BatchNorm
+
+  optimizer:
+    name: optimizer
+    value: paper
+    fit:
+      choices:
+        - AdamW
+        - RMSprop
+        - paper
+
+  gpu:
+    name: gpu
+    value: -1
+    fit: false
+
+  epochs:
+    name: epochs
+    value: 120
+    fit:
+      min: 60
+      max: 220
+      type: int
+      step: 20
+
+  batch_size:
+    name: batch_size
+    value: 512
+    fit:
+      choices:
+        - 256
+        - 512
+        - 1024
+        - 2048
+
+  learning_rate:
+    name: learning_rate
+    value: 0.001
+    fit:
+      min: 1.0e-5
+      max: 5.0e-3
+      type: float
+      log: true
+
+  patience:
+    name: patience
+    value: 25
+    fit:
+      min: 10
+      max: 50
+      type: int
+      step: 5
+
+  seed:
+    name: seed
+    value: 42
+    fit:
+      choices:
+        - 11
+        - 21
+        - 42
+        - 84
+
+  nworkers:
+    name: nworkers
+    value: 4
+    fit: false
+
+  test_mode:
+    name: test_mode
+    value: false
+    fit: false
+
+  cache_events:
+    name: cache_events
+    value: true
+    fit: false
+
+  outputdir:
+    name: outputdir
+    value:
+      __type__: path
+      value: /ptmp/mpp/jlinder/ML_Giovanni/polarisation_tagging/test
+    fit: false
+
+  replot_only:
+    name: replot_only
+    value: false
+    fit: false
+
+  use_zjet:
+    name: use_zjet
+    value: false
+    fit: false
+
+  standardise:
+    name: standardise
+    value: false
+    fit:
+      choices:
+        - false
+        - true
+
+  input_choice:
+    name: input_choice
+    value: null
+    fit:
+      choices:
+        - null
+        - jan2026
+
+  n_generated_events:
+    name: n_generated_events
+    value: 10000000
+    fit: false
+
+  do_test:
+    name: do_test
+    value: false
+    fit: false
+
+  penalties:
+    name: penalties
+    value: []
+    fit: false
+
+  polarisation:
+    name: polarisation
+    value: LL
+    fit:
+      choices:
+        - LL
+        - LT
+        - TL
+        - TT
+
+  showered:
+    name: showered
+    value: false
+    fit: false
+
+  labframe:
+    name: labframe
+    value: true
+    fit:
+      choices:
+        - true
+        - false
+
+  split_ratios:
+    name: split_ratios
+    value:
+      - 0.6
+      - 0.2
+      - 0.2
+    fit: false
+
+  test_standardisation:
+    name: test_standardisation
+    value: false
+    fit: false
+
+  count_negative_weights:
+    name: count_negative_weights
+    value: false
+    fit: false
