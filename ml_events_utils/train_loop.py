@@ -205,7 +205,7 @@ def train_loop(
             sigma_learned = torch.mean(exp_target_transform(pred[:,0]) * exp_target_transform(y[:,1]))  # Average over the predicted values.
             threshold  = 0.005  # Threshold for closeness (in %)
             importance = 0.001  # Weight of the penalty term in the total loss
-            importance *= (1 + (epoch // 10)**2)  # Optionally increase the importance of the penalty term as training progresses.
+            importance *= (1 + (epoch // 12)**2)  # Optionally increase the importance of the penalty term as training progresses.
             xsec_penalty = torch.abs(sigma_learned - sigma_true) / torch.clamp(torch.abs(sigma_true), min=eps) - threshold
             xsec_penalty = importance * torch.clamp(xsec_penalty, min=0)
             penalty_scalar += xsec_penalty
