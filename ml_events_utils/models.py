@@ -298,6 +298,32 @@ class FFNN_EMB_Selection(nn.Module):
     out = self.out_block(out)
     return out
 
+class FFNN_EMB_Selection_BatchNorm(FFNN_EMB_Selection):
+    """
+    Same as FFNN_EMB_Selection but with BatchNorm in input block.
+    """
+    def __init__(self, input_dim, output_dim = 1, emb_dim = [1000] * 3, *args, **kwargs):
+        super().__init__(input_dim, output_dim, emb_dim, stat_norm = None, external_stat = False, *args, **kwargs)
+        # Override input block to include BatchNorm
+        self.input_block = nn.Sequential(
+            nn.BatchNorm1d(self.input_dim),
+            nn.Linear(self.input_dim, self.emb_dim[0]),
+            nn.ReLU(),
+        )
+
+class FFNN_EMB_Selection_LayerNorm(FFNN_EMB_Selection):
+    """
+    Same as FFNN_EMB_Selection but with LayerNorm in input block.
+    """
+    def __init__(self, input_dim, output_dim = 1, emb_dim = [1000] * 3, *args, **kwargs):
+        super().__init__(input_dim, output_dim, emb_dim, stat_norm = None, external_stat = False, *args, **kwargs)
+        # Override input block to include LayerNorm
+        self.input_block = nn.Sequential(
+            nn.LayerNorm(self.input_dim),
+            nn.Linear(self.input_dim, self.emb_dim[0]),
+            nn.ReLU(),
+        )
+
 class FFNN_paper_BatchNorm(FFNN_paper):
     """
     Same as FFNN_paper but with BatchNorm in input block.
@@ -524,10 +550,15 @@ model_dict = {
     "FFNN_paper_2extraLayers_BatchNorm": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_paper_nextraLayers_BatchNorm(input_dim, output_dim, n_extra_layers=2, *args, **kwargs),
     "FFNN_paper_4extraLayers_BatchNorm": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_paper_nextraLayers_BatchNorm(input_dim, output_dim, n_extra_layers=4, *args, **kwargs),
     "FFNN_paper_8extraLayers_BatchNorm": lambda input_dim, output_dim=1, *args, **kwargs: FFNN_paper_nextraLayers_BatchNorm(input_dim, output_dim, n_extra_layers=8, *args, **kwargs),
+    #
     "FFNN_EMB_512_256_128_64_32": lambda input_dim, output_dim=1, emb_dim=[512,256,128,64,32], *args, **kwargs: FFNN_EMB_Selection(input_dim, output_dim=output_dim, emb_dim=emb_dim, *args, **kwargs),
     "FFNN_EMB_1024_512_256_128_64_32": lambda input_dim, output_dim=1, emb_dim=[1024,512,256,128,64,32], *args, **kwargs: FFNN_EMB_Selection(input_dim, output_dim=output_dim, emb_dim=emb_dim, *args, **kwargs),
     "FFNN_EMB_1024_512_256_128_64": lambda input_dim, output_dim=1, emb_dim=[1024,512,256,128,64], *args, **kwargs: FFNN_EMB_Selection(input_dim, output_dim=output_dim, emb_dim=emb_dim, *args, **kwargs),
     "FFNN_EMB_32_64_128_256_512": lambda input_dim, output_dim=1, emb_dim=[32,64,128,256,512], *args, **kwargs: FFNN_EMB_Selection(input_dim, output_dim=output_dim, emb_dim=emb_dim, *args, **kwargs),
     "FFNN_EMB_32_64_128_256_512_1024": lambda input_dim, output_dim=1, emb_dim=[32,64,128,256,512,1024], *args, **kwargs: FFNN_EMB_Selection(input_dim, output_dim=output_dim, emb_dim=emb_dim, *args, **kwargs),
+    #
+    "FFNN_EMB_1024_512_256_128_64_BatchNorm": lambda input_dim, output_dim=1, emb_dim=[1024,512,256,128,64], *args, **kwargs: FFNN_EMB_Selection_BatchNorm(input_dim, output_dim=output_dim, emb_dim=emb_dim, *args, **kwargs),
+    "FFNN_EMB_1024_512_256_128_64_LayerNorm": lambda input_dim, output_dim=1, emb_dim=[1024,512,256,128,64], *args, **kwargs: FFNN_EMB_Selection_LayerNorm(input_dim, output_dim=output_dim, emb_dim=emb_dim, *args, **kwargs),
+    #
     "FourVectorAwareNet": FourVectorAwareNet,
 }
