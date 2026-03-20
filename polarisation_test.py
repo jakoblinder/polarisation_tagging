@@ -151,22 +151,25 @@ def print_integration_statistics(observable_dict, histogram_data: dict = {}, mod
 
     return fig, ax
 
-def plot_r_distribution(r_pred, r_true, model_name="Model"):
+def plot_r_distribution(r_pred, r_true, model_name="Model", fitted_polarisation:str="LL"):
     fig, axs = plt.subplots(1, 1)
     r_min, r_max = min(r_pred.min() ,r_true.min()), max(r_pred.max(), r_true.max())
     bins = np.linspace(r_min, r_max, 101)
     axs.hist(r_pred, bins=bins, alpha=0.5, label=f"Predicted {model_name}")
     axs.hist(r_true, bins=bins, alpha=0.5, label="True")
-    axs.set_xlabel("r")
+    axs.set_xlabel(r"$r_{\mathrm{" + fitted_polarisation + r"}}$")
     axs.set_ylabel("Events")
     axs.legend()
     return fig, axs
 
-def r_plot(r_pred, r_true, weights, model_name="Model"):
+def r_plot(r_pred, r_true, weights, model_name="Model", fitted_polarisation:str="LL"):
     fig, axs = plt.subplots(1, 1)
 
-    r_min, r_max = min(r_pred.min() ,r_true.min()), max(r_pred.max(), r_true.max())
-    bins = np.linspace(r_min, r_max, 101)
+    r_min, r_max = -0.02, 1.00
+
+    bin_width = 0.01
+    bins = np.arange(r_min, r_max + bin_width, bin_width)
+    # np.linspace(r_min, r_max, 81)
 
     # Calculate bin widths for proper integration
     bin_widths = bins[1:] - bins[:-1]
@@ -192,20 +195,22 @@ def r_plot(r_pred, r_true, weights, model_name="Model"):
     # Scale y axis logarithmically
     # axs[0].set_yscale('log')
 
-    axs.set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} r}$ [pb / [r]]")
+    axs.set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} r_{\mathrm{" + fitted_polarisation + r"}}}$ [pb / [r]]")
     axs.set_title(f"Predicted vs. True Labels - {model_name}")
     axs.legend()
     axs.grid(True, alpha=0.3)
 
     try:
+        r_min, r_max = min(r_pred.min() ,r_true.min()), max(r_pred.max(), r_true.max())
         axs.set_xlim(xmin=r_min * 0.99, xmax=r_max * 1.01)
     except ValueError as e:
         logger.error(f"Could not set x limits for r plot: {e}")
 
-    axs.set_xlabel("r")
+    axs.set_xlabel(r"$r_{\mathrm{" + fitted_polarisation + r"}}$")
 
     fig.tight_layout()
-    return fig, axs
+    powheg_label = "rLL"
+    return fig, axs, powheg_label
 
 def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:dict = None, log_scale=True, nbins=50, model_name="Model", powheg_histogram_runs: list = ["LL",], *args, **kwargs):
     """
@@ -414,11 +419,13 @@ def test_model_ZZ(model,
     model.eval()
 
 
-    observable_dict = {"weights_y":     np.zeros(size),
+    observable_dict = {
+                       "weights_unpolarised": np.zeros(size),
+                       "weights_y":     np.zeros(size),
                        "weights_ypred": np.zeros(size),
                        ""
                        # Start observable arrays
-                       "invmass_Z1":    np.zeros(size),
+                       "invmass_Z1":    np.zeros(size),  # mee in POWHEG in analysis.
                        "invmass_Z2":    np.zeros(size),
                        "cthep":         np.zeros(size),
                     #    "cthep_mll_cut5":  np.zeros(size),
@@ -427,6 +434,22 @@ def test_model_ZZ(model,
                        "pt4l":          np.zeros(size),
                        "ptep":          np.zeros(size),
                        "yep":           np.zeros(size),
+                       "dphiee":        np.zeros(size), # Delta phi between the two leptons from the Z(e+ e-) boson
+                    #    TODO: ADD it.
+                    #    delta phi e+ e- (just in labframe)
+                    #     function getdphi(p1,p2)
+                    #     implicit none
+                    #     include 'pwhg_math.h'
+                    # !      real*8 p1(*),p2(*),getdphi
+                    #     real*8 p1(4),p2(4),getdphi
+                    #     real*8 phi1,phi2
+                    #     real*8 geteta
+                    #     external geteta
+                    #     phi1=atan2(p1(2),p1(1))
+                    #     phi2=atan2(p2(2),p2(1))
+                    #     getdphi=abs(phi1-phi2)
+                    #     getdphi=min(getdphi,2d0*pi-getdphi)
+                    #     end
                        "r_pred":      np.zeros(size),
                        "r_true":      np.zeros(size),
                        }
@@ -453,9 +476,11 @@ def test_model_ZZ(model,
             # Store weights for integration
             observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] = (exp_target_transform(pred[:,0]) * exp_target_transform(y[:,1])).cpu().numpy()
             observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     = (exp_target_transform(y[:,0])    * exp_target_transform(y[:,1])).cpu().numpy()
+            observable_dict["weights_unpolarised"][batch * batch_size : batch * batch_size + X.shape[0]] = exp_target_transform(y[:,1]).cpu().numpy()
             # The weights are calculated as an average over the number of genereated events in POWHEG-BOX-RES:
             observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] /= n_generated_events
             observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     /= n_generated_events
+            observable_dict["weights_unpolarised"][batch * batch_size : batch * batch_size + X.shape[0]] /= n_generated_events
 
 
             # Compute observables
@@ -554,11 +579,13 @@ def test_model_ZZ(model,
         # pdf.savefig(fig)
         # plt.close(fig)
 
-        fig, _ = r_plot(observable_dict["r_pred"], observable_dict["r_true"], observable_dict["weights_y"], model_name=model_name)
+        fig, _, powheg_label = r_plot(observable_dict["r_pred"], observable_dict["r_true"], observable_dict["weights_unpolarised"], model_name=model_name, fitted_polarisation=fitted_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
-        fig, _ = plot_r_distribution(observable_dict["r_pred"], observable_dict["r_true"], model_name=model_name)
+        # TODO: Add plot showing r_LL^pred (y) vs r_LL^truth (x) directly.
+
+        fig, _ = plot_r_distribution(observable_dict["r_pred"], observable_dict["r_true"], model_name=model_name, fitted_polarisation=fitted_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
@@ -681,7 +708,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
         pdf.savefig(fig)
         plt.close(fig)
 
-        fig, _ = r_plot(observable_dict["rL_pred"], observable_dict["rL_true"], total_xsec, model_name=model_name)
+        fig, _, powheg_label = r_plot(observable_dict["rL_pred"], observable_dict["rL_true"], total_xsec, model_name=model_name)
         pdf.savefig(fig)
         plt.close(fig)
 
