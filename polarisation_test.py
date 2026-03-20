@@ -23,6 +23,10 @@ from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output
 from ml_events_utils.analysis import costhetastar, get_pt, get_rapidity, cosmujet
 from ml_events_utils import log_file, setup_file_logger
 from ml_events_utils import Settings
+from ml_events_utils import stylesheet_default
+
+# Apply the package default style globally so all plots in this module are consistent.
+plt.style.use(stylesheet_default)
 
 # %% Helper functions for plotting and histogram handling
 def read_top_file_histograms(top_file_paths: dict) -> dict:
@@ -828,8 +832,8 @@ def select_device(gpu: int) -> str:
     # In torch/pytorch data and models need to be moved in the specific processing unit
     # this code snippet allows to set the variable "device" according to available resource (cpu or cuda gpu)
     if torch.cuda.is_available():
-        logger.info('Number of devices: ', torch.cuda.device_count())
-        logger.info(torch.cuda.get_device_name(0))
+        logger.info(f"Number of devices: {torch.cuda.device_count()}")
+        logger.info(f"Device name: {torch.cuda.get_device_name(0)}")
 
     if torch.cuda.is_available():
         if gpu >= 0:
@@ -838,7 +842,7 @@ def select_device(gpu: int) -> str:
             device = "cuda"
     else:
         device = "cpu"
-    logger.info(f"Computation device: {device}\n")
+    logger.info(f"Computation device: {device}")
 
     # Set CUDA device globally
     if torch.cuda.is_available():
@@ -949,12 +953,12 @@ def run_testing(run_settings: Settings):
     else:
         model_weight_file = model_dir / arg.model_weight_file
 
-    if torch.cuda.is_available():
-        model_summary = str(summary(model.cuda(), input_size=(input_dim,), verbose=0))
-    else:
-        model_summary = str(summary(model, input_size=(input_dim,), verbose=0))
+    # if torch.cuda.is_available():
+    #     model_summary = str(summary(model.cuda(), input_size=(input_dim,), verbose=0))
+    # else:
+    #     model_summary = str(summary(model, input_size=(input_dim,), verbose=0))
 
-    logger.info(f"\n{model_summary}")
+    # logger.info(f"\n{model_summary}")
 
     model.load_state_dict(torch.load(model_weight_file, map_location=device, weights_only=True))
     model.to(device)
@@ -970,7 +974,7 @@ def prepare_run_settings(arg: argparse.Namespace) -> Settings:
 
 # %% Run the test
 if __name__ == "__main__":
-    logger = setup_file_logger(log_file=log_file, level="DEBUG", console=False, force=True)
+    logger = setup_file_logger(log_file=log_file, level="DEBUG", mode="a", console=False, force=True)
 
     logger.info(f"numpy:  {np.__version__}")
     logger.info(f"pandas: {pd.__version__}")
