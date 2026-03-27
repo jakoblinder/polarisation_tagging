@@ -53,7 +53,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-n", "--nworkers", type=int, action="store", default=0, help="Number of workers for DataLoader.")
     parser.add_argument("-t", "--test_mode", dest="test_mode", action="store_true", help="Run in test mode (only one data point to test implementation of the model).")
     parser.add_argument("--no-cache-events", dest="cache_events", action="store_false", help="Disable caching of events in the dataset (default: cache the events).")
-    parser.add_argument("--outputdir", type=Path, action="store", default=None, help="Specify name of output directory.")
+    parser.add_argument("--outputdir", type=Path, action="store", default=Path().cwd(), help="Specify name of output directory.")
     parser.add_argument("--replot", dest="replot_only", action="store_true", help="Only regenerate the training history plot from existing CSV files. The model and potentially the output directory need to be specified.")
     parser.add_argument("--useZjet", dest="use_zjet", action="store_true", help="Use Z+jet dataset instead of default.")
     parser.add_argument("--standardise", dest="standardise", action="store_true", help="Enable standardisation of features over the whole dataset (default).")
@@ -63,16 +63,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--penalties", nargs="*", type=str, action="store", default=[], help="Specify which penalty terms to include in the loss function. Options: cross_section, ZdecayAngles.")
     parser.add_argument("--polarisation", type=str, action="store", default="LL", help="Specify which polarisation to train on (Only relevant for ZZ). Options: LL, LT, TL, TT, UL, LU.")
     parser.add_argument("--showered", dest="showered", action="store_true", help="This run used showered events instead of parton level events (default: use parton level events). Important for plotting.")
+    parser.add_argument("--verbose", action="store_true", help="Print to stdout as well")
 
     # Create a mutually exclusive group for specifying the reference frame
     frame_group = parser.add_mutually_exclusive_group()
     frame_group.add_argument("--labframe", dest="labframe", default=True, action="store_true", help="Use lab frame instead of partonic CMS.")
-    frame_group.add_argument("--cmframe",  dest="labframe", default=True, action="store_false", help="Use partonic CMS instead of lab frame.")
+    frame_group.add_argument("--cmframe", dest="labframe", default=argparse.SUPPRESS, action="store_false", help="Use partonic CMS instead of lab frame.")
 
     args = parser.parse_args()
 
     return args
-
 
 def namespace_from_settings(run_settings: Settings) -> argparse.Namespace:
     return argparse.Namespace(**{key: parameter.value for key, parameter in run_settings.items()})
@@ -608,15 +608,17 @@ def run_training(run_settings: Settings, logger, trial=None):
 
 
 def main() -> int:
-    log_file = "output.log"
-    mllogger = setup_file_logger(log_file, level="DEBUG", console=False, mode="w", force=True)
+
+
+    arg = parse_args()
+    run_settings = prepare_run_settings(arg)
+
+    log_file = arg.outputdir / "output.log"
+    mllogger = setup_file_logger(log_file, level="DEBUG", console=run_settings.verbose, mode="w", force=True)
 
     mllogger.info(f"numpy:  {np.__version__}")
     mllogger.info(f"pandas: {pd.__version__}")
     mllogger.info(f"torch:  {torch.__version__}")
-
-    arg = parse_args()
-    run_settings = prepare_run_settings(arg)
 
     try:
         run_training(run_settings, mllogger)
