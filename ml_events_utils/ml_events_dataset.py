@@ -40,7 +40,10 @@ class MLEventsDataset(Dataset):
         eventfiles = []
         for eventfile in self.file_path:
             if '*' in str(eventfile) or '?' in str(eventfile) or '.' in str(eventfile) or '{' in str(eventfile):
-                if eventfile.is_absolute():
+                if eventfile.exists():
+                    # If the event file actually exists there's nothing to expand (right?)
+                    eventfiles.append(eventfile.resolve())
+                elif eventfile.is_absolute():
                     raise NotImplementedError("Absolute paths with wildcards are not supported. Relative paths are though.")
                 else:
                     # eventfiles += Path.cwd().glob(str(eventfile))
