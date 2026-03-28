@@ -8,6 +8,8 @@ import sys
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+
 
 
 from pathlib import Path
@@ -230,7 +232,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
             - "weights_y": True label weights
             - "invmass_Z1": Invariant mass values (used for x-axis limits)
         observable_key (str): Key specifying which observable to plot from observable_dict
-        powheg_histogram (dict, optional): Optional dictionary used as an additional compariosn
+        powheg_histogram (dict, optional): Optional dictionary used as an additional comparison
             containing POWHEG reference data with keys:
             - 'edges': Bin edges for the histogram
             - 'values': Histogram values for comparison
@@ -247,7 +249,8 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     """
 
     # Create a single comparison plot
-    fig, axs = plt.subplots(2, 1, sharex=True, height_ratios=[3, 1])
+    size = mpl.rcParams['figure.figsize']
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(size[0], 1.5*size[1]), height_ratios=[3, 1])
 
     if powheg_histogram:
         bins = powheg_histogram[powheg_histogram_runs[0]]['edges']
