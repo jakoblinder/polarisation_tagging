@@ -1,7 +1,7 @@
 import numpy as np
 import re
 
- # parsing routine for .ml files
+# parsing routine for .ml files
 def parse_ml_events(filepath, useful_weights):
     events = []
     with open(filepath) as f:
