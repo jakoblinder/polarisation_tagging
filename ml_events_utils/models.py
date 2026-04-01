@@ -451,24 +451,37 @@ class LorentzBaseLayer(nn.Module):
     Takes raw 4-vectors [B, N, 4]
     Returns learned features [B, N, hidden_dim]
     """
-    def __init__(self, n_4vectors, hidden_dim=128):
+
+    def __init__(self, n_4vectors, hidden_dim=128, normalize=False):
         super().__init__()
         self.n_4vectors = n_4vectors
         self.hidden_dim = hidden_dim
+
+        # Prepare the normalization layers if normalize=True
+        if normalize:
+            self.inv_norm = nn.LayerNorm(1 + 1 + self.n_4vectors)
+            # Normalize over the last layer of the input 4-vectors
+            self.eq_norm = nn.LayerNorm(4)
+            mpl_start = 4
+        else:
+            self.inv_norm = None
+            self.eq_norm = None
+            # but make sure it works the same in the not-normalize case
+            mpl_start = self.n_4vectors
 
         # project invariant features
         self.inv_mlp = nn.Sequential(
             nn.Linear(1 + 1 + self.n_4vectors, hidden_dim),  # mass^2, norm(p), sum pairwise dot
             nn.GELU(),
             nn.Linear(hidden_dim, hidden_dim),
-            nn.GELU()
+            nn.GELU(),
         )
 
         self.eq_mlp = nn.Sequential(
-            nn.Linear(self.n_4vectors, hidden_dim),
+            nn.Linear(mpl_start, hidden_dim),
             nn.GELU(),
             nn.Linear(hidden_dim, hidden_dim),
-            nn.GELU()
+            nn.GELU(),
         )
 
     def forward(self, vectors):
@@ -477,8 +490,8 @@ class LorentzBaseLayer(nn.Module):
         returns: [B, N, hidden_dim]
         """
         B, N, _ = vectors.shape
-        E = vectors[..., -1   ]
-        P = vectors[...,   :-1]
+        E = vectors[..., -1]
+        P = vectors[..., :-1]
 
         # mass^2 = E^2 - |p|^2  (shape [B, N])
         # Note: The invariant masses of the leptons are zero and thus not a meaningful feature.
@@ -487,8 +500,9 @@ class LorentzBaseLayer(nn.Module):
         if N == 4:
             angles = torch.stack(costhetastar(vectors), dim=-1)
         else:
-          logger.info("Warning: costhetastar not implemented for N != 4")
-          raise NotImplementedError
+            msg = f"Warning: costhetastar not implemented for N != 4 ({N=})"
+            logger.error(msg)
+            raise NotImplementedError(msg)
 
         # norm(p) (shape [B, N])
         norm_p = torch.sqrt(torch.clamp((P**2).sum(dim=-1), min=1e-9))
@@ -500,13 +514,122 @@ class LorentzBaseLayer(nn.Module):
 
         # invariant feature vector per particle
         # "*torch.moveaxis(dot_mat, -1, 0) == dot_mat[..., 0], dot_mat[..., 1], dot_mat[..., 2], dot_mat[..., 3]"
-        inv_feats = torch.stack([angles, norm_p, *torch.moveaxis(dot_mat, -1, 0)], dim=-1)  # [B, N, 2 + N] = [B, N, 6] for N = 4
+        inv_feats = torch.stack(
+            [angles, norm_p, *torch.moveaxis(dot_mat, -1, 0)], dim=-1
+        )  # [B, N, 2 + N] = [B, N, 6] for N = 4
+        if self.inv_norm is not None:
+            # Before going throught he MPLs, normalize the input
+            inv_feats = self.inv_norm(inv_feats)
+            vectors = self.eq_norm(vectors)
+
         inv_feats = self.inv_mlp(inv_feats)  # [B, N, H]
 
         # equivariant projection of raw 4-vector
-        eq_feats = self.eq_mlp(vectors)      # [B, N, H]
+        eq_feats = self.eq_mlp(vectors)  # [B, N, H]
 
         return inv_feats + eq_feats
+
+
+# Implementatio of ParticleNet
+# Refs
+# > https://cms-ml.github.io/documentation/inference/particlenet.html
+# > https://indico.cern.ch/event/980214/contributions/4413544/attachments/2277334/3868991/ParticleNeXt_ML4Jets2021_H_Qu.pdf
+# > https://www.dgl.ai/dgl_docs/generated/dgl.nn.pytorch.conv.EdgeConv.html
+class EdgeConv(nn.Module):
+    """
+    Edge convolution layer from https://arxiv.org/abs/1801.07829
+
+    Cloud-of-particles version of applying a convolutional NN to a picture.
+    Particles are treated as nodes in a graph, so we will look as particles in the context
+    of all other particles in the event.
+    """
+
+    def __init__(self, in_feats, out_feats):
+        super().__init__()
+        self.mlp = nn.Sequential(
+            nn.Linear(2 * in_feats, out_feats),
+            nn.LayerNorm(out_feats),
+            nn.GELU(),
+            nn.Linear(out_feats, out_feats),
+            nn.LayerNorm(out_feats),
+            nn.GELU(),
+        )
+
+    def forward(self, x):
+        # x.shape = [Batch, N particles, C (4... at the begining)]
+        _, N, _ = x.shape
+
+        x_i = x.unsqueeze(2).expand(-1, -1, N, -1)
+        x_j = x.unsqueeze(1).expand(-1, N, -1, -1)
+        # Construct edge features for complete graph: [B, N, N, 2*C]
+        # Basically we pass through the 'position' of the particles
+        # but concatenated to its distance to each other particle
+        edge_input = torch.cat([x_i, x_j - x_i], dim=-1)
+
+        # Apply now the edgeconv FFNN
+        edge_features = self.mlp(edge_input)
+        return edge_features.mean(dim=2)  # [B, N, out_feats]
+
+
+class ParticleNet(nn.Module):
+    """
+    Implementation of the ParticleNet https://arxiv.org/pdf/1902.08570
+    Basically Fig 2, but adding the LorentzBaseLayer before the input
+
+    input (4-vectors)
+    LorentzBaseLayer to generate an invariant set of <embed_dim> features
+    <num_layers> EdgeConvs (each twice as wide as the previous one)
+    output mpl made of:
+        dense
+        relu
+        dropout
+        dense
+    """
+
+    def __init__(
+        self,
+        input_dim=16,
+        output_dim=1,
+        embed_dim=128,
+        num_layers=3,
+        growing_edge=False,
+        **kwargs,
+    ):
+        super().__init__()
+        self.n_4vectors = int(input_dim**0.5)
+        self.base = LorentzBaseLayer(
+            n_4vectors=self.n_4vectors, hidden_dim=embed_dim, normalize=True
+        )
+
+        current_dim = next_dim = embed_dim
+
+        tmp = []
+        for _ in range(num_layers):
+            if growing_edge:
+                next_dim = current_dim * 2
+            tmp.append(EdgeConv(current_dim, next_dim))
+            current_dim = next_dim
+
+        self.convs = nn.ModuleList(tmp)
+
+        self.output_mpl = nn.Sequential(
+            nn.Linear(current_dim, embed_dim),
+            nn.GELU(),
+            nn.Dropout(0.1),
+            nn.Linear(embed_dim, output_dim),
+        )
+
+    def forward(self, x):
+        # taken from FourVectorAwareNet below
+        # Each event has 16 numbers which are 4 particles
+        # each with (E, px, py, pz)
+        # x: [B, 16] → reshape to [B, 4, 4]
+        x = x.view(x.size(0), self.n_4vectors, 4)
+        h = self.base(x)
+        for conv in self.convs:
+            h = conv(h)
+        return self.output_mpl(h.mean(dim=1))
+
 
 class FeatureBlock(nn.Module):
     def __init__(self, hidden_dim=128, dropout=0.1):
@@ -604,6 +727,8 @@ model_dict = {
     "FFNN_EMB_1024_512_256_128_64_LayerNorm": lambda input_dim, output_dim=1, emb_dim=[1024,512,256,128,64], *args, **kwargs: FFNN_EMB_Selection_LayerNorm(input_dim, output_dim=output_dim, emb_dim=emb_dim, *args, **kwargs),
     #
     "FourVectorAwareNet": FourVectorAwareNet,
-    #
     "FFNN_general": FFNN_general,
+    "ParticleNet": ParticleNet,
+    "ParticleNet_big": lambda input_dim, *args, **kwargs: ParticleNet(input_dim, *args, **kwargs),
+    "ParticleNet_growing": lambda input_dim, *args, **kwargs: ParticleNet(input_dim, embed_dim=64, growing_edge=True, *args, **kwargs),
 }
