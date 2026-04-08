@@ -22,6 +22,7 @@ figure.figsize : 5.354, 4.016
 # ---------------------------------------------------------------------------
 axes.formatter.limits: -2, 4  # use scientific notation if log10(axis_range)
                                # is smaller than the first or larger than the second
+axes.formatter.use_mathtext : True
 axes.titlelocation: left       # alignment of the title: {left, right, center}
 axes.titley: 1.0               # title position in axes coordinates
 axes.titlepad: 6.0             # pad between axes and title in points

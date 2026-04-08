@@ -10,6 +10,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
+import matplotlib.ticker as mticker
 
 
 from pathlib import Path
@@ -26,6 +27,9 @@ from ml_events_utils.analysis import costhetastar, get_pt, get_rapidity, cosmuje
 from ml_events_utils import log_file, setup_file_logger
 from ml_events_utils import Settings
 from ml_events_utils import stylesheet_default
+from ml_events_utils import color_deep as color_dict
+
+color_dict = {key: hexwithhash for key, (hex, hexwithhash, floats) in color_dict.items()}
 
 # Apply the package default style globally so all plots in this module are consistent.
 plt.style.use(stylesheet_default)
@@ -117,15 +121,15 @@ def read_top_file_histograms(top_file_paths: dict) -> dict:
     return histogram_data_restructured
 
 def print_integration_statistics(observable_dict, histogram_data: dict = {}, model: str = "", powheg_histogram_runs: list = ["LL",], fitted_polarisation: str = "LL"):
-    pred_integral = np.sum(observable_dict["weights_ypred"])
-    true_integral = np.sum(observable_dict["weights_y"])
+    pred_integral = np.sum(observable_dict["weights_ypred"][0])
+    true_integral = np.sum(observable_dict["weights_y"][0])
 
     # Note that we can in principle also integrate over the histograms here for cross-checks:
     # pred_integral = np.sum(pred_sums * bin_widths)
     # true_integral = np.sum(true_sums * bin_widths)
 
     if model:
-        title = f"Integrated cross-sections for model {model}"
+        title = f"Integrated cross-sections for model\n{model}"
     else:
         title = "Integrated cross-sections"
     logger.info(f"{title}:")
@@ -161,10 +165,21 @@ def plot_r_distribution(r_pred, r_true, model_name="Model", fitted_polarisation:
     fig, axs = plt.subplots(1, 1)
     r_min, r_max = min(r_pred.min() ,r_true.min()), max(r_pred.max(), r_true.max())
     bins = np.linspace(r_min, r_max, 101)
-    axs.hist(r_pred, bins=bins, alpha=0.5, label=f"Predicted {model_name}")
-    axs.hist(r_true, bins=bins, alpha=0.5, label="True")
+
+    axs.set_title(f"{model_name}")
+    axs.hist(r_pred, bins=bins, alpha=0.7, label=f"Predicted")
+    axs.hist(r_true, bins=bins, alpha=0.7, label="True")
     axs.set_xlabel(r"$r_{\mathrm{" + fitted_polarisation + r"}}$")
-    axs.set_ylabel("Events")
+
+    ylabel = "Events"
+    # axs.set_ylabel(ylabel)
+    # Move the y-axis offset text (the "x 1e-3" part) into the y-axis label and hide the original offset text to avoid overlap with the title.
+    axs.figure.draw_without_rendering()
+    offset = axs.yaxis.get_major_formatter().get_offset()
+    offset = " " + offset if offset else ""
+    axs.yaxis.set_label_text(ylabel + offset)
+    axs.yaxis.offsetText.set_visible(False)
+
     axs.legend()
     return fig, axs
 
@@ -195,14 +210,14 @@ def r_plot(r_pred, r_true, weights, model_name="Model", fitted_polarisation:str=
     # Plot as step histograms
     bin_centers = (bins[:-1] + bins[1:]) / 2
 
-    axs.step(bin_centers, true_sums, where='mid', label='True r',      color='green', linewidth=2, alpha=0.7)
-    axs.step(bin_centers, pred_sums, where='mid', label='Predicted r', color='red',   linewidth=2, alpha=0.7)
+    axs.step(bin_centers, true_sums, where='mid', label='True r',      color=color_dict['green'], linewidth=2, alpha=0.7, marker='')
+    axs.step(bin_centers, pred_sums, where='mid', label='Predicted r', color=color_dict['red'],   linewidth=2, alpha=0.7, marker='')
 
     # Scale y axis logarithmically
     # axs[0].set_yscale('log')
 
-    axs.set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} r_{\mathrm{" + fitted_polarisation + r"}}}$ [pb / [r]]")
-    axs.set_title(f"Predicted vs. True Labels - {model_name}")
+    axs.set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} r_{\mathrm{" + fitted_polarisation + r"}}}$ [pb]")
+    axs.set_title(f"{model_name}")
     axs.legend()
     axs.grid(True, alpha=0.3)
 
@@ -255,20 +270,20 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     if powheg_histogram:
         bins = powheg_histogram[powheg_histogram_runs[0]]['edges']
     else:
-        bins = np.linspace(observable_dict[observable_key].min(), observable_dict[observable_key].max(), nbins+1)
+        bins = np.linspace(observable_dict[observable_key][0].min(), observable_dict[observable_key][0].max(), nbins+1)
 
     # Calculate bin widths for proper integration
     bin_widths = bins[1:] - bins[:-1]
 
     # Sum predicted labels in each invariant mass bin
     if not kwargs.get("plotrLL", False):
-        pred_sums, _ = np.histogram(observable_dict[observable_key], bins=bins, weights=observable_dict["weights_ypred"])
+        pred_sums, _ = np.histogram(observable_dict[observable_key][0], bins=bins, weights=observable_dict["weights_ypred"][0])
         # Sum true labels in each invariant mass bin
-        true_sums, _ = np.histogram(observable_dict[observable_key], bins=bins, weights=observable_dict["weights_y"])
+        true_sums, _ = np.histogram(observable_dict[observable_key][0], bins=bins, weights=observable_dict["weights_y"][0])
     else:
-        pred_sums, _ = np.histogram(observable_dict[observable_key], bins=bins, weights=observable_dict["r_pred"])
+        pred_sums, _ = np.histogram(observable_dict[observable_key][0], bins=bins, weights=observable_dict["r_pred"][0])
         # Sum true labels in each invariant mass bin
-        true_sums, _ = np.histogram(observable_dict[observable_key], bins=bins, weights=observable_dict["r_true"])
+        true_sums, _ = np.histogram(observable_dict[observable_key][0], bins=bins, weights=observable_dict["r_true"][0])
     pred_sums /= bin_widths
     true_sums /= bin_widths
     if powheg_histogram:
@@ -279,13 +294,13 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
 
     # Plot as step histograms
     bin_centers = (bins[:-1] + bins[1:]) / 2
-    axs[0].step(bin_centers, true_sums,   where='mid', label='True Labels',      color='green', linewidth=2, alpha=0.7)
-    axs[0].plot(bin_centers, true_sums, 'x', color='green', markersize=8, alpha=0.7)
+    axs[0].step(bin_centers, true_sums,   where='mid', label='True Labels', color=color_dict['green'], linewidth=2, alpha=1.0, marker='')
+    axs[0].plot(bin_centers, true_sums, 'x', color=color_dict['green'], markersize=8, alpha=1.0)
 
     def powheg_color(reset_index=False):
         if reset_index or "counter" not in powheg_color.__dict__:
             powheg_color.__dict__["counter"] = 0
-        colors = ['blue', 'cyan', 'magenta', 'orange', 'purple']
+        colors = [color_dict['blue'], color_dict['cyan'], color_dict['yellow']]
         while True:
             i = powheg_color.__dict__["counter"] % len(colors)
             powheg_color.__dict__["counter"] += 1
@@ -295,16 +310,18 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
 
     if powheg_histogram:
         for run, color in zip(powheg_histogram_runs, powheg_color(reset_index=True)):
-            axs[0].step(bin_centers, powheg_sums[run], where='mid', label=f'POWHEG Labels {run}',    color=color,  linewidth=2, alpha=0.7)
-    axs[0].step(bin_centers, pred_sums,   where='mid', label='Predicted Labels', color='red',   linewidth=2, alpha=0.7)
+            axs[0].step(bin_centers, powheg_sums[run], where='mid', label=f'POWHEG Labels {run}',    color=color,  linewidth=2, alpha=1.0, marker='')
+    axs[0].step(bin_centers, pred_sums,   where='mid', label='Predicted Labels', color=color_dict['red'],   linewidth=2, alpha=1.0, marker='')
 
-    axs[1].step(bin_centers, pred_sums / np.maximum(true_sums, 1e-10), where='mid', color='red', linewidth=2, alpha=0.7)
+    axs[1].step(bin_centers, pred_sums / np.maximum(true_sums, 1e-10), where='mid', color=color_dict['red'], linewidth=2, alpha=1.0, marker='')
     if powheg_histogram:
         for run, color in zip(powheg_histogram_runs, powheg_color(reset_index=True)):
-            axs[1].step(bin_centers, powheg_sums[run] / np.maximum(true_sums, 1e-10), where='mid', color=color, linewidth=2, alpha=0.7, linestyle='--')
+            axs[1].step(bin_centers, powheg_sums[run] / np.maximum(true_sums, 1e-10), where='mid', color=color, linewidth=2, alpha=1.0, linestyle='--', marker='')
 
-    axs[1].axhline(1.0, color='gray', linestyle='--', linewidth=1)
+    axs[1].axhline(1.0, color=color_dict['gray'], linestyle='--', linewidth=1)
     axs[1].set_ylabel("X / True")
+
+    x_label_tex = observable_dict[observable_key][1]
 
     # Scale y axis logarithmically
     if log_scale:
@@ -317,20 +334,32 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
             logger.error(f"Could not set y scale to log for {observable_key} plot: {e}")
 
     if not kwargs.get("plotrLL", False):
-        axs[0].set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} \mathrm{" + observable_key + r"}}$ [pb / [" + observable_key + "]]")
+        ylabel_axs0 = r"$\frac{\mathrm{d} \sigma}{\mathrm{d} \mathrm{" + x_label_tex[1:-1] + r"}}$ [pb]"
     else:
-        axs[0].set_ylabel(r"$r$")
-    axs[0].set_title(f"Predicted vs. True Labels - {model_name}")
+        ylabel_axs0 = r"$r$"
+    # axs[0].set_ylabel(ylabel_axs0)
+
+    axs[0].set_title(f"{model_name}")
     axs[0].legend()
     axs[0].grid(True, alpha=0.3)
     axs[1].grid(True, alpha=0.3)
 
+    # Move the y-axis offset text (the "x 1e-3" part) into the y-axis label and hide the original offset text to avoid overlap with the title.
+    axs[0].figure.draw_without_rendering()
+    offset = axs[0].yaxis.get_major_formatter().get_offset()
+    offset = " " + offset if offset else ""
+    axs[0].yaxis.set_label_text(ylabel_axs0 + offset)
+    axs[0].yaxis.offsetText.set_visible(False)
+
+    # Move the y-axis offset text (the "x 1e-3" part) down a bit to avoid overlap with the x-axis label.
+    # axs[0].yaxis.get_offset_text().set_y(0.5)
+
     try:
-        axs[1].set_xlim(xmin=observable_dict[observable_key].min() * 0.99, xmax=observable_dict[observable_key].max() * 1.01)
+        axs[1].set_xlim(xmin=observable_dict[observable_key][0].min() * 0.99, xmax=observable_dict[observable_key][0].max() * 1.01)
     except ValueError as e:
         logger.error(f"Could not set x limits for {observable_key} plot: {e}")
 
-    axs[1].set_xlabel(f"{observable_key}")
+    axs[1].set_xlabel(f"{x_label_tex}")
 
     fig.tight_layout()
 
@@ -427,21 +456,20 @@ def test_model_ZZ(model,
 
 
     observable_dict = {
-                       "weights_unpolarised": np.zeros(size),
-                       "weights_y":     np.zeros(size),
-                       "weights_ypred": np.zeros(size),
-                       ""
+                       "weights_unpolarised": [np.zeros(size), r"$\sigma_{\mathrm{UU}}$"],
+                        "weights_y":          [np.zeros(size), r"$\sigma_{\mathrm{true}}$"],
+                        "weights_ypred":      [np.zeros(size), r"$\sigma_{\mathrm{pred}}$"],
                        # Start observable arrays
-                       "invmass_Z1":    np.zeros(size),  # mee in POWHEG in analysis.
-                       "invmass_Z2":    np.zeros(size),
-                       "cthep":         np.zeros(size),
+                       "invmass_Z1":          [np.zeros(size), r"$m_{e^{+} \, e^{-}}$"],       # mee in POWHEG in analysis.
+                       "invmass_Z2":          [np.zeros(size), r"$m_{\mathrm{Z} 2}$"],
+                       "cthep":               [np.zeros(size), r"$\cos \theta^{*}_{e^{+}}$"], # cos(theta*) in POWHEG in analysis.
                     #    "cthep_mll_cut5":  np.zeros(size),
                     #    "cthep_mll_cut10": np.zeros(size),
-                       "ptee":          np.zeros(size), # Transverse momentum of the Z(e+ e-) boson
-                       "pt4l":          np.zeros(size),
-                       "ptep":          np.zeros(size),
-                       "yep":           np.zeros(size),
-                       "dphiee":        np.zeros(size), # Delta phi between the two leptons from the Z(e+ e-) boson
+                       "ptee":                [np.zeros(size), r"$p_{\mathrm{T}, \, e^{+} \, e^{-}}$"], # Transverse momentum of the Z(e+ e-) boson
+                       "pt4l":                [np.zeros(size), r"$p_{\mathrm{T}, \, 4\ell}$"],          # Transverse momentum of the 4-lepton system
+                       "ptep":                [np.zeros(size), r"$p_{\mathrm{T}, \, e^{+}}$"],          # Transverse momentum of the positron
+                       "yep":                 [np.zeros(size), r"$y_{e^{+}}$"],                         # Rapidity of the positron
+                       "dphiee":              [np.zeros(size), r"$\Delta \phi(e^{+} \, e^{-})$"],       # Delta phi between the two leptons from the Z(e+ e-) boson
                     #    TODO: ADD it.
                     #    delta phi e+ e- (just in labframe)
                     #     function getdphi(p1,p2)
@@ -457,8 +485,8 @@ def test_model_ZZ(model,
                     #     getdphi=abs(phi1-phi2)
                     #     getdphi=min(getdphi,2d0*pi-getdphi)
                     #     end
-                       "r_pred":      np.zeros(size),
-                       "r_true":      np.zeros(size),
+                       "r_pred":      [np.zeros(size), r"$\mathrm{r}_{\mathrm{pred}}$"],
+                       "r_true":      [np.zeros(size), r"$\mathrm{r}_{\mathrm{true}}$"],
                        }
 
     test_loss = 0
@@ -481,18 +509,18 @@ def test_model_ZZ(model,
             test_loss += loss_fn(pred, y_first_weight_only).item()
 
             # Store weights for integration
-            observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] = (exp_target_transform(pred[:,0]) * exp_target_transform(y[:,1])).cpu().numpy()
-            observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     = (exp_target_transform(y[:,0])    * exp_target_transform(y[:,1])).cpu().numpy()
-            observable_dict["weights_unpolarised"][batch * batch_size : batch * batch_size + X.shape[0]] = exp_target_transform(y[:,1]).cpu().numpy()
+            observable_dict["weights_ypred"][0][batch * batch_size : batch * batch_size + X.shape[0]] = (exp_target_transform(pred[:,0]) * exp_target_transform(y[:,1])).cpu().numpy()
+            observable_dict["weights_y"][0][batch * batch_size : batch * batch_size + X.shape[0]]     = (exp_target_transform(y[:,0])    * exp_target_transform(y[:,1])).cpu().numpy()
+            observable_dict["weights_unpolarised"][0][batch * batch_size : batch * batch_size + X.shape[0]] = exp_target_transform(y[:,1]).cpu().numpy()
             # The weights are calculated as an average over the number of genereated events in POWHEG-BOX-RES:
-            observable_dict["weights_ypred"][batch * batch_size : batch * batch_size + X.shape[0]] /= n_generated_events
-            observable_dict["weights_y"][batch * batch_size : batch * batch_size + X.shape[0]]     /= n_generated_events
-            observable_dict["weights_unpolarised"][batch * batch_size : batch * batch_size + X.shape[0]] /= n_generated_events
+            observable_dict["weights_ypred"][0][batch * batch_size : batch * batch_size + X.shape[0]] /= n_generated_events
+            observable_dict["weights_y"][0][batch * batch_size : batch * batch_size + X.shape[0]]     /= n_generated_events
+            observable_dict["weights_unpolarised"][0][batch * batch_size : batch * batch_size + X.shape[0]] /= n_generated_events
 
 
             # Compute observables
-            observable_dict["r_pred"][batch * batch_size : batch * batch_size + X.shape[0]] = exp_target_transform(pred[:,0]).cpu().numpy()
-            observable_dict["r_true"][batch * batch_size : batch * batch_size + X.shape[0]] = exp_target_transform(y[:,0]).cpu().numpy()
+            observable_dict["r_pred"][0][batch * batch_size : batch * batch_size + X.shape[0]] = exp_target_transform(pred[:,0]).cpu().numpy()
+            observable_dict["r_true"][0][batch * batch_size : batch * batch_size + X.shape[0]] = exp_target_transform(y[:,0]).cpu().numpy()
 
 
             # zl1, zl2, zl3, zl4 = e+, e-, mu+, mu-
@@ -502,19 +530,19 @@ def test_model_ZZ(model,
             invmass_Z1 = torch.sqrt((momenta[:,0,3] + momenta[:,1,3])**2 - ((momenta[:,0,0:3] + momenta[:,1,0:3])**2).sum(dim=-1) + 1e-9)
             # invmass_Z2 = torch.sqrt((momenta[:,2,3] + momenta[:,3,3])**2 - ((momenta[:,2,0:3] + momenta[:,3,0:3])**2).sum(dim=-1) + 1e-9)
 
-            observable_dict["invmass_Z1"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = invmass_Z1.cpu().numpy()
-            # observable_dict["invmass_Z2"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = invmass_Z2.cpu().numpy()
-            observable_dict["ptee"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta[:,0,:] + momenta[:,1,:]).cpu().numpy()
+            observable_dict["invmass_Z1"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = invmass_Z1.cpu().numpy()
+            # observable_dict["invmass_Z2"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = invmass_Z2.cpu().numpy()
+            observable_dict["ptee"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta[:,0,:] + momenta[:,1,:]).cpu().numpy()
 
 
             ct1, ct2, ct3, ct4 = costhetastar(momenta)
-            observable_dict["cthep"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = ct1.cpu().numpy()
+            observable_dict["cthep"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = ct1.cpu().numpy()
 
-            observable_dict["ptep"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta[:,0,:]).cpu().numpy()
+            observable_dict["ptep"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta[:,0,:]).cpu().numpy()
 
-            observable_dict["yep"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]]  = get_rapidity(momenta[:,0,:]).cpu().numpy()
+            observable_dict["yep"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]]  = get_rapidity(momenta[:,0,:]).cpu().numpy()
             # Note that pt4l is zero in the 4-lepton CM frame
-            # observable_dict["pt4l"][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta.sum(dim=1)).cpu().numpy()
+            # observable_dict["pt4l"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta.sum(dim=1)).cpu().numpy()
 
     # observable_dict["cthep_mll_cut10"] = np.where(np.abs(observable_dict["invmass_Z1"] - 91.19) < 10, observable_dict["cthep"], 0.0)
     # observable_dict["cthep_mll_cut5"] = np.where(np.abs(observable_dict["invmass_Z1"] - 91.19) < 5, observable_dict["cthep"], 0.0)
@@ -586,13 +614,13 @@ def test_model_ZZ(model,
         # pdf.savefig(fig)
         # plt.close(fig)
 
-        fig, _, powheg_label = r_plot(observable_dict["r_pred"], observable_dict["r_true"], observable_dict["weights_unpolarised"], model_name=model_name, fitted_polarisation=fitted_polarisation)
+        fig, _, powheg_label = r_plot(observable_dict["r_pred"][0], observable_dict["r_true"][0], observable_dict["weights_unpolarised"][0], model_name=model_name, fitted_polarisation=fitted_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
         # TODO: Add plot showing r_LL^pred (y) vs r_LL^truth (x) directly.
 
-        fig, _ = plot_r_distribution(observable_dict["r_pred"], observable_dict["r_true"], model_name=model_name, fitted_polarisation=fitted_polarisation)
+        fig, _ = plot_r_distribution(observable_dict["r_pred"][0], observable_dict["r_true"][0], model_name=model_name, fitted_polarisation=fitted_polarisation)
         pdf.savefig(fig)
         plt.close(fig)
 
