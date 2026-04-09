@@ -1,4 +1,5 @@
 from pathlib import Path
+from matplotlib import font_manager
 
 from .ml_events_dataset import MLEventsDataset, get_statistics_from_dataset
 from .Zjet_events_dataset import ZJetDataset
@@ -41,4 +42,19 @@ color_deep = {"blue":   "4c72b0",
               "black":  "000000"
             }
 color_deep = {key: [hex, f"#{hex}", [int(hex[:2], 16)/ 255., int(hex[2:4], 16)/ 255., int(hex[4:6], 16)/ 255., ]] for key, hex in color_deep.items()}
+
+
+# Add fonts from the fonts directory to Matplotlib's font manager
+try:
+    font_dir = Path(__file__).parent / Path('fonts')
+    font_files = list(font_dir.glob('**/*.ttf')) + list(font_dir.glob('**/*.otf'))
+    # print(f"Found {len(font_files)} font files in {font_dir}: {[font.name for font in font_files]}")
+except Exception as e:
+    logger.warning(f"Could not find fonts in {font_dir}: {e}")
+    font_files = []
+
+for font_path in font_files:
+    font_manager.fontManager.addfont(font_path)
+    prop = font_manager.FontProperties(fname=font_path)
+    # print(f"Added font {font_path.name}: {prop.get_name()}")
 
