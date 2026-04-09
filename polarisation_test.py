@@ -176,7 +176,7 @@ def plot_r_distribution(r_pred, r_true, model_name="Model", fitted_polarisation:
     # Move the y-axis offset text (the "x 1e-3" part) into the y-axis label and hide the original offset text to avoid overlap with the title.
     axs.figure.draw_without_rendering()
     offset = axs.yaxis.get_major_formatter().get_offset()
-    offset = " " + offset if offset else ""
+    offset = r" / $" + offset[7:] if offset else ""
     axs.yaxis.set_label_text(ylabel + offset)
     axs.yaxis.offsetText.set_visible(False)
 
@@ -347,7 +347,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     # Move the y-axis offset text (the "x 1e-3" part) into the y-axis label and hide the original offset text to avoid overlap with the title.
     axs[0].figure.draw_without_rendering()
     offset = axs[0].yaxis.get_major_formatter().get_offset()
-    offset = " " + offset if offset else ""
+    offset = r" / $" + offset[7:] if offset else ""
     axs[0].yaxis.set_label_text(ylabel_axs0 + offset)
     axs[0].yaxis.offsetText.set_visible(False)
 
