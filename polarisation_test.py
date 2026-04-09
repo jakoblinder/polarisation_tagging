@@ -18,6 +18,7 @@ from torchinfo import summary
 from torch.utils.data import DataLoader
 from matplotlib.backends.backend_pdf import PdfPages
 
+from ml_events_utils.write_top_file import TopFileWriter
 from ml_events_utils.transforms import januar2026_input_choice
 from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform, exp_target_transform  #, test_loop
 from ml_events_utils import ZJetDataset
@@ -120,7 +121,7 @@ def read_top_file_histograms(top_file_paths: dict) -> dict:
 
     return histogram_data_restructured
 
-def print_integration_statistics(observable_dict, histogram_data: dict = {}, model: str = "", powheg_histogram_runs: list = ["LL",], fitted_polarisation: str = "LL"):
+def print_integration_statistics(observable_dict, histogram_data: dict = {}, model: str = "", powheg_histogram_runs: list = ["LL",], fitted_polarisation: str = "LL", hist_writer: TopFileWriter = None):
     pred_integral = np.sum(observable_dict["weights_ypred"][0])
     true_integral = np.sum(observable_dict["weights_y"][0])
 
@@ -140,6 +141,12 @@ def print_integration_statistics(observable_dict, histogram_data: dict = {}, mod
             logger.info(f"  POWHEG reweighting [{run}]: {histogram_data['totxsec'][run]['values'][0]:.6e}")
         logger.info(f"  Ratio (pred/PWG-[{powheg_histogram_runs[0]}]):   {pred_integral/histogram_data['totxsec'][powheg_histogram_runs[0]]['values'][0]:.6f}")
     logger.info(f"  Ratio (pred/true):  {pred_integral/true_integral:.6f}")
+
+    if hist_writer:
+        hist_writer.write_histogram(f"{fitted_polarisation}_pred.top", "totxsec", bin_edges=[[0., 1.],], values=[pred_integral,], uncertainties=[0., ])
+        hist_writer.write_histogram(f"{fitted_polarisation}_true.top", "totxsec", bin_edges=[[0., 1.],], values=[true_integral,], uncertainties=[0., ])
+        for run in powheg_histogram_runs:
+            hist_writer.write_histogram(f"POWHEG_{run}.top", "totxsec", bin_edges=[[0., 1.],], values=[histogram_data['totxsec'][run]['values'][0],], uncertainties=[0., ])
 
     # Create a text-only plot for integration results
     fig, ax = plt.subplots(1, 1)
@@ -161,7 +168,7 @@ def print_integration_statistics(observable_dict, histogram_data: dict = {}, mod
 
     return fig, ax
 
-def plot_r_distribution(r_pred, r_true, model_name="Model", fitted_polarisation:str="LL"):
+def plot_r_distribution(r_pred, r_true, model_name="Model", fitted_polarisation:str="LL", hist_writer: TopFileWriter = None):
     fig, axs = plt.subplots(1, 1)
     r_min, r_max = min(r_pred.min() ,r_true.min()), max(r_pred.max(), r_true.max())
     bins = np.linspace(r_min, r_max, 101)
@@ -169,6 +176,13 @@ def plot_r_distribution(r_pred, r_true, model_name="Model", fitted_polarisation:
     axs.set_title(f"{model_name}")
     axs.hist(r_pred, bins=bins, alpha=0.7, label=f"Predicted")
     axs.hist(r_true, bins=bins, alpha=0.7, label="True")
+
+    if hist_writer:
+        pred_hist, _ = np.histogram(r_pred, bins=bins)
+        true_hist, _ = np.histogram(r_true, bins=bins)
+        hist_writer.write_histogram(f"{fitted_polarisation}_pred.top", f"r_{fitted_polarisation}_count", bin_edges=np.column_stack((bins[:-1], bins[1:])), values=pred_hist, uncertainties=np.zeros_like(pred_hist))
+        hist_writer.write_histogram(f"{fitted_polarisation}_true.top", f"r_{fitted_polarisation}_count", bin_edges=np.column_stack((bins[:-1], bins[1:])), values=true_hist, uncertainties=np.zeros_like(true_hist))
+
     axs.set_xlabel(r"$r_{\mathrm{" + fitted_polarisation + r"}}$")
 
     ylabel = "Events"
@@ -183,7 +197,7 @@ def plot_r_distribution(r_pred, r_true, model_name="Model", fitted_polarisation:
     axs.legend()
     return fig, axs
 
-def r_plot(r_pred, r_true, weights, model_name="Model", fitted_polarisation:str="LL"):
+def r_plot(r_pred, r_true, weights, model_name="Model", fitted_polarisation:str="LL", hist_writer: TopFileWriter = None):
     fig, axs = plt.subplots(1, 1)
 
     r_min, r_max = -0.02, 1.00
@@ -213,10 +227,15 @@ def r_plot(r_pred, r_true, weights, model_name="Model", fitted_polarisation:str=
     axs.step(bin_centers, true_sums, where='mid', label='True r',      color=color_dict['green'], linewidth=2, alpha=0.7, marker='')
     axs.step(bin_centers, pred_sums, where='mid', label='Predicted r', color=color_dict['red'],   linewidth=2, alpha=0.7, marker='')
 
+    if hist_writer:
+        hist_writer.write_histogram(f"{fitted_polarisation}_pred.top", f"r_{fitted_polarisation}", bin_edges=np.column_stack((bins[:-1], bins[1:])), values=pred_sums, uncertainties=np.zeros_like(pred_sums))
+        hist_writer.write_histogram(f"{fitted_polarisation}_true.top", f"r_{fitted_polarisation}", bin_edges=np.column_stack((bins[:-1], bins[1:])), values=true_sums, uncertainties=np.zeros_like(true_sums))
+
+
     # Scale y axis logarithmically
     # axs[0].set_yscale('log')
 
-    axs.set_ylabel(r"$\frac{\mathrm{d} \sigma}{\mathrm{d} r_{\mathrm{" + fitted_polarisation + r"}}}$ [pb]")
+    axs.set_ylabel(r"$\frac{\mathrm{d} \sigma^{\mathrm{UU}}}{\mathrm{d} r_{\mathrm{" + fitted_polarisation + r"}}}$ [pb]")
     axs.set_title(f"{model_name}")
     axs.legend()
     axs.grid(True, alpha=0.3)
@@ -233,7 +252,7 @@ def r_plot(r_pred, r_true, weights, model_name="Model", fitted_polarisation:str=
     powheg_label = "rLL"
     return fig, axs, powheg_label
 
-def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:dict = None, log_scale=True, nbins=50, model_name="Model", powheg_histogram_runs: list = ["LL",], *args, **kwargs):
+def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:dict = None, log_scale=True, nbins=50, model_name="Model", powheg_histogram_runs: list = ["LL",], hist_writer: TopFileWriter = None, *args, **kwargs):
     """
     Create a comparison plot of predicted vs true labels for a given observable.
     This function generates a step histogram plot comparing predicted labels, true labels,
@@ -286,6 +305,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
         true_sums, _ = np.histogram(observable_dict[observable_key][0], bins=bins, weights=observable_dict["r_true"][0])
     pred_sums /= bin_widths
     true_sums /= bin_widths
+
     if powheg_histogram:
         # POWHEG histograms for comparison
         powheg_sums = {}
@@ -312,6 +332,14 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
         for run, color in zip(powheg_histogram_runs, powheg_color(reset_index=True)):
             axs[0].step(bin_centers, powheg_sums[run], where='mid', label=f'POWHEG Labels {run}',    color=color,  linewidth=2, alpha=1.0, marker='')
     axs[0].step(bin_centers, pred_sums,   where='mid', label='Predicted Labels', color=color_dict['red'],   linewidth=2, alpha=1.0, marker='')
+
+    if hist_writer:
+        fitted_polarisation = powheg_histogram_runs[0]
+        hist_writer.write_histogram(f"{fitted_polarisation}_pred.top", f"{observable_key}", bin_edges=np.column_stack((bins[:-1], bins[1:])), values=pred_sums, uncertainties=np.zeros_like(pred_sums))
+        hist_writer.write_histogram(f"{fitted_polarisation}_true.top", f"{observable_key}", bin_edges=np.column_stack((bins[:-1], bins[1:])), values=true_sums, uncertainties=np.zeros_like(true_sums))
+        if powheg_histogram:
+            for run in powheg_histogram_runs:
+                hist_writer.write_histogram(f"POWHEG_{run}.top", f"{observable_key}", bin_edges=np.column_stack((bins[:-1], bins[1:])), values=powheg_sums[run], uncertainties=np.zeros_like(powheg_sums[run]))
 
     axs[1].step(bin_centers, pred_sums / np.maximum(true_sums, 1e-10), where='mid', color=color_dict['red'], linewidth=2, alpha=1.0, marker='')
     if powheg_histogram:
@@ -552,6 +580,8 @@ def test_model_ZZ(model,
 
     logger.info(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
 
+    hist_writer = TopFileWriter(basepath = Path(f"{model_dir}"))
+
     with PdfPages(f"{model_dir}/test_histograms.pdf") as pdf:
         d = pdf.infodict()
         d['Title']        = f"Test results for model {model_name}"
@@ -564,65 +594,67 @@ def test_model_ZZ(model,
         show_polarisation = [fitted_polarisation, "UU"]
 
         # Integration statistics
-        fig, _ = print_integration_statistics(observable_dict, histogram_data, model=model_name, powheg_histogram_runs = [fitted_polarisation, ], fitted_polarisation=fitted_polarisation)
+        fig, _ = print_integration_statistics(observable_dict, histogram_data, model=model_name, powheg_histogram_runs = [fitted_polarisation, ], fitted_polarisation=fitted_polarisation, hist_writer=hist_writer)
         pdf.savefig(fig)
         plt.close(fig)
 
         # Invariant mass Z1 comparison plot
-        fig, _ = comparison_plots(observable_dict, "invmass_Z1", histogram_data["mee"], model_name=model_name, powheg_histogram_runs = show_polarisation)
+        fig, _ = comparison_plots(observable_dict, "invmass_Z1", histogram_data["mee"], model_name=model_name, powheg_histogram_runs = show_polarisation, hist_writer=hist_writer)
         pdf.savefig(fig)
         plt.close(fig)
 
         # pT of Z1 comparison plot
-        fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = show_polarisation)
+        fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = show_polarisation, hist_writer=hist_writer)
         pdf.savefig(fig)
         plt.close(fig)
 
         # pT of Z1 with rLL plot
-        fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = show_polarisation, plotrLL=True)
+        fig, _ = comparison_plots(observable_dict, "ptee", histogram_data["ptee"], model_name=model_name, powheg_histogram_runs = show_polarisation, plotrLL=True, hist_writer=hist_writer)
         pdf.savefig(fig)
         plt.close(fig)
 
         # Cos(theta*) comparison plot
-        fig, _ = comparison_plots(observable_dict, "cthep", histogram_data["cthep"], model_name=model_name, powheg_histogram_runs = show_polarisation)
+        fig, _ = comparison_plots(observable_dict, "cthep", histogram_data["cthep"], model_name=model_name, powheg_histogram_runs = show_polarisation, hist_writer=hist_writer)
         pdf.savefig(fig)
         plt.close(fig)
 
         # # Cos(theta*) with mll cut comparison plot
-        # fig, axs = comparison_plots(observable_dict, "cthep_mll_cut10", histogram_data["cthep"], model_name=model_name, powheg_histogram_runs = [fitted_polarisation, ])
+        # fig, axs = comparison_plots(observable_dict, "cthep_mll_cut10", histogram_data["cthep"], model_name=model_name, powheg_histogram_runs = [fitted_polarisation, ], hist_writer=hist_writer)
         # axs[0].set_title("Cos(theta*) with mll cut |mll - mZ| < 10 GeV")
         # pdf.savefig(fig)
         # plt.close(fig)
 
-        # fig, axs = comparison_plots(observable_dict, "cthep_mll_cut5", histogram_data["cthep"], model_name=model_name, powheg_histogram_runs = [fitted_polarisation, ])
+        # fig, axs = comparison_plots(observable_dict, "cthep_mll_cut5", histogram_data["cthep"], model_name=model_name, powheg_histogram_runs = [fitted_polarisation, ], hist_writer=hist_writer)
         # axs[0].set_title("Cos(theta*) with mll cut |mll - mZ| < 5 GeV")
         # pdf.savefig(fig)
         # plt.close(fig)
 
         # Transverse momentum of positron
-        fig, _ = comparison_plots(observable_dict, "ptep", histogram_data["ptep"], model_name=model_name, powheg_histogram_runs = show_polarisation)
+        fig, _ = comparison_plots(observable_dict, "ptep", histogram_data["ptep"], model_name=model_name, powheg_histogram_runs = show_polarisation, hist_writer=hist_writer)
         pdf.savefig(fig)
         plt.close(fig)
 
         # Rapidity of positron
-        fig, _ = comparison_plots(observable_dict, "yep", histogram_data["yep"], model_name=model_name, powheg_histogram_runs = show_polarisation)
+        fig, _ = comparison_plots(observable_dict, "yep", histogram_data["yep"], model_name=model_name, powheg_histogram_runs = show_polarisation, hist_writer=hist_writer)
         pdf.savefig(fig)
         plt.close(fig)
 
         # # Transverse momentum of 4-lepton system
-        # fig, _ = comparison_plots(observable_dict, "pt4l", histogram_data["pt4l"], model_name=model_name, powheg_histogram_runs = [fitted_polarisation, ])
+        # fig, _ = comparison_plots(observable_dict, "pt4l", histogram_data["pt4l"], model_name=model_name, powheg_histogram_runs = [fitted_polarisation, ], hist_writer=hist_writer)
         # pdf.savefig(fig)
         # plt.close(fig)
 
-        fig, _, powheg_label = r_plot(observable_dict["r_pred"][0], observable_dict["r_true"][0], observable_dict["weights_unpolarised"][0], model_name=model_name, fitted_polarisation=fitted_polarisation)
+        fig, _, powheg_label = r_plot(observable_dict["r_pred"][0], observable_dict["r_true"][0], observable_dict["weights_unpolarised"][0], model_name=model_name, fitted_polarisation=fitted_polarisation, hist_writer=hist_writer)
         pdf.savefig(fig)
         plt.close(fig)
 
         # TODO: Add plot showing r_LL^pred (y) vs r_LL^truth (x) directly.
 
-        fig, _ = plot_r_distribution(observable_dict["r_pred"][0], observable_dict["r_true"][0], model_name=model_name, fitted_polarisation=fitted_polarisation)
+        fig, _ = plot_r_distribution(observable_dict["r_pred"][0], observable_dict["r_true"][0], model_name=model_name, fitted_polarisation=fitted_polarisation, hist_writer=hist_writer)
         pdf.savefig(fig)
         plt.close(fig)
+
+    hist_writer.save_all()
 
     return test_loss
 
