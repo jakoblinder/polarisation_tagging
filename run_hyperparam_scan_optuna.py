@@ -11,6 +11,7 @@ import subprocess
 import sys
 
 from ml_events_utils import Settings, setup_file_logger
+from ml_events_utils import stylesheet_default
 from polarisation_train import run_training
 
 try:
@@ -215,7 +216,7 @@ def objective_factory(base_settings: Settings, output_root: Path, run_test: bool
     return objective
 
 
-def create_study_summary_figure(study: optuna.Study, study_name: str, storage: str) -> plt.Figure:
+def create_study_summary_figure(study: optuna.Study, study_name: str, storage: str, target_name: str) -> plt.Figure:
     """Create a matplotlib figure containing study summary information.
 
     Args:
@@ -254,7 +255,7 @@ Pruned Trials:           {n_pruned}
 
 BEST TRIAL FOUND
 Trial Number:            {best_trial.number}
-Best Objective Value:    {best_trial.value:.6e}
+Best {target_name}:    {best_trial.value:.6e}
 
 Best Parameters:
 {params_str}
@@ -282,6 +283,8 @@ def generate_optimization_plots(study: optuna.Study, output_root: Path,
     Returns:
         Path to generated PDF file
     """
+    plt.style.use(stylesheet_default)
+
     pdf_path = output_root / f"optimization_analysis_{study_name}.pdf"
 
     # Save all figures to multipage PDF
@@ -293,14 +296,16 @@ def generate_optimization_plots(study: optuna.Study, output_root: Path,
         d["Keywords"] = "Optuna, Hyperparameter Optimization"
         d["CreationDate"] = datetime.now()
 
+        target_name="Validation Loss"
+
         # Page 1: Study summary
-        fig_summary = create_study_summary_figure(study, study_name, storage)
+        fig_summary = create_study_summary_figure(study, study_name, storage, target_name=target_name)
         pdf.savefig(fig_summary, bbox_inches="tight")
         plt.close(fig_summary)
 
         # Page 2: Optimization history
         try:
-            plot_optimization_history(study)
+            plot_optimization_history(study, target_name=target_name)
             fig_history = plt.gcf()  # Get current figure
             pdf.savefig(fig_history, bbox_inches="tight")
             plt.close(fig_history)
@@ -309,7 +314,7 @@ def generate_optimization_plots(study: optuna.Study, output_root: Path,
 
         # Page 3: Slice plot (parameter importance via slices)
         try:
-            plot_slice(study)
+            plot_slice(study, target_name=target_name)
             fig_slice = plt.gcf()  # Get current figure (may have multiple subplots)
             pdf.savefig(fig_slice, bbox_inches="tight")
             plt.close(fig_slice)
@@ -319,7 +324,7 @@ def generate_optimization_plots(study: optuna.Study, output_root: Path,
         # Page 4: Parameter importance ranking (only if enough trials)
         if len(study.trials) >= 2:
             try:
-                plot_param_importances(study)
+                plot_param_importances(study, target_name=target_name)
                 fig_importance = plt.gcf()  # Get current figure
                 pdf.savefig(fig_importance, bbox_inches="tight")
                 plt.close(fig_importance)
