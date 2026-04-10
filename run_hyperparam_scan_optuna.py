@@ -1,9 +1,14 @@
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
+
+from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.pyplot as plt
+
 import argparse
 import os
 import subprocess
 import sys
-from pathlib import Path
-from typing import Any, Dict, List
 
 from ml_events_utils import Settings, setup_file_logger
 from polarisation_train import run_training
@@ -13,6 +18,11 @@ try:
     from optuna.study import MaxTrialsCallback
     from optuna.trial import Trial
     from optuna.pruners import MedianPruner
+    from optuna.visualization.matplotlib import (
+        plot_optimization_history,
+        plot_slice,
+        plot_param_importances,
+    )
 except ImportError as exc:
     raise SystemExit(
         "Optuna is not installed. Install with: pip install optuna"
@@ -22,6 +32,10 @@ except ImportError as exc:
 # python ML_Giovanni/polarisation_tagging/run_hyperparam_scan_optuna.py path/to/run_settings.yaml --study-name pol_scan --storage sqlite:///pol_scan.db --n-trials 120 --gpus 0 1 2 3 --output-root scan_runs_optuna
 # With pruning:
 # python ML_Giovanni/polarisation_tagging/run_hyperparam_scan_optuna.py path/to/run_settings.yaml --study-name pol_scan --storage sqlite:///pol_scan.db --n-trials 120 --gpus 0 1 2 3 --output-root scan_runs_optuna --enable-pruning --pruner median
+# With auto-plotting after optimization:
+# python ML_Giovanni/polarisation_tagging/run_hyperparam_scan_optuna.py path/to/run_settings.yaml --study-name pol_scan --storage sqlite:///pol_scan.db --n-trials 120 --gpus 0 1 2 3 --output-root scan_runs_optuna --plot-after
+# Plot existing study only (no optimization):
+# python ML_Giovanni/polarisation_tagging/run_hyperparam_scan_optuna.py path/to/run_settings.yaml --study-name pol_scan --storage sqlite:///pol_scan.db --plot-only --output-root scan_runs_optuna
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -87,6 +101,16 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=0,
         help="Internal flag: physical GPU id assigned to this worker.",
+    )
+    parser.add_argument(
+        "--plot-only",
+        action="store_true",
+        help="Load existing study and generate plots without running optimization.",
+    )
+    parser.add_argument(
+        "--plot-after",
+        action="store_true",
+        help="Generate plots automatically after optimization completes.",
     )
     args = parser.parse_args()
 
@@ -189,6 +213,120 @@ def objective_factory(base_settings: Settings, output_root: Path, run_test: bool
         return float(result["best_val_loss"])
 
     return objective
+
+
+def create_study_summary_figure(study: optuna.Study, study_name: str, storage: str) -> plt.Figure:
+    """Create a matplotlib figure containing study summary information.
+
+    Args:
+        study: Loaded Optuna study object
+        study_name: Name of the study
+        storage: Storage URL/path
+
+    Returns:
+        matplotlib Figure object
+    """
+    fig, ax = plt.subplots(figsize=(10, 8))
+    ax.axis("off")
+
+    # Get study statistics
+    n_trials = len(study.trials)
+    n_complete = len([t for t in study.trials if t.state.name == "COMPLETE"])
+    n_pruned = len([t for t in study.trials if t.state.name == "PRUNED"])
+    best_trial = study.best_trial
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Format best parameters
+    params_str = "\n".join([f"  {k}: {v}" for k, v in best_trial.params.items()])
+
+    # Create text content
+    summary_text = f"""
+OPTUNA STUDY OPTIMIZATION SUMMARY
+
+Study Name:              {study_name}
+Storage:                 {storage}
+Analysis Date/Time:      {timestamp}
+
+TRIAL STATISTICS
+Total Trials:            {n_trials}
+Completed Trials:        {n_complete}
+Pruned Trials:           {n_pruned}
+
+BEST TRIAL FOUND
+Trial Number:            {best_trial.number}
+Best Objective Value:    {best_trial.value:.6e}
+
+Best Parameters:
+{params_str}
+    """.strip()
+
+    ax.text(0.05, 0.95, summary_text, transform=ax.transAxes, fontsize=10,
+            verticalalignment="top", fontfamily="monospace",
+            bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.3))
+
+    return fig
+
+
+def generate_optimization_plots(study: optuna.Study, output_root: Path,
+                                 study_name: str, storage: str) -> Path:
+    """Generate and save optimization analysis plots to a multipage PDF.
+
+    Uses matplotlib-based Optuna visualization functions for direct integration.
+
+    Args:
+        study: Loaded Optuna study object
+        output_root: Directory to save PDF
+        study_name: Name of the study
+        storage: Storage URL/path
+
+    Returns:
+        Path to generated PDF file
+    """
+    pdf_path = output_root / f"optimization_analysis_{study_name}.pdf"
+
+    # Save all figures to multipage PDF
+    with PdfPages(str(pdf_path)) as pdf:
+        d = pdf.infodict()
+        d["Title"] = f"Optuna Study Analysis: {study_name}"
+        d["Author"] = "Optuna"
+        d["Subject"] = "Hyperparameter Optimization Analysis"
+        d["Keywords"] = "Optuna, Hyperparameter Optimization"
+        d["CreationDate"] = datetime.now()
+
+        # Page 1: Study summary
+        fig_summary = create_study_summary_figure(study, study_name, storage)
+        pdf.savefig(fig_summary, bbox_inches="tight")
+        plt.close(fig_summary)
+
+        # Page 2: Optimization history
+        try:
+            plot_optimization_history(study)
+            fig_history = plt.gcf()  # Get current figure
+            pdf.savefig(fig_history, bbox_inches="tight")
+            plt.close(fig_history)
+        except Exception as e:
+            print(f"Warning: Could not generate optimization history plot: {e}")
+
+        # Page 3: Slice plot (parameter importance via slices)
+        try:
+            plot_slice(study)
+            fig_slice = plt.gcf()  # Get current figure (may have multiple subplots)
+            pdf.savefig(fig_slice, bbox_inches="tight")
+            plt.close(fig_slice)
+        except Exception as e:
+            print(f"Warning: Could not generate slice plot: {e}")
+
+        # Page 4: Parameter importance ranking (only if enough trials)
+        if len(study.trials) >= 2:
+            try:
+                plot_param_importances(study)
+                fig_importance = plt.gcf()  # Get current figure
+                pdf.savefig(fig_importance, bbox_inches="tight")
+                plt.close(fig_importance)
+            except Exception as e:
+                print(f"Warning: Could not generate parameter importance plot: {e}")
+
+    return pdf_path
 
 
 def run_worker(arg: argparse.Namespace) -> int:
@@ -319,11 +457,44 @@ def run_coordinator(arg: argparse.Namespace) -> int:
     print(f"Output root: {output_root}")
     print(f"Study DB: {arg.storage}")
 
+    # Generate plots if requested
+    if arg.plot_after:
+        print("\nGenerating optimization analysis plots...")
+        pdf_path = generate_optimization_plots(study, output_root, arg.study_name, arg.storage)
+        print(f"Plots saved to: {pdf_path}")
+
     return exit_code
 
 
 def main() -> int:
     arg = parse_args()
+
+    # Handle plot-only mode: load existing study and generate plots
+    if arg.plot_only:
+        try:
+            study = optuna.load_study(study_name=arg.study_name, storage=arg.storage)
+        except Exception as e:
+            print(f"Error loading study '{arg.study_name}' from storage '{arg.storage}': {e}")
+            return 1
+
+        # Print study summary to console
+        best = study.best_trial
+        print(f"Study: {arg.study_name}")
+        print(f"Total trials: {len(study.trials)}")
+        print(f"Best trial number: {best.number}")
+        print(f"Best objective value: {best.value}")
+        print(f"Best parameters: {best.params}\n")
+
+        # Generate plots
+        print("Generating optimization analysis plots...")
+        try:
+            pdf_path = generate_optimization_plots(study, arg.output_root, arg.study_name, arg.storage)
+            print(f"Plots saved to: {pdf_path}")
+        except Exception as e:
+            print(f"Error generating plots: {e}")
+            return 1
+
+        return 0
 
     # Workflow overview:
     # 1) Put fit specifications into run_settings.yaml (in each parameter's fit field).
