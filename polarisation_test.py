@@ -258,7 +258,9 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     This function generates a step histogram plot comparing predicted labels, true labels,
     and (if given) POWHEG reference data for a specified observable. The histograms are normalized
     by bin width and displayed on a logarithmic y-scale.
-    Note the slight difference of the true labels and POWHEG histograms due to FIXME: Add explanation here.
+    Note the slight difference of the true labels and POWHEG histograms due to the smaller statistics
+    of the true labels (which are only from the test set) compared to the POWHEG histograms (which are from the full dataset).
+
     Args:
         observable_dict (dict): Dictionary containing observable data with keys:
             - observable_key: The observable values to plot
@@ -383,7 +385,32 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     # axs[0].yaxis.get_offset_text().set_y(0.5)
 
     try:
-        axs[1].set_xlim(xmin=observable_dict[observable_key][0].min() * 0.99, xmax=observable_dict[observable_key][0].max() * 1.01)
+        # Determin percentage of small values to set x limits accordingly
+        # Percentage of bins with values smaller than the mean value of the histogram. If this percentage is large, we set the y limits to be smaller to better visualize the distribution. Otherwise, we set the y limits to be larger to include all values.
+        ratios = []
+        ratios.append(np.sum(true_sums < true_sums.mean()) / len(true_sums))
+        ratios.append(np.sum(pred_sums < pred_sums.mean()) / len(pred_sums))
+        if powheg_histogram:
+            for run in powheg_histogram_runs:
+                ratios.append(np.sum(powheg_sums[run] < powheg_sums[run].mean()) / len(powheg_sums[run]))
+        small_percent = max(ratios)
+        if small_percent > 0.9:
+            # Find non-zero bins and set y limits to be between the 1st and 99th percentile of these bins to better visualize the distribution.
+            # Find the indices of the bins that are smaller than the mean value of the histogram and set the x limits to be between the minimum and maximum of these bins to better visualize the distribution.
+
+            big_indices = []
+            big_indices.append(np.flatnonzero(~(true_sums < true_sums.mean())))
+            big_indices.append(np.flatnonzero(~(pred_sums < pred_sums.mean())))
+            if powheg_histogram:
+                for run in powheg_histogram_runs:
+                    big_indices.append(np.flatnonzero(~(powheg_sums[run] < powheg_sums[run].mean())))
+
+            min_index, max_index = min([indices.min() for indices in big_indices if len(indices) > 0]), max([indices.max() for indices in big_indices if len(indices) > 0])
+
+            extra_bins = int(0.05 * len(bins))  # Add 5% of the total number of bins as extra range on both sides
+            min_index = max(min_index - extra_bins, 0) if min_index is not None else None
+            max_index = min(max_index + extra_bins, len(bins) - 2) if max_index is not None else None
+            axs[0].set_xlim(xmin=bins[min_index] if min_index is not None else bins[0], xmax=bins[max_index+1] if max_index is not None else bins[-1])
     except ValueError as e:
         logger.error(f"Could not set x limits for {observable_key} plot: {e}")
 
