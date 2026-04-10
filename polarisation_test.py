@@ -24,7 +24,7 @@ from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepto
 from ml_events_utils import ZJetDataset
 from ml_events_utils import boost_into_Zjet_cm_frame
 from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output, FFNN_paper
-from ml_events_utils.analysis import costhetastar, get_pt, get_rapidity, cosmujet
+from ml_events_utils.analysis import costhetastar, get_pt, get_rapidity, cosmujet, getdphi
 from ml_events_utils import log_file, setup_file_logger
 from ml_events_utils import Settings
 from ml_events_utils import stylesheet_default
@@ -498,21 +498,6 @@ def test_model_ZZ(model,
                        "ptep":                [np.zeros(size), r"$p_{\mathrm{T}, \, e^{+}}$"],          # Transverse momentum of the positron
                        "yep":                 [np.zeros(size), r"$y_{e^{+}}$"],                         # Rapidity of the positron
                        "dphiee":              [np.zeros(size), r"$\Delta \phi(e^{+} \, e^{-})$"],       # Delta phi between the two leptons from the Z(e+ e-) boson
-                    #    TODO: ADD it.
-                    #    delta phi e+ e- (just in labframe)
-                    #     function getdphi(p1,p2)
-                    #     implicit none
-                    #     include 'pwhg_math.h'
-                    # !      real*8 p1(*),p2(*),getdphi
-                    #     real*8 p1(4),p2(4),getdphi
-                    #     real*8 phi1,phi2
-                    #     real*8 geteta
-                    #     external geteta
-                    #     phi1=atan2(p1(2),p1(1))
-                    #     phi2=atan2(p2(2),p2(1))
-                    #     getdphi=abs(phi1-phi2)
-                    #     getdphi=min(getdphi,2d0*pi-getdphi)
-                    #     end
                        "r_pred":      [np.zeros(size), r"$\mathrm{r}_{\mathrm{pred}}$"],
                        "r_true":      [np.zeros(size), r"$\mathrm{r}_{\mathrm{true}}$"],
                        }
@@ -570,7 +555,10 @@ def test_model_ZZ(model,
 
             observable_dict["yep"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]]  = get_rapidity(momenta[:,0,:]).cpu().numpy()
             # Note that pt4l is zero in the 4-lepton CM frame
-            # observable_dict["pt4l"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta.sum(dim=1)).cpu().numpy()
+            observable_dict["pt4l"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta.sum(dim=1)).cpu().numpy()
+
+            # Delta phi e+ e- (just in labframe)
+            observable_dict["dphiee"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = getdphi(momenta[:,0,:], momenta[:,1,:]).cpu().numpy()
 
     # observable_dict["cthep_mll_cut10"] = np.where(np.abs(observable_dict["invmass_Z1"] - 91.19) < 10, observable_dict["cthep"], 0.0)
     # observable_dict["cthep_mll_cut5"] = np.where(np.abs(observable_dict["invmass_Z1"] - 91.19) < 5, observable_dict["cthep"], 0.0)
@@ -639,16 +627,19 @@ def test_model_ZZ(model,
         pdf.savefig(fig)
         plt.close(fig)
 
-        # # Transverse momentum of 4-lepton system
-        # fig, _ = comparison_plots(observable_dict, "pt4l", histogram_data["pt4l"], model_name=model_name, powheg_histogram_runs = [fitted_polarisation, ], hist_writer=hist_writer)
-        # pdf.savefig(fig)
-        # plt.close(fig)
+        # Transverse momentum of 4-lepton system
+        fig, _ = comparison_plots(observable_dict, "pt4l", histogram_data["pt4l"], model_name=model_name, powheg_histogram_runs = show_polarisation, hist_writer=hist_writer)
+        pdf.savefig(fig)
+        plt.close(fig)
+
+        # Delta phi e+ e- (just in labframe)
+        fig, _ = comparison_plots(observable_dict, "dphiee", histogram_data["dphiee"], model_name=model_name, powheg_histogram_runs = show_polarisation, hist_writer=hist_writer)
+        pdf.savefig(fig)
+        plt.close(fig)
 
         fig, _, powheg_label = r_plot(observable_dict["r_pred"][0], observable_dict["r_true"][0], observable_dict["weights_unpolarised"][0], model_name=model_name, fitted_polarisation=fitted_polarisation, hist_writer=hist_writer)
         pdf.savefig(fig)
         plt.close(fig)
-
-        # TODO: Add plot showing r_LL^pred (y) vs r_LL^truth (x) directly.
 
         fig, _ = plot_r_distribution(observable_dict["r_pred"][0], observable_dict["r_true"][0], model_name=model_name, fitted_polarisation=fitted_polarisation, hist_writer=hist_writer)
         pdf.savefig(fig)

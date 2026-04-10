@@ -86,6 +86,7 @@ def costhetastar(momenta):
 
     return ct1, ct2, ct3, ct4
 
+
 def get_pt(p4):
     """
     Calculate the transverse momentum (pT) of a particle given its 4-momentum.
@@ -142,6 +143,25 @@ def get_rapidity(p4):
     )
 
     return rapidity
+
+
+def getdphi(p1, p2):
+    """
+    Calculate the delta phi between two particles given their 4-momenta.
+
+    Args:
+        p1 (torch.Tensor): Tensor of shape (..., 4) representing the 4-momentum of the first particle
+        p2 (torch.Tensor): Tensor of shape (..., 4) representing the 4-momentum of the second particle
+    Returns:
+        torch.Tensor: Tensor of shape (...) representing the delta phi in radians, in the range [0, pi]
+    """
+    phi1 = get_phi(p1)
+    phi2 = get_phi(p2)
+
+    getdphi = torch.abs(phi1 - phi2)
+    getdphi = torch.min(getdphi, 2*torch.pi - getdphi)
+
+    return getdphi * 180. / torch.pi  # Convert to degrees if desired, or return in radians by removing this factor
 
 
 # Z jet:
