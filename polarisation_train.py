@@ -505,8 +505,7 @@ def run_training(run_settings: Settings, logger):
     logger.info(f"Final validation loss: {hist_val_loss[-1]:.6f}")
     logger.info(f"Best validation loss: {best_val_loss:.6f}")
 
-    # %% Plot loss
-
+    # Plot loss
     logger.info(f"Plotting training history, using best model weights: {best_model_state is not None}")
     # Generate plot using the plotting function
     try:
@@ -518,7 +517,10 @@ def run_training(run_settings: Settings, logger):
     logger.info(f"Total execution time: {elapsed_time:.2f} seconds")
 
     if arg.do_test:
-        do_test_run(run_settings, model, test_dataset)
+        if best_val_loss == float("inf"):
+            logger.warning("Best validation loss is infinite, skipping test run.")
+        else:
+            do_test_run(run_settings, model, test_dataset)
 
     return {
         "mode": "train",
