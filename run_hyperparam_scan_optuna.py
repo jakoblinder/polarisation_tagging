@@ -102,11 +102,11 @@ def suggest_from_fit_spec(trial: Trial, name: str, fit_spec: Any, current_value:
         return trial.suggest_categorical(name, list(fit_spec["choices"]))
 
     if "min" in fit_spec and "max" in fit_spec:
-        low = fit_spec["min"]
+        low  = fit_spec["min"]
         high = fit_spec["max"]
         value_type = fit_spec.get("type", "float")
         step = fit_spec.get("step", None)
-        log = bool(fit_spec.get("log", False))
+        log  = bool(fit_spec.get("log", False))
 
         if value_type == "int":
             kwargs = {}
@@ -133,16 +133,16 @@ def build_trial_settings(base_settings: Settings, trial: Trial, output_root: Pat
     trial_dir = output_root / f"trial_{trial.number:05d}"
     trial_dir.mkdir(parents=True, exist_ok=True)
 
-    overrides["outputdir"] = trial_dir
+    overrides["outputdir"]   = trial_dir
     overrides["replot_only"] = False
-    overrides["do_test"] = bool(run_test)
+    overrides["do_test"]     = bool(run_test)
 
-    return base_settings.with_overrides(overrides, overwrite=True)
+    return base_settings.with_overrides(overrides, overwrite=True), overrides
 
 
 def objective_factory(base_settings: Settings, output_root: Path, run_test: bool):
     def objective(trial: Trial) -> float:
-        trial_settings = build_trial_settings(base_settings, trial, output_root, run_test)
+        trial_settings, overwritten_settings = build_trial_settings(base_settings, trial, output_root, run_test)
 
         # Each trial gets its own log file in its own output folder.
         trial_log_file = trial_settings.outputdir.value / "output.log"
@@ -158,6 +158,7 @@ def objective_factory(base_settings: Settings, output_root: Path, run_test: bool
         for key, parameter in trial_settings.items():
             trial.set_user_attr(key, str(parameter.value))
 
+        # TODO: Maybe add trail argument to allow for example pruning based on intermediate validation losses.
         result = run_training(trial_settings, trial_logger)
         if "best_val_loss" not in result:
             raise RuntimeError("run_training did not return best_val_loss for this trial.")
@@ -187,7 +188,8 @@ def run_worker(arg: argparse.Namespace) -> int:
 
     objective = objective_factory(base_settings, output_root, arg.run_test)
 
-    # MaxTrialsCallback enforces a global cap across all workers connected to this study.
+    # MaxTrialsCallback enforces a global cap on the number of trials across all workers connected to this study.
+    # callbacks=[max_trials_cb]: Registers the MaxTrialsCallback to monitor progress and halt optimization when the global limit n_trials is reached.
     max_trials_cb = MaxTrialsCallback(arg.n_trials)
     study.optimize(objective, n_trials=None, callbacks=[max_trials_cb])
     return 0
@@ -237,7 +239,7 @@ def run_coordinator(arg: argparse.Namespace) -> int:
     # Print best trial summary after all workers finished.
     study = optuna.load_study(study_name=arg.study_name, storage=arg.storage)
     best = study.best_trial
-    print("Best trial:")
+    print(f"Best trial in study {arg.study_name}:")
     print(f"  number: {best.number}")
     print(f"  value:  {best.value}")
     print(f"  params: {best.params}")
