@@ -15,182 +15,126 @@
 # - fit: {min,max,...} -> numeric sampling (supports type, step, log)
 
 parameters:
-  mlfiles:
-    name: mlfiles
-    value:
-      -
-        __type__: path
-        value: /ptmp/mpp/jlinder/ML_Giovanni/polarisation_tagging/examplary_eventfiles/example_1.ml
-    fit: false
-
-  model:
-    name: model
-    value: FFNN_paper_BatchNorm
-    fit:
-      choices:
-        - FFNN_paper_BatchNorm
-
-  optimizer:
-    name: optimizer
-    value: paper
-    fit:
-      choices:
-        - AdamW
-        - RMSprop
-        - paper
-
-  gpu:
-    name: gpu
-    value: -1
-    fit: false
-
-  epochs:
-    name: epochs
-    value: 120
-    fit:
-      min: 60
-      max: 220
-      type: int
-      step: 20
-
   batch_size:
-    name: batch_size
-    value: 512
     fit:
       choices:
         - 256
         - 512
         - 1024
         - 2048
-
+    name: batch_size
+    value: 512
+  cache_events:
+    fit: false
+    name: cache_events
+    value: true
+  count_negative_weights:
+    fit: false
+    name: count_negative_weights
+    value: false
+  do_test:
+    fit: false
+    name: do_test
+    value: true
+  epochs:
+    fit: false
+    name: epochs
+    value: 500
+  gpu:
+    fit: false
+    name: gpu
+    value: -1
+  input_choice:
+    fit: false
+    name: input_choice
+    value: null
+  labframe:
+    fit: false
+    name: labframe
+    value: true
   learning_rate:
-    name: learning_rate
-    value: 0.001
     fit:
       min: 1.0e-5
-      max: 5.0e-3
+      max: 5.0e-2
       type: float
       log: true
-
+    name: learning_rate
+    value: 0.001
+  mlfiles:
+    fit: false
+    name: mlfiles
+    value:
+    - __type__: path
+      value: ../../../ML_FILES/UU_LO/pwgevents-{0001..0005}.ml
+  model:
+    fit: false
+    name: model
+    value: FFNN_EMB_1024_512_256_128_64_BatchNorm
+  n_generated_events:
+    fit: false
+    name: n_generated_events
+    value: 200000
+  nworkers:
+    fit: false
+    name: nworkers
+    value: 0
+  optimizer:
+    fit:
+      choices:
+        - AdamW
+        - RMSprop
+        - paper_momentum
+    name: optimizer
+    value: AdamW
   patience:
-    name: patience
-    value: 25
     fit:
       min: 10
       max: 50
       type: int
       step: 5
-
-  seed:
-    name: seed
-    value: 42
-    fit:
-      choices:
-        - 11
-        - 21
-        - 42
-        - 84
-
-  nworkers:
-    name: nworkers
-    value: 4
-    fit: false
-
-  test_mode:
-    name: test_mode
-    value: false
-    fit: false
-
-  cache_events:
-    name: cache_events
-    value: true
-    fit: false
-
-  outputdir:
-    name: outputdir
-    value:
-      __type__: path
-      value: /ptmp/mpp/jlinder/ML_Giovanni/polarisation_tagging/test
-    fit: false
-
-  replot_only:
-    name: replot_only
-    value: false
-    fit: false
-
-  use_zjet:
-    name: use_zjet
-    value: false
-    fit: false
-
-  standardise:
-    name: standardise
-    value: false
-    fit:
-      choices:
-        - false
-        - true
-
-  input_choice:
-    name: input_choice
-    value: null
-    fit:
-      choices:
-        - null
-        - jan2026
-
-  n_generated_events:
-    name: n_generated_events
-    value: 10000000
-    fit: false
-
-  do_test:
-    name: do_test
-    value: false
-    fit: false
-
+    name: patience
+    value: 10
   penalties:
-    name: penalties
-    value: []
     fit: false
-
+    name: penalties
+    value:
+    - cross_section
   polarisation:
+    fit: false
     name: polarisation
     value: LL
-    fit:
-      choices:
-        - LL
-        - LT
-        - TL
-        - TT
-
+  replot_only:
+    fit: false
+    name: replot_only
+    value: false
+  seed:
+    fit: false
+    name: seed
+    value: 42
   showered:
+    fit: false
     name: showered
     value: false
-    fit: false
-
-  labframe:
-    name: labframe
-    value: true
-    fit:
-      choices:
-        - true
-        - false
-
   split_ratios:
+    fit: false
     name: split_ratios
     value:
-      - 0.6
-      - 0.2
-      - 0.2
+    - 0.6
+    - 0.2
+    - 0.2
+  standardise:
     fit: false
-
+    name: standardise
+    value: false
+  test_mode:
+    fit: false
+    name: test_mode
+    value: false
   test_standardisation:
+    fit: false
     name: test_standardisation
     value: false
+  use_zjet:
     fit: false
-
-  count_negative_weights:
-    name: count_negative_weights
+    name: use_zjet
     value: false
-    fit: false
