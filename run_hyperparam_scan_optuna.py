@@ -12,6 +12,7 @@ try:
     import optuna
     from optuna.study import MaxTrialsCallback
     from optuna.trial import Trial
+    from optuna.pruners import MedianPruner
 except ImportError as exc:
     raise SystemExit(
         "Optuna is not installed. Install with: pip install optuna"
@@ -19,6 +20,8 @@ except ImportError as exc:
 
 # Example usage:
 # python ML_Giovanni/polarisation_tagging/run_hyperparam_scan_optuna.py path/to/run_settings.yaml --study-name pol_scan --storage sqlite:///pol_scan.db --n-trials 120 --gpus 0 1 2 3 --output-root scan_runs_optuna
+# With pruning:
+# python ML_Giovanni/polarisation_tagging/run_hyperparam_scan_optuna.py path/to/run_settings.yaml --study-name pol_scan --storage sqlite:///pol_scan.db --n-trials 120 --gpus 0 1 2 3 --output-root scan_runs_optuna --enable-pruning --pruner median
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -57,6 +60,22 @@ def parse_args() -> argparse.Namespace:
         "--run-test",
         action="store_true",
         help="Run test stage after each trial (slower).",
+    )
+    parser.add_argument(
+        "--enable-pruning",
+        action="store_true",
+        help="Enable Optuna pruning to terminate unpromising trials early.",
+    )
+    parser.add_argument(
+        "--pruner",
+        type=str,
+        default="median",
+        choices=["median", "percentile"],
+        help=(
+            "Pruning algorithm to use. "
+            "'median': Prunes trials performing worse than the median (conservative, good default). "
+            "'percentile': Prunes bottom 25%% of trials (aggressive, for faster scanning)."
+        ),
     )
     parser.add_argument(
         "--worker",
@@ -158,8 +177,7 @@ def objective_factory(base_settings: Settings, output_root: Path, run_test: bool
         for key, parameter in trial_settings.items():
             trial.set_user_attr(key, str(parameter.value))
 
-        # TODO: Maybe add trail argument to allow for example pruning based on intermediate validation losses.
-        result = run_training(trial_settings, trial_logger)
+        result = run_training(trial_settings, trial_logger, trial=trial)
         if "best_val_loss" not in result:
             raise RuntimeError("run_training did not return best_val_loss for this trial.")
 
@@ -179,11 +197,34 @@ def run_worker(arg: argparse.Namespace) -> int:
     output_root = arg.output_root
     output_root.mkdir(parents=True, exist_ok=True)
 
+    # Create pruner if enabled
+    # Pruning terminates unpromising trials early to save computational resources.
+    #
+    # MedianPruner (conservative, recommended):
+    #   - Compares each trial's intermediate values against the median of completed trials
+    #   - n_startup_trials=5: Don't prune until 5 trials complete (gives algorithm warm-up period)
+    #   - n_warmup_steps=0: Start pruning from epoch 1 (no warm-up epochs)
+    #   - Best for: Balanced exploration/exploitation, reducing noise
+    #   - Benefit: Avoids pruning good long-training models too early
+    #
+    # PercentilePruner (aggressive):
+    #   - Prunes trials in the bottom percentile (here: 25th, i.e., worst 25%)
+    #   - Aggressive pruning can speed up scans but may miss good hyperparameters
+    #   - Best for: Large scans where speed is priority, or after median found good region
+    #   - Benefit: Faster iteration, but requires more trials to find good hyperparameters
+    pruner = None
+    if arg.enable_pruning:
+        if arg.pruner == "median":
+            pruner = MedianPruner(n_startup_trials=5, n_warmup_steps=0)
+        else:  # percentile
+            pruner = optuna.pruners.PercentilePruner(percentile=25, n_startup_trials=5, n_warmup_steps=0)
+
     study = optuna.create_study(
         study_name=arg.study_name,
         storage=arg.storage,
         direction="minimize",
         load_if_exists=True,
+        pruner=pruner,
     )
 
     objective = objective_factory(base_settings, output_root, arg.run_test)
@@ -199,12 +240,35 @@ def run_coordinator(arg: argparse.Namespace) -> int:
     output_root = arg.output_root
     output_root.mkdir(parents=True, exist_ok=True)
 
+    # Create pruner if enabled
+    # Pruning terminates unpromising trials early to save computational resources.
+    #
+    # MedianPruner (conservative, recommended):
+    #   - Compares each trial's intermediate values against the median of completed trials
+    #   - n_startup_trials=5: Don't prune until 5 trials complete (gives algorithm warm-up period)
+    #   - n_warmup_steps=0: Start pruning from epoch 1 (no warm-up epochs)
+    #   - Best for: Balanced exploration/exploitation, reducing noise
+    #   - Benefit: Avoids pruning good long-training models too early
+    #
+    # PercentilePruner (aggressive):
+    #   - Prunes trials in the bottom percentile (here: 25th, i.e., worst 25%)
+    #   - Aggressive pruning can speed up scans but may miss good hyperparameters
+    #   - Best for: Large scans where speed is priority, or after median found good region
+    #   - Benefit: Faster iteration, but requires more trials to find good hyperparameters
+    pruner = None
+    if arg.enable_pruning:
+        if arg.pruner == "median":
+            pruner = MedianPruner(n_startup_trials=5, n_warmup_steps=0)
+        else:  # percentile
+            pruner = optuna.pruners.PercentilePruner(percentile=25, n_startup_trials=5, n_warmup_steps=0)
+
     # Create the study once so workers can attach immediately.
     optuna.create_study(
         study_name=arg.study_name,
         storage=arg.storage,
         direction="minimize",
         load_if_exists=True,
+        pruner=pruner,
     )
 
     worker_cmd_base: List[str] = [
@@ -223,6 +287,9 @@ def run_coordinator(arg: argparse.Namespace) -> int:
     ]
     if arg.run_test:
         worker_cmd_base.append("--run-test")
+    if arg.enable_pruning:
+        worker_cmd_base.append("--enable-pruning")
+        worker_cmd_base.extend(["--pruner", arg.pruner])
 
     procs: List[subprocess.Popen] = []
     for gpu_id in arg.gpus:

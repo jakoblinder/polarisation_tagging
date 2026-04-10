@@ -11,6 +11,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+try:
+    import optuna
+except ImportError:
+    optuna = None
+
 from pathlib import Path
 from torch import nn
 from torchinfo import summary
@@ -105,7 +110,7 @@ def select_device(gpu: int, logger) -> str:
     return device
 
 
-def run_training(run_settings: Settings, logger):
+def run_training(run_settings: Settings, logger, trial=None):
     arg = namespace_from_settings(run_settings)
     start_time = time.time()
 
@@ -459,6 +464,16 @@ def run_training(run_settings: Settings, logger):
         # Learning rate scheduling
         # scheduler.step()
         scheduler.step(valid_loss)
+
+        # Report intermediate value to Optuna for pruning
+        # This allows Optuna to monitor trial progress at each epoch and make pruning decisions.
+        # If the trial is underperforming relative to its pruner's strategy, it will be terminated early
+        # to save training time and GPU resources.
+        if trial is not None:
+            trial.report(valid_loss, step=epoch)
+            if trial.should_prune():
+                logger.info(f"Trial pruned at epoch {epoch + 1}")
+                raise optuna.TrialPruned()
 
         # Early stopping check
         if valid_loss < best_val_loss:
