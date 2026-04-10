@@ -88,7 +88,12 @@ def parse_args() -> argparse.Namespace:
         default=0,
         help="Internal flag: physical GPU id assigned to this worker.",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    # Convert output_root to absolute path to avoid ambiguity when workers spawn in different contexts
+    args.output_root = args.output_root.resolve()
+
+    return args
 
 
 def suggest_from_fit_spec(trial: Trial, name: str, fit_spec: Any, current_value: Any) -> Any:
@@ -310,6 +315,7 @@ def run_coordinator(arg: argparse.Namespace) -> int:
     print(f"  number: {best.number}")
     print(f"  value:  {best.value}")
     print(f"  params: {best.params}")
+    print(f"Best trial directory: {best.params.get('outputdir', 'N/A')}")
     print(f"Output root: {output_root}")
     print(f"Study DB: {arg.storage}")
 
