@@ -350,8 +350,8 @@ def run_worker(arg: argparse.Namespace) -> int:
     #
     # MedianPruner (conservative, recommended):
     #   - Compares each trial's intermediate values against the median of completed trials
-    #   - n_startup_trials=5: Don't prune until 5 trials complete (gives algorithm warm-up period)
-    #   - n_warmup_steps=0: Start pruning from epoch 1 (no warm-up epochs)
+    #   - n_startup_trials=20: Don't prune until 20 trials complete (gives algorithm warm-up period)
+    #   - n_warmup_steps=10: Start pruning from epoch 11 (10 warm-up epochs)
     #   - Best for: Balanced exploration/exploitation, reducing noise
     #   - Benefit: Avoids pruning good long-training models too early
     #
@@ -363,9 +363,9 @@ def run_worker(arg: argparse.Namespace) -> int:
     pruner = None
     if arg.enable_pruning:
         if arg.pruner == "median":
-            pruner = MedianPruner(n_startup_trials=5, n_warmup_steps=0)
+            pruner = MedianPruner(n_startup_trials=20, n_warmup_steps=10)
         else:  # percentile
-            pruner = optuna.pruners.PercentilePruner(percentile=25, n_startup_trials=5, n_warmup_steps=0)
+            pruner = optuna.pruners.PercentilePruner(percentile=25, n_startup_trials=20, n_warmup_steps=10)
 
     study = optuna.create_study(
         study_name=arg.study_name,
@@ -393,8 +393,8 @@ def run_coordinator(arg: argparse.Namespace) -> int:
     #
     # MedianPruner (conservative, recommended):
     #   - Compares each trial's intermediate values against the median of completed trials
-    #   - n_startup_trials=5: Don't prune until 5 trials complete (gives algorithm warm-up period)
-    #   - n_warmup_steps=0: Start pruning from epoch 1 (no warm-up epochs)
+    #   - n_startup_trials=20: Don't prune until 20 trials complete (gives algorithm warm-up period)
+    #   - n_warmup_steps=10: Start pruning from epoch 11 (10 warm-up epochs)
     #   - Best for: Balanced exploration/exploitation, reducing noise
     #   - Benefit: Avoids pruning good long-training models too early
     #
@@ -406,9 +406,9 @@ def run_coordinator(arg: argparse.Namespace) -> int:
     pruner = None
     if arg.enable_pruning:
         if arg.pruner == "median":
-            pruner = MedianPruner(n_startup_trials=5, n_warmup_steps=0)
+            pruner = MedianPruner(n_startup_trials=20, n_warmup_steps=10)
         else:  # percentile
-            pruner = optuna.pruners.PercentilePruner(percentile=25, n_startup_trials=5, n_warmup_steps=0)
+            pruner = optuna.pruners.PercentilePruner(percentile=25, n_startup_trials=20, n_warmup_steps=10)
 
     # Create the study once so workers can attach immediately.
     optuna.create_study(
