@@ -34,7 +34,7 @@ from polarisation_test import do_test_run
 from plot_training_history import plot_training_history
 
 
-def build_parser() -> argparse.ArgumentParser:
+def parse_args() -> argparse.Namespace:
     # %%
     parser = argparse.ArgumentParser(
         description="Train a neural network for polarisation tagging.",
@@ -66,8 +66,11 @@ def build_parser() -> argparse.ArgumentParser:
     # Create a mutually exclusive group for specifying the reference frame
     frame_group = parser.add_mutually_exclusive_group()
     frame_group.add_argument("--labframe", dest="labframe", default=True, action="store_true", help="Use lab frame instead of partonic CMS.")
-    frame_group.add_argument("--cmframe", dest="labframe", default=True, action="store_false", help="Use partonic CMS instead of lab frame.")
-    return parser
+    frame_group.add_argument("--cmframe",  dest="labframe", default=True, action="store_false", help="Use partonic CMS instead of lab frame.")
+
+    args = parser.parse_args()
+
+    return args
 
 
 def namespace_from_settings(run_settings: Settings) -> argparse.Namespace:
@@ -423,10 +426,13 @@ def run_training(run_settings: Settings, logger, trial=None):
     logger.info(f"Starting training for {epochs} epochs...")
     logger.info(f"Early stopping patience: {patience}")
 
-    penalties = {penalty: True for penalty in arg.penalties}
-    # Ensure that Z decay angle penalty is disabled when using Z+jet dataset or the januar2026 input choice, as the relevant features are not included in these cases.
-    if arg.use_zjet or (arg.input_choice in ["jan2026"]):
-        penalties["ZdecayAngles"] = False
+    if not arg.penalties:
+        penalties = {}
+    else:
+        penalties = {penalty: True for penalty in arg.penalties}
+        # Ensure that Z decay angle penalty is disabled when using Z+jet dataset or the januar2026 input choice, as the relevant features are not included in these cases.
+        if arg.use_zjet or (arg.input_choice in ["jan2026"]):
+            penalties["ZdecayAngles"] = False
 
     for epoch in range(epochs):
         epoch_start_time = time.time()
@@ -553,8 +559,7 @@ def main() -> int:
     mllogger.info(f"pandas: {pd.__version__}")
     mllogger.info(f"torch:  {torch.__version__}")
 
-    parser = build_parser()
-    arg    = parser.parse_args()
+    arg = parse_args()
     run_settings = prepare_run_settings(arg)
 
     try:

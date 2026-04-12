@@ -876,7 +876,7 @@ def do_test_run(run_settings: Settings, model, test_dataset):
     return test_loss
 
 
-def build_parser() -> argparse.ArgumentParser:
+def parse_args() -> argparse.Namespace:
     # %%
     parser = argparse.ArgumentParser(
         description='Test the already trained neural network for polarisation tagging.',
@@ -901,7 +901,10 @@ def build_parser() -> argparse.ArgumentParser:
     frame_group = parser.add_mutually_exclusive_group()
     frame_group.add_argument("--labframe",       dest="labframe", default=True, action="store_true",    help="Use lab frame instead of partonic CMS.")
     frame_group.add_argument("--cmframe",        dest="labframe", default=True, action="store_false",   help="Use partonic CMS instead of lab frame.")
-    return parser
+
+    args = parser.parse_args()
+
+    return args
 
 
 def namespace_from_settings(run_settings: Settings) -> argparse.Namespace:
@@ -1061,8 +1064,7 @@ if __name__ == "__main__":
     logger.info(f"pandas: {pd.__version__}")
     logger.info(f"torch:  {torch.__version__}")
 
-    parser       = build_parser()
-    arg          = parser.parse_args()
+    arg          = parse_args()
     run_settings = prepare_run_settings(arg)
 
     try:
