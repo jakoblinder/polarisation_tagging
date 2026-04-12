@@ -6,6 +6,7 @@ import torch
 import copy
 import sys
 import argparse
+import json
 
 import numpy as np
 import pandas as pd
@@ -113,6 +114,37 @@ def select_device(gpu: int, logger) -> str:
     return device
 
 
+def load_statistics_from_file(output_root_parent: Path) -> dict:
+    """Load pre-computed dataset statistics from JSON file.
+
+    Args:
+        output_root_parent: Parent directory containing dataset_statistics.json
+                           (typically {output_root} from hyperparameter scan)
+
+    Returns:
+        dict with 'mean' and 'stddev' numpy arrays, or None if file doesn't exist/is invalid
+    """
+    stats_file = output_root_parent / "dataset_statistics.json"
+
+    if not stats_file.exists():
+        return None
+
+    try:
+        with open(stats_file, "r") as f:
+            stats_data = json.load(f)
+
+        # Convert lists back to numpy arrays
+        stat_norm = {
+            "mean": torch.tensor(stats_data["mean"]),
+            "stddev": torch.tensor(stats_data["stddev"]),
+        }
+        return stat_norm
+
+    except Exception as e:
+        print(f"Warning: Could not load statistics from {stats_file}: {e}")
+        return None
+
+
 def run_training(run_settings: Settings, logger, trial=None):
     arg = namespace_from_settings(run_settings)
     start_time = time.time()
@@ -215,10 +247,23 @@ def run_training(run_settings: Settings, logger, trial=None):
 
     stat_norm = None
     if arg.standardise:
-        overall_mean, overall_stddev = get_statistics_from_dataset(train_dataset)
-        stat_norm = {"mean": overall_mean, "stddev": overall_stddev}
-        logger.info(f"Feature means over training set (verification):\n{overall_mean}")
-        logger.info(f"Feature stddevs over training set (verification):\n{overall_stddev}")
+        # Try to load cached statistics from parent directory (hyperparameter scan cache)
+        output_root_parent = Path(arg.outputdir).parent
+        cached_stats = load_statistics_from_file(output_root_parent)
+
+        if cached_stats is not None:
+            stat_norm = cached_stats
+            logger.info("Loaded pre-computed dataset statistics from cache.")
+            logger.info(f"Feature means over training set (from cache):\n{stat_norm['mean']}")
+            logger.info(f"Feature stddevs over training set (from cache):\n{stat_norm['stddev']}")
+        else:
+            # Compute statistics for this trial
+            overall_mean, overall_stddev = get_statistics_from_dataset(train_dataset)
+            stat_norm = {"mean": overall_mean, "stddev": overall_stddev}
+            logger.info("Computing dataset statistics for this trial (no cache found).")
+            logger.info(f"Feature means over training set:\n{overall_mean}")
+            logger.info(f"Feature stddevs over training set:\n{overall_stddev}")
+
 
     train_dataloader = DataLoader(
         train_dataset,

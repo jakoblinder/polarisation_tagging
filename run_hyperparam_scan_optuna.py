@@ -4,6 +4,8 @@ from typing import Any, Dict, List
 
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
+import json
+import numpy as np
 
 import argparse
 import os
@@ -334,6 +336,106 @@ def generate_optimization_plots(study: optuna.Study, output_root: Path,
     return pdf_path
 
 
+def compute_and_save_dataset_statistics(base_settings: Settings, output_root: Path) -> Path:
+    """Compute dataset statistics once and save to file for all trials to reuse.
+
+    Computes mean/stddev from the training split using the same split ratios
+    and random seed that trials will use.
+
+    Args:
+        base_settings: Base optimization settings
+        output_root: Directory to save statistics JSON file
+
+    Returns:
+        Path to saved statistics JSON file
+    """
+    from polarisation_train import (
+        prepare_run_settings, namespace_from_settings, select_device,
+        boost_into_four_lepton_cm_frame, januar2026_input_choice,
+        MLEventsDataset, ZJetDataset, get_statistics_from_dataset,
+        torch
+    )
+
+    stats_file = output_root / "dataset_statistics.json"
+
+    try:
+        arg = namespace_from_settings(base_settings)
+        seed = arg.seed
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+
+        # Load dataset with same parameters as trials will
+        files = arg.mlfiles
+        split_ratios = [0.6, 0.2, 0.2]  # Same as in prepare_run_settings
+
+        if not arg.use_zjet:
+            if arg.labframe:
+                trafo = None
+            else:
+                trafo = boost_into_four_lepton_cm_frame
+
+            if arg.input_choice == "jan2026":
+                if trafo:
+                    trafo = lambda x: januar2026_input_choice(trafo(x))
+                else:
+                    trafo = januar2026_input_choice
+
+            dataset = MLEventsDataset(
+                files,
+                labels=[f"{arg.polarisation}/UU", "UU"],
+                transform=trafo,
+                cache_events=arg.cache_events,
+                standardise=False,
+            )
+        else:
+            if arg.labframe:
+                trafo = None
+            else:
+                trafo = boost_into_Zjet_cm_frame
+
+            if arg.input_choice == "jan2026":
+                if trafo:
+                    trafo = lambda x: januar2026_input_choice(trafo(x))
+                else:
+                    trafo = januar2026_input_choice
+
+            dataset = ZJetDataset(
+                files[0],
+                transform=trafo,
+                max_events=None,
+                standardise=False,
+            )
+
+        # Split dataset with same seed as trials
+        generator = torch.Generator().manual_seed(seed)
+        train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(
+            dataset, split_ratios, generator=generator
+        )
+
+        # Compute statistics from training split only
+        overall_mean, overall_stddev = get_statistics_from_dataset(train_dataset)
+
+        # Save to JSON
+        stats_data = {
+            "mean": overall_mean.tolist(),
+            "stddev": overall_stddev.tolist(),
+            "computed_from_seed": seed,
+            "n_training_samples": len(train_dataset),
+            "split_ratios": split_ratios,
+            "dataset_type": "MLEventsDataset" if not arg.use_zjet else "ZJetDataset",
+            "timestamp": datetime.now().isoformat(),
+        }
+
+        with open(stats_file, "w") as f:
+            json.dump(stats_data, f, indent=2)
+
+        return stats_file
+
+    except Exception as e:
+        print(f"Warning: Could not compute and save dataset statistics: {e}")
+        return None
+
+
 def run_worker(arg: argparse.Namespace) -> int:
     # Bind this worker to one physical GPU by masking visible devices.
     # Inside training we then set settings.gpu=0, because each worker sees only one GPU.
@@ -387,6 +489,20 @@ def run_worker(arg: argparse.Namespace) -> int:
 def run_coordinator(arg: argparse.Namespace) -> int:
     output_root = arg.output_root
     output_root.mkdir(parents=True, exist_ok=True)
+
+    # Compute and cache dataset statistics if standardization is enabled
+    base_settings = Settings.load_yaml(arg.settings_file)
+    if base_settings.standardise.value:
+        print("Computing and caching dataset statistics for standardization...")
+        try:
+            stats_file = compute_and_save_dataset_statistics(base_settings, output_root)
+            if stats_file:
+                print(f"Dataset statistics cached at: {stats_file}")
+                print("All trials will reuse these statistics (no per-trial recomputation).")
+            else:
+                print("Warning: Statistics caching failed. Trials will compute statistics independently.")
+        except Exception as e:
+            print(f"Warning: Error computing dataset statistics: {e}")
 
     # Create pruner if enabled
     # Pruning terminates unpromising trials early to save computational resources.
@@ -514,3 +630,7 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# TODO: Add some effective saving for doing hyperparameters scans when standardisation is on, e.g. save the fitted scalers for each trial, or save the transformed datasets, to avoid refitting and transforming the data from scratch for each trial. This would speed up the scanning process significantly when standardisation is enabled.
+
