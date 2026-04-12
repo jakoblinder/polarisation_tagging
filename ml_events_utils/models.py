@@ -363,7 +363,10 @@ class FFNN_paper_nextraLayers(FFNN_paper):
         super().__init__(self.input_dim, output_dim, emb_dim=[new_width] * 3, *args, **kwargs)
 
         # Dynamically create the extra layers
-        extra_layers = [nn.Linear(self.emb_dim[0], self.emb_dim[0]), nn.ReLU()] * n_extra_layers
+        extra_layers = []
+        for _ in range(n_extra_layers):
+            extra_layers.append(nn.Linear(self.emb_dim[0], self.emb_dim[0]))
+            extra_layers.append(nn.ReLU())
 
         # Hidden block with extra layers
         self.hidden_block = nn.Sequential(
