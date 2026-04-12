@@ -270,6 +270,41 @@ Best Parameters:
     return fig
 
 
+def apply_log_scale_to_y_axes(fig):
+    """Apply logarithmic scaling to plot axes (but not colorbar axes).
+
+    Useful for plots with values spanning multiple orders of magnitude.
+    Colorbar axes are identified by checking if they contain a colorbar instance.
+
+    Args:
+        fig: matplotlib Figure object
+    """
+    from matplotlib.colorbar import Colorbar
+
+    all_axes = fig.get_axes()
+
+    for ax in all_axes:
+        try:
+            # Skip if this axis or its parent has a colorbar
+            # Colorbar axes have 'colorbar' in their internal structure
+            if hasattr(ax, '_colorbar') or isinstance(getattr(ax, 'colorbar', None), Colorbar):
+                continue
+
+            # Skip axes that are internal colorbar axes (check their internal name/label)
+            if hasattr(ax, '_label') and 'colorbar' in str(ax._label).lower():
+                continue
+
+            # For axes without explicit colorbar markers, try to apply log scale
+            # If it fails, just skip (it's likely a colorbar or incompatible axis)
+            try:
+                ax.set_yscale("log")
+            except (ValueError, AttributeError, RuntimeError):
+                pass
+
+        except Exception:
+            pass
+
+
 def generate_optimization_plots(study: optuna.Study, output_root: Path,
                                  study_name: str, storage: str) -> Path:
     """Generate and save optimization analysis plots to a multipage PDF.
@@ -309,6 +344,7 @@ def generate_optimization_plots(study: optuna.Study, output_root: Path,
         try:
             plot_optimization_history(study, target_name=target_name)
             fig_history = plt.gcf()  # Get current figure
+            apply_log_scale_to_y_axes(fig_history)  # Apply log scale to objective values
             pdf.savefig(fig_history, bbox_inches="tight")
             plt.close(fig_history)
         except Exception as e:
@@ -318,6 +354,7 @@ def generate_optimization_plots(study: optuna.Study, output_root: Path,
         try:
             plot_slice(study, target_name=target_name)
             fig_slice = plt.gcf()  # Get current figure (may have multiple subplots)
+            apply_log_scale_to_y_axes(fig_slice)  # Apply log scale to objective values
             pdf.savefig(fig_slice, bbox_inches="tight")
             plt.close(fig_slice)
         except Exception as e:
@@ -328,6 +365,7 @@ def generate_optimization_plots(study: optuna.Study, output_root: Path,
             try:
                 plot_param_importances(study, target_name=target_name)
                 fig_importance = plt.gcf()  # Get current figure
+                # Note: importance plot usually has categorical x-axis, log scale not needed
                 pdf.savefig(fig_importance, bbox_inches="tight")
                 plt.close(fig_importance)
             except Exception as e:
