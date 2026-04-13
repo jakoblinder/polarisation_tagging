@@ -51,7 +51,7 @@ class DataNorm(nn.Module):
 
 
 class FFNN_BatchNorm(nn.Module):
-  def __init__(self, input_dim, width=200, stat_norm: dict = None, external_stat: bool = False):
+  def __init__(self, input_dim, width=200, stat_norm: dict = None, external_stat: bool = False, *args, **kwargs):
     """
     Setup up a feedforward neural network with batch normalization,
     ELU activation functions, and optional input data normalization. The network
@@ -174,7 +174,7 @@ class FFNN_BatchNorm_nextraLayers(FFNN_BatchNorm):
         return out
 
 class FFNN_paper(nn.Module):
-  def __init__(self, input_dim, output_dim = 1, emb_dim = [1000] * 3, stat_norm: dict = None, external_stat: bool = False):
+  def __init__(self, input_dim, output_dim = 1, emb_dim = [1000] * 3, stat_norm: dict = None, external_stat: bool = False, *args, **kwargs):
     """
     Initialize a multi-layer perceptron neural network.
     Args:
@@ -243,7 +243,7 @@ class FFNN_paper_163264(FFNN_paper):
         super().__init__(input_dim, output_dim, emb_dim = [16, 32, 64], *args, **kwargs)
 
 class FFNN_EMB_Selection(nn.Module):
-  def __init__(self, input_dim, output_dim = 1, emb_dim = [1000] * 3, stat_norm: dict = None, external_stat: bool = False):
+  def __init__(self, input_dim, output_dim = 1, emb_dim = [1000] * 3, stat_norm: dict = None, external_stat: bool = False, *args, **kwargs):
     """
     Initialize a multi-layer perceptron neural network.
     Args:
@@ -393,6 +393,46 @@ class FFNN_paper_nextraLayers_BatchNorm(FFNN_paper_nextraLayers):
             nn.Linear(self.input_dim, self.emb_dim[0]),
             nn.ReLU(),
         )
+
+class FFNN_general(nn.Module):
+    """
+    A general feedforward neural network with a variable number of hidden layers and (constant)width.
+    Each extra layer consists of a linear layer followed by an activation function.
+    """
+    def __init__(self, input_dim:int, width:int, n_hidden:int, output_dim=1, *args, **kwargs):
+        super().__init__()
+
+        self.input_dim  = input_dim
+        self.output_dim = output_dim
+
+        self.width = int(width)
+        self.n_hidden = int(n_hidden)
+
+        self.emb_dim = [self.width] * self.n_hidden
+
+        self.input_block = nn.Sequential(
+            nn.BatchNorm1d(self.input_dim),
+            nn.Linear(self.input_dim, self.emb_dim[0]),
+            nn.ReLU(),
+        )
+
+        # Dynamically create the hidden layers
+        hidden_layers = []
+        for i in range(len(self.emb_dim) - 1):
+            hidden_layers.append(nn.Linear(self.emb_dim[i], self.emb_dim[i + 1]))
+            hidden_layers.append(nn.ReLU())
+
+        # Hidden block
+        self.hidden_block = nn.Sequential(*hidden_layers)
+
+        # Output layer:
+        self.out_block = nn.Linear(self.emb_dim[-1], self.output_dim)
+
+    def forward(self, x):
+        out = self.input_block(x)
+        out = self.hidden_block(out)
+        out = self.out_block(out)
+        return out
 
 def minkowski_dot(p, q):
     """
@@ -564,4 +604,6 @@ model_dict = {
     "FFNN_EMB_1024_512_256_128_64_LayerNorm": lambda input_dim, output_dim=1, emb_dim=[1024,512,256,128,64], *args, **kwargs: FFNN_EMB_Selection_LayerNorm(input_dim, output_dim=output_dim, emb_dim=emb_dim, *args, **kwargs),
     #
     "FourVectorAwareNet": FourVectorAwareNet,
+    #
+    "FFNN_general": FFNN_general,
 }

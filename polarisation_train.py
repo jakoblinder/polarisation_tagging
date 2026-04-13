@@ -356,6 +356,8 @@ def run_training(run_settings: Settings, logger, trial=None):
     model_name = arg.model
     if arg.standardise:
         model = model_dict[model_name](input_dim=input_dim, stat_norm=stat_norm)
+    elif model_name == "FFNN_general":
+        model = model_dict[model_name](input_dim=input_dim, width=run_settings.width.value, n_hidden=run_settings.n_hidden.value)
     else:
         model = model_dict[model_name](input_dim=input_dim)
 
