@@ -115,6 +115,13 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Generate plots automatically after optimization completes.",
     )
+    parser.add_argument(
+        "--complexity-weight",
+        type=float,
+        default=0.0001,
+        help="Regularization weight for model complexity (default: 0.0001). "
+             "Higher values prefer simpler models. 0.0 disables complexity penalty.",
+    )
     args = parser.parse_args()
 
     # Convert output_root to absolute path to avoid ambiguity when workers spawn in different contexts
@@ -191,7 +198,17 @@ def build_trial_settings(base_settings: Settings, trial: Trial, output_root: Pat
     return base_settings.with_overrides(overrides, overwrite=True), overrides
 
 
-def objective_factory(base_settings: Settings, output_root: Path, run_test: bool):
+def objective_factory(base_settings: Settings, output_root: Path, run_test: bool, complexity_weight: float = 0.0001):
+    """Factory for objective function with optional complexity penalty.
+
+    Args:
+        base_settings: Base settings for the run
+        output_root: Output directory root
+        run_test: Whether to run test stage
+        complexity_weight: Regularization weight for model complexity (default: 0.0001).
+                           0.0 = ignore complexity (standard single-objective)
+                           >0.0 = penalize models with more parameters
+    """
     def objective(trial: Trial) -> float:
         trial_settings, overwritten_settings = build_trial_settings(base_settings, trial, output_root, run_test)
 
@@ -213,7 +230,22 @@ def objective_factory(base_settings: Settings, output_root: Path, run_test: bool
         if "best_val_loss" not in result:
             raise RuntimeError("run_training did not return best_val_loss for this trial.")
 
-        return float(result["best_val_loss"])
+        best_val_loss = float(result["best_val_loss"])
+        model_param_count = float(result.get("model_param_count", 0))
+
+        # Apply complexity penalty if weight > 0
+        if complexity_weight > 0:
+            # Normalize param count to avoid dominating loss value
+            # Use a reasonable reference: max of model params or 1000
+            reference_param_count = max(1000, model_param_count)
+            normalized_complexity = model_param_count / reference_param_count
+
+            # Weighted objective
+            weighted_objective = best_val_loss + complexity_weight * normalized_complexity
+            return weighted_objective
+        else:
+            # No complexity penalty
+            return best_val_loss
 
     return objective
 

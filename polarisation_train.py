@@ -370,6 +370,14 @@ def run_training(run_settings: Settings, logger, trial=None):
     model.to(device)
     logger.info(f"Model {model_name} device: {next(model.parameters()).device}")
 
+    # Count trainable parameters
+    def count_parameters(model):
+        """Count total trainable parameters in model."""
+        return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+    model_param_count = count_parameters(model)
+    logger.info(f"Model {model_name}: {model_param_count:,} trainable parameters")
+
     if torch.cuda.is_available():
         model_summary = str(summary(model.cuda(), input_size=(input_dim,), batch_dim=0, verbose=0))
     else:
@@ -595,6 +603,7 @@ def run_training(run_settings: Settings, logger, trial=None):
         "model_dir": model_dir,
         "model_name": model_name,
         "best_val_loss": best_val_loss,
+        "model_param_count": model_param_count,
     }
 
 
