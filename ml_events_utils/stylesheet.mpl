@@ -24,6 +24,7 @@ figure.figsize : 5.354, 4.016
 # ---------------------------------------------------------------------------
 axes.formatter.limits: -2, 4  # use scientific notation if log10(axis_range)
                                # is smaller than the first or larger than the second
+axes.formatter.use_mathtext : True
 axes.titlelocation: left       # alignment of the title: {left, right, center}
 axes.titley: 1.0               # title position in axes coordinates
 axes.titlepad: 6.0             # pad between axes and title in points
@@ -34,7 +35,7 @@ axes.labelsize: 13
 font.size: 13
 
 # Specify possible serif fonts
-font.serif : Computer Modern Roman, CMU Classical Serif, Times New Roman, Times, DejaVu Serif, Bitstream Vera Serif, New Century Schoolbook, Century Schoolbook L, Utopia, ITC Bookman, Bookman, Nimbus Roman No9 L, Palatino, Charter, serif
+font.serif : CMU Serif Roman, CMU Serif, CMU Classical Serif, Times New Roman, Times, DejaVu Serif, Bitstream Vera Serif, New Century Schoolbook, Century Schoolbook L, Utopia, ITC Bookman, Bookman, Nimbus Roman No9 L, Palatino, Charter, serif
 font.family: serif
 font.weight: 200  # normal = 400
 
@@ -213,4 +214,3 @@ axes.prop_cycle : (cycler('color', ['EB3323', 'D2A641', '377D22', '001EF5', 'EB4
 #      ('dashdotdotted',         (0, (3, 5, 1, 5, 1, 5))),
 #      ('loosely dashdotdotted', (0, (3, 10, 1, 10, 1, 10))),
 #      ('densely dashdotdotted', (0, (3, 1, 1, 1, 1, 1)))]
-
