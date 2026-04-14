@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser(description="Which events do you want?")
 parser.add_argument('--order',  '-p', type=str, choices=['lo', 'lows', 'nlo', 'nlops'])
 parser.add_argument('--data',   '-d', type=str, choices=['reduced', 'full'])
 parser.add_argument('--model',  '-m', type=str, choices=['all'])
-parser.add_argument('--features',  '-f', type=str, choices=['ep', 'ct'])
+#parser.add_argument('--features',  '-f', type=str, choices=['ep', 'ct'])
 args = parser.parse_args()
 
 N_lhe = 100000
@@ -120,6 +120,8 @@ p1_in_p12_rest = np.zeros_like(p1)
 p3_in_p34_rest = np.zeros_like(p3)
 cos_theta = np.zeros(len(df))
 cos_thetab= np.zeros(len(df))
+Mv1 = np.zeros(len(df))
+dphiee = np.zeros(len(df))
 ptv1 = np.zeros(len(df))
 ptv2 = np.zeros(len(df))
 ptvv = np.zeros(len(df))
@@ -140,6 +142,7 @@ for i in range(len(df)):
     p3_dir_rest = p3_in_p34_rest[i, :3]
     cos_theta[i]  = np.dot(p12_dir_cm, p1_dir_rest) / (np.linalg.norm(p12_dir_cm) * np.linalg.norm(p1_dir_rest))
     cos_thetab[i] = np.dot(p34_dir_cm, p3_dir_rest) / (np.linalg.norm(p34_dir_cm) * np.linalg.norm(p3_dir_rest))
+    Mv1[i] = (p12[i,3]**2-p12[i,0]**2-p12[i,1]**2-p12[i,2]**2)**0.5
     ptv1[i] = (p12[i,0]**2+p12[i,1]**2)**0.5
     ptv2[i] = (p34[i,0]**2+p34[i,1]**2)**0.5
     ptvv[i] = ((p12[i,0]+p34[i,0])**2+(p12[i,1]+p34[i,1])**2)**0.5
@@ -147,7 +150,9 @@ for i in range(len(df)):
     yv2[i]  = 0.5*np.log(( p34[i,3] + p34[i,2] ) / ( p34[i,3] - p34[i,2] ))
     phiv1[i] = np.arctan2(p12[i,1],p12[i,0])
     phiv2[i] = np.arctan2(p34[i,1],p34[i,0])
+    dphiee[i] = (180.0/np.pi)*min(abs(np.arctan2(p1[i,1],p1[i,0]) - np.arctan2(p2[i,1],p2[i,0])), 2.0*np.pi-abs(np.arctan2(p1[i,1],p1[i,0]) - np.arctan2(p2[i,1],p2[i,0])))
 
+    
 df["cos_theta_p1_p12"] = cos_theta
 df["cos_theta_p3_p34"] = cos_thetab
 df["ptZ1"] = ptv1
@@ -157,6 +162,9 @@ df["yZ2"] = yv2
 df["phiZ1"] = phiv1
 df["phiZ2"] = phiv2
 df["pt4l"] = ptvv
+df["MZ1"] = Mv1
+df["dphiZ1"] = dphiee  
+
 
 df["rLL"] = df["LL"] / df["UU"]
 df = df.drop(columns=["LT", "TL", "TT"]) 
@@ -261,23 +269,30 @@ if args.model == 'all':
     end5 = time.time()
 
 
-    fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(11.5, 14))
+
+    f = open("histograms_rfr_ct_" + args.order+ ".top", "w")
+    
+    fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(11.5, 17))
     ax1 = axes[0, 0]
     ax3 = axes[0, 1]
     ax4 = axes[1, 0]
     ax2 = axes[1, 1]
     ax5 = axes[2, 0]
     ax6 = axes[2, 1]
+    ax7 = axes[3, 0]
+    ax8 = axes[3, 1]
+    ax9 = axes[4, 0]
+    ax10= axes[4, 1]
 
     true_weights = z_ll*1e+03/(N_tot*r_test)
     
-    bins = 40 # for physical observables
     norm_factor = 1e+03*sigma_uu[0]/float(len(y_pred))
-
+    
+    bins = 20 # for physical observables
     yep = df.loc[X_test.index, "kin_y_1"]
     yep2 = df.loc[X2_test.index, "kin_y_1"]
     ax1.set_title("Positron rapidity "+t_app)
-    hist_vals, bin_edges = np.histogram(yep, bins=bins, weights=w_pred)
+    hist_vals, bin_edges = np.histogram(yep, range=(-2.5,2.5), bins=bins, weights=w_pred)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.clip(np.digitize(yep, bin_edges) - 1, 0, bins-1)
     bin_var = np.zeros(bins)
@@ -288,7 +303,7 @@ if args.model == 'all':
     ax1.hist(
         yep,
         weights=true_weights/bin_width,
-        bins=bins, histtype="step",
+        range=(-2.5,2.5), bins=bins, histtype="step",
         linewidth=1,
         color="blue",
         label="true"
@@ -296,7 +311,7 @@ if args.model == 'all':
     ax1.hist(
         yep2,
         weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
-        bins=bins, histtype="step",
+        range=(-2.5,2.5), bins=bins, histtype="step",
         linewidth=1.2,
         color="green",
         label="RFR$_{\\tt ep}$"
@@ -311,16 +326,94 @@ if args.model == 'all':
         edgecolor='red', facecolor='red',
         step='mid'
     )
-    ax1.set_xlim(-2.2,2.2)
+    ax1.set_xlim(-2.37,2.37)
     ax1.legend(loc='best',   borderpad=0.5, framealpha=0.9, frameon=False, ncol = 1)
     ax1.set_xlabel("y$_{\\tt e^+}$")
     ax1.set_ylabel("d$\\sigma/$d$y_{\\tt e^+}$ [fb]")
 
+    
+    print('\n# yep ', file=f)
+    left_edges  = bin_centers - 0.5 * bin_width
+    right_edges = bin_centers + 0.5 * bin_width
+    norm = 1e+03 / (N_tot * r_test * bin_width)
+    values = hist_vals * norm
+    errors = bin_sigma * norm
+    for i in range(len(values)):
+        left  = left_edges[i]
+        right = right_edges[i]
+        val   = values[i]
+        err   = errors[i]
+        print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
 
+
+
+    bins = 30 # for physical observables
+    dphill = df.loc[X_test.index, "dphiZ1"]
+    dphill2 = df.loc[X2_test.index, "dphiZ1"]
+    ax7.set_title("Positron-electron azimuthal separation "+t_app)
+    hist_vals, bin_edges = np.histogram(dphill, range=(0,180), bins=bins, weights=w_pred)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+    bin_indices = np.clip(np.digitize(dphill, bin_edges) - 1, 0, bins-1)
+    bin_var = np.zeros(bins)
+    bin_width = bin_edges[1] - bin_edges[0]
+    for i, b in enumerate(bin_indices):
+        bin_var[b] += w_err[i]
+    bin_sigma = np.sqrt(bin_var)
+    ax7.hist(
+        dphill,
+        weights=true_weights/bin_width,
+        range=(0,180), bins=bins, histtype="step",
+        linewidth=1,
+        color="blue",
+        label="true"
+    )
+    ax7.hist(
+        dphill2,
+        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        range=(0,180), bins=bins, histtype="step",
+        linewidth=1.2,
+        color="green",
+        label="RFR$_{\\tt ep}$"
+    )
+    ax7.fill_between(
+        bin_centers,
+        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        alpha=0.3,
+        color='red',
+        label="RFR$_{\\tt ct}$",
+        edgecolor='red', facecolor='red',
+        step='mid'
+    )
+    ax7.set_xlim(3,177)
+    ax7.legend(loc='best',   borderpad=0.5, framealpha=0.9, frameon=False, ncol = 1)
+    ax7.set_xlabel("$\Delta\phi_{\\tt e^+e^-}$")
+    ax7.set_ylabel("d$\\sigma/$d$\Delta\phi_{\\tt e^+e^-}$ [fb]")
+
+    print('\n# dphiee ', file=f)
+    left_edges  = bin_centers - 0.5 * bin_width
+    right_edges = bin_centers + 0.5 * bin_width
+    norm = 1e+03 / (N_tot * r_test * bin_width)
+    values = hist_vals * norm
+    errors = bin_sigma * norm
+    for i in range(len(values)):
+        left  = left_edges[i]
+        right = right_edges[i]
+        val   = values[i]
+        err   = errors[i]
+        print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
+
+
+
+
+
+
+    
+    bins = 40
     cth = df.loc[X_test.index, "cos_theta_p1_p12"]
     cth2 = df.loc[X2_test.index, "cos_theta_p1_p12"]
     ax3.set_title("Positron decay angle "+t_app)
-    hist_vals, bin_edges = np.histogram(cth, bins=bins, weights=w_pred)
+    hist_vals, bin_edges = np.histogram(cth, range=(-1.0,1.0), bins=bins, weights=w_pred)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(cth, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
@@ -329,11 +422,18 @@ if args.model == 'all':
         bin_var[b] += w_err[i]
     bin_sigma = np.sqrt(bin_var)
     bin_width = bin_edges[1] - bin_edges[0]
-    ax3.hist(cth, weights=true_weights/bin_width, bins=bins, histtype="step", linewidth=1, color="blue", label="true")
+    ax3.hist(
+        cth,
+        weights=true_weights/bin_width,
+        range=(-1.0,1.0), bins=bins, histtype="step",
+        linewidth=1,
+        color="blue",
+        label="true"
+    )
     ax3.hist(
         cth2,
         weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
-        bins=bins, histtype="step",
+        range=(-1.0,1.0), bins=bins, histtype="step",
         linewidth=1.2,
         color="green",
         label="RFR$_{\\tt ep}$"
@@ -349,11 +449,26 @@ if args.model == 'all':
         facecolor='red',
         step='mid'
     )
-    ax3.set_xlim(-0.95,0.95)
+    ax3.set_xlim(-0.975,0.975)
     ax3.legend(loc='best',   borderpad=0.5, framealpha=0.9, frameon=False, ncol = 1)
     ax3.set_xlabel("cos$\\theta^*_{\\tt e^+}$")
     ax3.set_ylabel("d$\\sigma/$dcos$\\theta^*_{\\tt e^+}$ [fb]")
 
+    print('\n# cthep ', file=f)
+    left_edges  = bin_centers - 0.5 * bin_width
+    right_edges = bin_centers + 0.5 * bin_width
+    norm = 1e+03 / (N_tot * r_test * bin_width)
+    values = hist_vals * norm
+    errors = bin_sigma * norm
+    for i in range(len(values)):
+        left  = left_edges[i]
+        right = right_edges[i]
+        val   = values[i]
+        err   = errors[i]
+        print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
+
+
+    
     bins = 102
     rll1 = y_test
     rll2 = y2_test
@@ -393,12 +508,25 @@ if args.model == 'all':
     ax2.set_xlabel("r$_{\\tt LL}$")
     ax2.set_ylabel("Normalised distribution")
     
-    
+    print('\n# rll ', file=f)
+    left_edges  = bin_centers - 0.5 * bin_width
+    right_edges = bin_centers + 0.5 * bin_width
+    norm = 1e+03 / (N_tot * r_test * bin_width)
+    values = hist_vals * norm
+    errors = bin_sigma * norm
+    for i in range(len(values)):
+        left  = left_edges[i]
+        right = right_edges[i]
+        val   = values[i]
+        err   = errors[i]
+        print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
+
     ax2.text(0.6, 0.50, f"$\\sigma$(LL, MC sim)   = {sigLLsim[0]:.4f}({(sigLLsim[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
     ax2.text(0.6, 0.46, f"$\\sigma$(LL, true rLL) = {sigLLtrue[0]:.4f}({(sigLLtrue[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
     ax2.text(0.6, 0.42, f"$\\sigma$(LL, RFR-ct) = {sigLLpred[0]:.4f}({(sigLLpred[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
     ax2.text(0.6, 0.38, f"$\\sigma$(LL, RFR-ep) = {sigLLpred2[0]:.4f}({(sigLLpred2[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
 
+    
 
 
 
@@ -435,22 +563,23 @@ if args.model == 'all':
 #        density=True
 #    )
 
-    ptep = df.loc[X_test.index, "pt4l"]
-    ptep2 = df.loc[X2_test.index, "pt4l"]
+    bins = 60 # for physical observables
+    pt4lep = df.loc[X_test.index, "pt4l"]
+    pt4lep2 = df.loc[X2_test.index, "pt4l"]
     ax4.set_title("Four-lepton transverse momentum "+t_app)
-    hist_vals, bin_edges = np.histogram(ptep, range=(0.0,250.0), bins=bins, weights=w_pred)
+    hist_vals, bin_edges = np.histogram(pt4lep, range=(0.0,300.0), bins=bins, weights=w_pred)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
-    bin_indices = np.digitize(ptep, bin_edges) - 1
+    bin_indices = np.digitize(pt4lep, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
     bin_var = np.zeros(bins)
     bin_width = bin_edges[1] - bin_edges[0]
     for i, b in enumerate(bin_indices):
         bin_var[b] += w_err[i]
     bin_sigma = np.sqrt(bin_var)
-    ax4.hist(ptep, range=(0.0,250.0),  weights=true_weights/bin_width, bins=bins, histtype="step", linewidth=1, color="blue", label="true")
+    ax4.hist(pt4lep, range=(0.0,300.0),  weights=true_weights/bin_width, bins=bins, histtype="step", linewidth=1, color="blue", label="true")
     ax4.hist(
-        ptep2,
-        range=(0.0,250.0), 
+        pt4lep2,
+        range=(0.0,300.0), 
         weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
         bins=bins, histtype="step",
         linewidth=1.2,
@@ -469,13 +598,142 @@ if args.model == 'all':
         facecolor='red',
         step='mid'
     )
-    ax4.set_xlim(0.5,249.5)
+    ax4.set_xlim(2.5,297.5)
     ax4.set_ylim(1e-06,1e-01)
     ax4.legend(loc='best', borderpad=0.5, framealpha=0.9, frameon=False, ncol = 1)
     ax4.set_xlabel("$p_{\\tt T, 4\ell}$ [GeV]")
     ax4.set_ylabel("d$\\sigma/$d$p_{\\tt T, 4\ell}$ [fb/GeV]")
     ax4.set_yscale("log")
 
+    print('\n# pt4l ', file=f)
+    left_edges  = bin_centers - 0.5 * bin_width
+    right_edges = bin_centers + 0.5 * bin_width
+    norm = 1e+03 / (N_tot * r_test * bin_width)
+    values = hist_vals * norm
+    errors = bin_sigma * norm
+    for i in range(len(values)):
+        left  = left_edges[i]
+        right = right_edges[i]
+        val   = values[i]
+        err   = errors[i]
+        print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
+
+
+
+
+    bins = 40 # for physical observables
+    ptep = df.loc[X_test.index, "kin_pt_1"]
+    ptep2 = df.loc[X2_test.index, "kin_pt_1"]
+    ax8.set_title("Positron transverse momentum "+t_app)
+    hist_vals, bin_edges = np.histogram(ptep, range=(0.0,400.0), bins=bins, weights=w_pred)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+    bin_indices = np.digitize(ptep, bin_edges) - 1
+    bin_indices = np.clip(bin_indices, 0, bins-1)
+    bin_var = np.zeros(bins)
+    bin_width = bin_edges[1] - bin_edges[0]
+    for i, b in enumerate(bin_indices):
+        bin_var[b] += w_err[i]
+    bin_sigma = np.sqrt(bin_var)
+    ax8.hist(ptep, range=(0.0,400.0),  weights=true_weights/bin_width, bins=bins, histtype="step", linewidth=1, color="blue", label="true")
+    ax8.hist(
+        ptep2,
+        range=(0.0,400.0), 
+        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        bins=bins, histtype="step",
+        linewidth=1.2,
+        color="green",
+        label="RFR$_{\\tt ep}$"
+    )
+    
+    ax8.fill_between(
+        bin_centers,
+        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        alpha=0.3,
+        color='red',
+        label="RFR$_{\\tt ct}$",
+        edgecolor='red',
+        facecolor='red',
+        step='mid'
+    )
+    ax8.set_xlim(5,395)
+    ax8.set_ylim(1e-06,1e-01)
+    ax8.legend(loc='best', borderpad=0.5, framealpha=0.9, frameon=False, ncol = 1)
+    ax8.set_xlabel("$p_{\\tt T, e^+}$ [GeV]")
+    ax8.set_ylabel("d$\\sigma/$d$p_{\\tt T, e^+}$ [fb/GeV]")
+    ax8.set_yscale("log")
+
+    print('\n# ptep ', file=f)
+    left_edges  = bin_centers - 0.5 * bin_width
+    right_edges = bin_centers + 0.5 * bin_width
+    norm = 1e+03 / (N_tot * r_test * bin_width)
+    values = hist_vals * norm
+    errors = bin_sigma * norm
+    for i in range(len(values)):
+        left  = left_edges[i]
+        right = right_edges[i]
+        val   = values[i]
+        err   = errors[i]
+        print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
+
+
+    bins = 40 # for physical observables
+    mee = df.loc[X_test.index, "MZ1"]
+    mee2 = df.loc[X2_test.index, "MZ1"]
+    ax9.set_title("Positron-electron invariant mass "+t_app)
+    hist_vals, bin_edges = np.histogram(mee, range=(81,101), bins=bins, weights=w_pred)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+    bin_indices = np.digitize(mee, bin_edges) - 1
+    bin_indices = np.clip(bin_indices, 0, bins-1)
+    bin_var = np.zeros(bins)
+    bin_width = bin_edges[1] - bin_edges[0]
+    for i, b in enumerate(bin_indices):
+        bin_var[b] += w_err[i]
+    bin_sigma = np.sqrt(bin_var)
+    ax9.hist(mee, range=(81,101),  weights=true_weights/bin_width, bins=bins, histtype="step", linewidth=1, color="blue", label="true")
+    ax9.hist(
+        mee2,
+        range=(81,101), 
+        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        bins=bins, histtype="step",
+        linewidth=1.2,
+        color="green",
+        label="RFR$_{\\tt ep}$"
+    )
+    
+    ax9.fill_between(
+        bin_centers,
+        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        alpha=0.3,
+        color='red',
+        label="RFR$_{\\tt ct}$",
+        edgecolor='red',
+        facecolor='red',
+        step='mid'
+    )
+    ax9.set_xlim(82,100)
+    #ax9.set_ylim(1e-06,1e-01)
+    ax9.legend(loc='best', borderpad=0.5, framealpha=0.9, frameon=False, ncol = 1)
+    ax9.set_xlabel("$M_{\\tt e^+e^-}$ [GeV]")
+    ax9.set_ylabel("d$\\sigma/$d$M_{\\tt e^+e^-}$ [fb/GeV]")
+    ax9.set_yscale("log")
+
+    print('\n# mepem ', file=f)
+    left_edges  = bin_centers - 0.5 * bin_width
+    right_edges = bin_centers + 0.5 * bin_width
+    norm = 1e+03 / (N_tot * r_test * bin_width)
+    values = hist_vals * norm
+    errors = bin_sigma * norm
+    for i in range(len(values)):
+        left  = left_edges[i]
+        right = right_edges[i]
+        val   = values[i]
+        err   = errors[i]
+        print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
+
+
+    
     
     ax5.set_title("Permutation importance for RFR$_{\\tt ct}$ "+t_app)
     ax5.bar(range(len(importances)), importances[indices], yerr=0, color="red", alpha = 0.35) #, yerr=std[indices])
@@ -500,6 +758,66 @@ if args.model == 'all':
                    ha="right")
     ax6.set_ylabel("Decrease in performance")
 
+
+
+
+    #################################### new histos
+    bins = 60 # for physical observables
+    ptep = df.loc[X_test.index, "pt4l"]
+    ptep2 = df.loc[X2_test.index, "pt4l"]
+    ax4.set_title("Four-lepton transverse momentum "+t_app)
+    hist_vals, bin_edges = np.histogram(ptep, range=(0.0,300.0), bins=bins, weights=w_pred)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+    bin_indices = np.digitize(ptep, bin_edges) - 1
+    bin_indices = np.clip(bin_indices, 0, bins-1)
+    bin_var = np.zeros(bins)
+    bin_width = bin_edges[1] - bin_edges[0]
+    for i, b in enumerate(bin_indices):
+        bin_var[b] += w_err[i]
+    bin_sigma = np.sqrt(bin_var)
+
+    ax4.hist(
+        ptep,
+        range=(0.0,300.0),
+        weights=true_weights/bin_width,
+        bins=bins, histtype="step", linewidth=1,
+        color="blue",
+        label="true"
+    )
+    ax4.hist(
+        ptep2,
+        range=(0.0,300.0), 
+        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        bins=bins, histtype="step",
+        linewidth=1.2,
+        color="green",
+        label="RFR$_{\\tt ep}$"
+    )
+    ax4.fill_between(
+        bin_centers,
+        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        alpha=0.3,
+        color='red',
+        label="RFR$_{\\tt ct}$",
+        edgecolor='red',
+        facecolor='red',
+        step='mid'
+    )
+    ax4.set_xlim(2.5,297.5)
+    ax4.set_ylim(1e-06,1e-01)
+    ax4.legend(loc='best', borderpad=0.5, framealpha=0.9, frameon=False, ncol = 1)
+    ax4.set_xlabel("$p_{\\tt T, 4\ell}$ [GeV]")
+    ax4.set_ylabel("d$\\sigma/$d$p_{\\tt T, 4\ell}$ [fb/GeV]")
+    ax4.set_yscale("log")
+
+
+
+
+
+
+
+    
     
     plt.tight_layout()
     fig.savefig("test_random_forest_regressor_"+ str(args.order) +"_test_events_" + str(len(y_pred)) + "_basis_both.pdf")
