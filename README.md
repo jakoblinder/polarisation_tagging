@@ -177,6 +177,54 @@ dataset = MLEventsDataset(
 )
 ```
 
+## Hyperparameter Optimization
+
+In order to do a practical hyperparameter optimisation the framework of giving input parameters was upgraded. It allows to pass all run information with a single `.yaml` file, as for example
+
+`run_settings_scan_example.yaml`.
+
+Such a file is as well outputed from the training itself to easily grep the chosen settings for one run.
+
+** Using it for fitting: **
+`run_settings_scan_example.yaml` allows to specify directly which hyperparameters should be fitted and in which range. Some examples and explanations are given in that file. The `value` field of each parameter is set to the optimal values I have found so far (e.g. `learning_rate: value: 0.003`).
+
+Should you wish to change model parameters like e.g. the width of some hidden layer or so, a specific adjustment need to be made in `polarisation_train.py`, as illustrated there for the `FFNN_general` model (just grep `FFNN_general` and you see).
+
+### Using Optuna for Bayesian Hyperparameter Search
+
+```bash
+python run_hyperparam_scan_optuna.py path/to/run_settings.yaml --study-name pol_scan --storage sqlite:///pol_scan.db --output-root scan_runs --gpus 0 1 2 3 --n-trials 50 --run-test --enable-pruning --pruner "median" --plot-after
+```
+
+**Key options:**
+- `--study-name`: Unique study identifier (resumable across runs, e.g. `pol_scan`).
+- `--storage`: Database URL for results persistence (e.g., `sqlite:///poll_scan.db`).
+- `--output-root`: Directory where the different trial runs are performed.
+- `--gpus`: GPU indices for parallel execution.
+- `--n-trials`: Total number of optimization trials.
+- `--run-test`: Produce the test histograms for each trial.
+- `--enable-pruning`: Terminate unpromising trials early.
+- `--pruner`: `median`, `percentile` (default: `median`) See comment in `run_worker` function in `run_hyperparam_scan_optuna.py` to get more information about there difference.
+- `--plot-after`: Auto-generate optimization plots after completion.
+- `--plot-only`: Plotting without fitting the hyperparameters (s. below).
+- `--complexity-weight` (experimental): Can be used to give punish more complex models in the hyperparameter fit (tried to used that to find a perfect width, but didn't succeed so far.)
+
+For a detailed list of options, run: `python run_hyperparam_scan_optuna.py --help`
+
+**Only plotting**
+Due to the use of the `sql` databank, the result of the fit can be plotted at any time (especially when the fit is still going on) by using:
+
+```bash
+python run_hyperparam_scan_optuna.py path/to/run_settings.yaml --study-name pol_scan --storage sqlite:///pol_scan.db --output-root scan_runs --plot-only
+```
+
+### Random Hyperparameter Search
+There is also the option to do the hyperparameter fit by doing multiple runs with randomly selecting them (not recommened) and hoping for the best.
+
+```bash
+python run_hyperparam_scan.py path/to/run_settings.yaml --n-trials 20 --output-root scan_runs --seed 12345 --run-test
+```
+
 ## Performance Considerations
 
 ### For Large Files (>1GB)
@@ -204,6 +252,8 @@ polarisation_tagging/
 ├── polarisation_train.py         # Main training entry point (CLI)
 ├── polarisation_test.py          # Test / evaluation entry point (CLI)
 ├── plot_training_history.py      # Plotting utilities for training logs
+├── run_hyperparam_scan.py        # Random hyperparameter search with parallelization
+├── run_hyperparam_scan_optuna.py # Bayesian hyperparameter optimization using Optuna framework
 │
 ├── ml_events_utils/              # Core library code used by train/test
 │   ├── __init__.py

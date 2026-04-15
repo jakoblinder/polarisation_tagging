@@ -23,7 +23,7 @@ parameters:
         - 1024
         - 2048
     name: batch_size
-    value: 512
+    value: 2048
   cache_events:
     fit: false
     name: cache_events
@@ -59,7 +59,7 @@ parameters:
       type: float
       log: true
     name: learning_rate
-    value: 0.001
+    value: 0.003
   mlfiles:
     fit: false
     name: mlfiles
@@ -93,12 +93,14 @@ parameters:
       type: int
       step: 5
     name: patience
-    value: 10
+    value: 30
   penalties:
-    fit: false
+    fit:
+      choices:
+        - null
+        - cross_section
     name: penalties
-    value:
-    - cross_section
+    value: cross_section
   polarisation:
     fit: false
     name: polarisation
