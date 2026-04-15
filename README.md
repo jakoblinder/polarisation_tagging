@@ -258,7 +258,7 @@ polarisation_tagging/
 │
 ├── ml_events_utils/               # Core library code used by train/test
 |   ├── fonts/                     # Fonts needed for plotting.
-│   ├── __init_s_.py                # Init file of the package: Sets colors, fonts, etc.
+│   ├── __init__.py                # Init file of the package: Sets colors, fonts, etc.
 │   ├── analysis.py                # Physics helpers (e.g. angular observables)
 │   ├── ml_events_dataset.py       # MLEventsDataset (+ helpers)
 │   ├── models.py                  # Model definitions (FFNN variants, etc.)
