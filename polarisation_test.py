@@ -242,7 +242,8 @@ def r_plot(r_pred, r_true, weights, model_name="Model", fitted_polarisation:str=
 
     try:
         r_min, r_max = min(r_pred.min() ,r_true.min()), max(r_pred.max(), r_true.max())
-        axs.set_xlim(xmin=r_min * 0.99, xmax=r_max * 1.01)
+        if abs(r_min) != float("inf") and abs(r_max) != float("inf"):
+            axs.set_xlim(xmin=r_min * 0.99, xmax=r_max * 1.01)
     except ValueError as e:
         logger.error(f"Could not set x limits for r plot: {e}")
 
