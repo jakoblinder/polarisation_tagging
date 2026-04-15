@@ -235,6 +235,7 @@ def objective_factory(base_settings: Settings, output_root: Path, run_test: bool
 
         # Apply complexity penalty if weight > 0
         if complexity_weight > 0:
+            print(f"Trial {trial.number}: best_val_loss={best_val_loss:.6e}, model_param_count={model_param_count}, complexity_weight={complexity_weight}")
             # Normalize param count to avoid dominating loss value
             # Use a reasonable reference: max of model params or 1000
             reference_param_count = max(1000, model_param_count)
@@ -551,7 +552,7 @@ def run_worker(arg: argparse.Namespace) -> int:
         pruner=pruner,
     )
 
-    objective = objective_factory(base_settings, output_root, arg.run_test)
+    objective = objective_factory(base_settings, output_root, arg.run_test, arg.complexity_weight)
 
     # MaxTrialsCallback enforces a global cap on the number of trials across all workers connected to this study.
     # callbacks=[max_trials_cb]: Registers the MaxTrialsCallback to monitor progress and halt optimization when the global limit n_trials is reached.
@@ -628,6 +629,9 @@ def run_coordinator(arg: argparse.Namespace) -> int:
     if arg.enable_pruning:
         worker_cmd_base.append("--enable-pruning")
         worker_cmd_base.extend(["--pruner", arg.pruner])
+
+    if arg.complexity_weight > 0:
+        worker_cmd_base.extend(["--complexity-weight", str(arg.complexity_weight)])
 
     procs: List[subprocess.Popen] = []
     for gpu_id in arg.gpus:
