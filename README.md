@@ -246,28 +246,35 @@ python run_hyperparam_scan.py path/to/run_settings.yaml --n-trials 20 --output-r
 ```
 polarisation_tagging/
 │
-├── README.md                     # Project documentation
-├── requirements.txt              # Python package dependencies
+├── README.md                      # Project documentation
+├── requirements.txt               # Python package dependencies
 │
-├── polarisation_train.py         # Main training entry point (CLI)
-├── polarisation_test.py          # Test / evaluation entry point (CLI)
-├── plot_training_history.py      # Plotting utilities for training logs
-├── run_hyperparam_scan.py        # Random hyperparameter search with parallelization
-├── run_hyperparam_scan_optuna.py # Bayesian hyperparameter optimization using Optuna framework
+├── polarisation_train.py          # Main training entry point (CLI)
+├── polarisation_test.py           # Test / evaluation entry point (CLI)
+├── plot_training_history.py       # Plotting utilities for training logs
+├── run_hyperparam_scan.py         # Random hyperparameter search with parallelization
+├── run_hyperparam_scan_optuna.py  # Bayesian hyperparameter optimization using Optuna framework
+├── run_settings_scan_example.yaml # Example input file for hyperparameter optimisation
 │
-├── ml_events_utils/              # Core library code used by train/test
-│   ├── __init__.py
-│   ├── ml_events_dataset.py      # MLEventsDataset (+ helpers)
-│   ├── train_loop.py             # Training loop
-│   ├── valid_loop.py             # Validation loop
-│   ├── transforms.py             # Feature/ target transforms (boosts, scaling, etc.)
-│   ├── analysis.py               # Physics helpers (e.g. angular observables)
-│   └── models/                   # Model definitions (FFNN variants, etc.)
+├── ml_events_utils/               # Core library code used by train/test
+|   ├── fonts/                     # Fonts needed for plotting.
+│   ├── __init_s_.py                # Init file of the package: Sets colors, fonts, etc.
+│   ├── analysis.py                # Physics helpers (e.g. angular observables)
+│   ├── ml_events_dataset.py       # MLEventsDataset (+ helpers)
+│   ├── models.py                  # Model definitions (FFNN variants, etc.)
+│   ├── run_settings.py            # Some classes to maintain run settings.
+│   ├── stylesheet_no_tex.mpl      # Default stylesheet used in polarisation_test.py and not requiring a LaTex installation.
+│   ├── stylesheet.mpl             # Same as stylesheet_no_tex.mpl but requiring a LaTex installation (not used at the moment)
+│   ├── train_loop.py              # Training loop
+│   ├── valid_loop.py              # Validation loop
+│   ├── transforms.py              # Feature/ target transforms (boosts, scaling, etc.)
+│   ├── write_top_file.py          # Functions to write the powheg like histograms.
+│   └── Zjet_event_dataset.py      # Same as ml_events_dataset.py but for the Zjet dataset.
 │
-├── examplary_eventfiles/         # Small example .ml files for quick tests
+├── examplary_eventfiles/          # Small example .ml files for quick tests
 │   └── pwgevents-0002.ml
 │
-├── zj_material/                  # Z+jet related notebooks/scripts (experimental)
+├── zj_material/                   # Z+jet related notebooks/scripts (experimental)
 │   ├── *.ipynb
 │   └── *.py
 │
