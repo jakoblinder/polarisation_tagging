@@ -48,6 +48,7 @@ xtick.minor.width : 0.75
 xtick.minor.visible : True
 xtick.top : True
 axes.spines.top: True
+axes.xmargin: 0.0
 
 # Set y axis
 ytick.direction : in
@@ -61,7 +62,7 @@ axes.spines.right: True
 
 # Set line widths
 axes.linewidth : 0.75
-lines.linewidth : 1.25
+lines.linewidth : 1.5  # 2.0
 
 
 # ---------------------------------------------------------------------------
@@ -84,7 +85,7 @@ legend.loc: best
 legend.frameon: False       # if True, draw legend on a background patch
 legend.shadow: False        # if True, give background a shadow effect
 legend.markerscale: 1.0     # relative size of legend markers vs. original
-legend.borderaxespad: 1.0   # border between axes and legend edge
+legend.borderaxespad: 0.25   # border between axes and legend edge
 
 # Remaining legend options kept for quick activation:
 # legend.framealpha: 0.8
