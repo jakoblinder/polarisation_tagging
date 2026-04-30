@@ -338,8 +338,10 @@ def apply_log_scale_to_y_axes(fig):
             pass
 
 
-def generate_optimization_plots(study: optuna.Study, output_root: Path,
-                                 study_name: str, storage: str) -> Path:
+def generate_optimization_plots(study: optuna.Study,
+                                output_root: Path,
+                                study_name: str,
+                                storage: str) -> Path:
     """Generate and save optimization analysis plots to a multipage PDF.
 
     Uses matplotlib-based Optuna visualization functions for direct integration.

@@ -1,0 +1,143 @@
+# Example base settings for hyperparameter scans.
+#
+# Usage examples:
+# - Random scan:
+#   python run_hyperparam_scan.py run_settings_scan_example.yaml --n-trials 20 --output-root scan_runs
+#
+# - Optuna scan on 4 GPUs:
+#   python run_hyperparam_scan_optuna.py run_settings_scan_example.yaml --study-name pol_scan --storage sqlite:///pol_scan.db --n-trials 120 --gpus 0 1 2 3 --output-root scan_runs_optuna
+#
+# Notes on "fit":
+# - fit: false      -> keep fixed value
+# - fit: scalar     -> force this fixed value during scan
+# - fit: [a, b]     -> range sampling (numeric) OR categorical if not numeric pair
+# - fit: {choices}  -> categorical sampling
+# - fit: {min,max,...} -> numeric sampling (supports type, step, log)
+
+parameters:
+  batch_size:
+    fit:
+      choices:
+        - 256
+        - 512
+        - 1024
+        - 2048
+        - 4096
+    name: batch_size
+    value: 512
+  cache_events:
+    fit: false
+    name: cache_events
+    value: true
+  count_negative_weights:
+    fit: false
+    name: count_negative_weights
+    value: false
+  do_test:
+    fit: false
+    name: do_test
+    value: true
+  epochs:
+    fit: false
+    name: epochs
+    value: 500
+  gpu:
+    fit: false
+    name: gpu
+    value: 1
+  input_choice:
+    fit: false
+    name: input_choice
+    value: null
+  labframe:
+    fit: false
+    name: labframe
+    value: true
+  learning_rate:
+    fit:
+      min: 1.0e-5
+      max: 5.0e-2
+      type: float
+      log: true
+    name: learning_rate
+    value: 0.001
+  mlfiles:
+    fit: false
+    name: mlfiles
+    value:
+    - __type__: path
+      value: ../../../ML_FILES/UU_LO/pwgevents-{0001..050}.ml
+  model:
+    fit: false
+    name: model
+    value: FFNN_EMB_1024_512_256_128_64_BatchNorm
+  n_generated_events:
+    fit: false
+    name: n_generated_events
+    value: 2000000
+  nworkers:
+    fit: false
+    name: nworkers
+    value: 0
+  optimizer:
+    fit:
+      choices:
+        - AdamW
+        - RMSprop
+        - paper_momentum
+    name: optimizer
+    value: AdamW
+  patience:
+    fit:
+      min: 5
+      max: 50
+      type: int
+      step: 5
+    name: patience
+    value: 10
+  penalties:
+    fit:
+      choices:
+        - null
+        - cross_section
+    name: penalties
+    value: cross_section
+  polarisation:
+    fit: false
+    name: polarisation
+    value: LL
+  replot_only:
+    fit: false
+    name: replot_only
+    value: false
+  seed:
+    fit: false
+    name: seed
+    value: 42
+  showered:
+    fit: false
+    name: showered
+    value: false
+  split_ratios:
+    fit: false
+    name: split_ratios
+    value:
+    - 0.6
+    - 0.2
+    - 0.2
+  standardise:
+    fit: false
+    name: standardise
+    value: false
+  test_mode:
+    fit: false
+    name: test_mode
+    value: false
+  test_standardisation:
+    fit: false
+    name: test_standardisation
+    value: false
+  use_zjet:
+    fit: false
+    name: use_zjet
+    value: false
