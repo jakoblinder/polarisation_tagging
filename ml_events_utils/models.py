@@ -730,5 +730,6 @@ model_dict = {
     "FFNN_general": FFNN_general,
     "ParticleNet": ParticleNet,
     "ParticleNet_big": lambda input_dim, *args, **kwargs: ParticleNet(input_dim, *args, **kwargs),
+    "ParticleNet_best": lambda input_dim, *args, **kwargs: ParticleNet(input_dim, *args, embed_dim=80, num_layers=2),
     "ParticleNet_growing": lambda input_dim, *args, **kwargs: ParticleNet(input_dim, embed_dim=64, growing_edge=True, *args, **kwargs),
 }
