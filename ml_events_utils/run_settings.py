@@ -44,6 +44,7 @@ class Settings:
     def __init__(self,argparse=None, **kwargs):
         # Keep parameters in a dedicated mapping to simplify robust I/O.
         super().__setattr__("_parameters", {})
+        fittable = False
 
         if argparse:
             for key, value in vars(argparse).items():
@@ -51,9 +52,12 @@ class Settings:
 
         for key, value in kwargs.items():
             if isinstance(value, Parameter):
+                if value.fit:
+                    fittable = True
                 self._set_parameter(key, value.value, fit=value.fit)
             else:
                 self._set_parameter(key, value)
+        self.fittable = fittable
 
     def _set_parameter(self, key: str, value: Any, fit: Any = False) -> None:
         self._parameters[key] = Parameter(name=key, value=value, fit=fit)
