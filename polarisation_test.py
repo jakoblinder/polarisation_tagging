@@ -573,7 +573,10 @@ def test_model_ZZ(model,
 
             observable_dict["invmass_Z1"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = invmass_Z1.cpu().numpy()
             # observable_dict["invmass_Z2"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = invmass_Z2.cpu().numpy()
-            observable_dict["ptee"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta[:,0,:] + momenta[:,1,:]).cpu().numpy()
+            # FIXME: Check weather the really the pt of the Z boson is calculated as the pt of the sum of the two lepton momenta.
+            #        It seems to be order of magnitudes to big compared to the POWHEG histograms.
+            #        Probably something is summed w.r.t. the wrong axis.
+            observable_dict["ptee"][0][batch * batch_size : batch * batch_size + X_untransformed.shape[0]] = get_pt(momenta[:,0,0:4] + momenta[:,1,0:4]).cpu().numpy()
 
 
             ct1, ct2, ct3, ct4 = costhetastar(momenta)
