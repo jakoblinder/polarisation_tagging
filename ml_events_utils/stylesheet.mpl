@@ -120,7 +120,7 @@ figure.subplot.bottom  : 0.150
 figure.subplot.right   : 0.9
 figure.subplot.top     : 0.9
 figure.subplot.wspace  : 0.2
-figure.subplot.hspace  : 0.4
+figure.subplot.hspace  : 0.0
 # figure.autolayout : True
 
 
