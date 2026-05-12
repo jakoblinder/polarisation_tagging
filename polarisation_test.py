@@ -299,10 +299,12 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
 
     # Sum predicted labels in each invariant mass bin
     if not kwargs.get("plotrLL", False):
+        # Plot reweighted cross section
         pred_sums, _ = np.histogram(observable_dict[observable_key][0], bins=bins, weights=observable_dict["weights_ypred"][0])
         # Sum true labels in each invariant mass bin
         true_sums, _ = np.histogram(observable_dict[observable_key][0], bins=bins, weights=observable_dict["weights_y"][0])
     else:
+        # Plot r_LL distribution directly without reweighting with the unpolarised cross section.
         pred_sums, _ = np.histogram(observable_dict[observable_key][0], bins=bins, weights=observable_dict["r_pred"][0])
         # Sum true labels in each invariant mass bin
         true_sums, _ = np.histogram(observable_dict[observable_key][0], bins=bins, weights=observable_dict["r_true"][0])
@@ -338,9 +340,14 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
 
     if hist_writer:
         fitted_polarisation = powheg_histogram_runs[0]
-        hist_writer.write_histogram(f"{fitted_polarisation}_pred.top", f"{observable_key}", bin_edges=np.column_stack((bins[:-1], bins[1:])), values=pred_sums, uncertainties=np.zeros_like(pred_sums))
-        hist_writer.write_histogram(f"{fitted_polarisation}_true.top", f"{observable_key}", bin_edges=np.column_stack((bins[:-1], bins[1:])), values=true_sums, uncertainties=np.zeros_like(true_sums))
-        if powheg_histogram:
+        if not kwargs.get("plotrLL", False):
+            save_key_obs = f"{observable_key}"
+        else:
+            save_key_obs = f"r_{fitted_polarisation}_{observable_key}"
+
+        hist_writer.write_histogram(f"{fitted_polarisation}_pred.top", save_key_obs, bin_edges=np.column_stack((bins[:-1], bins[1:])), values=pred_sums, uncertainties=np.zeros_like(pred_sums))
+        hist_writer.write_histogram(f"{fitted_polarisation}_true.top", save_key_obs, bin_edges=np.column_stack((bins[:-1], bins[1:])), values=true_sums, uncertainties=np.zeros_like(true_sums))
+        if powheg_histogram and not kwargs.get("plotrLL", False):
             for run in powheg_histogram_runs:
                 hist_writer.write_histogram(f"POWHEG_{run}.top", f"{observable_key}", bin_edges=np.column_stack((bins[:-1], bins[1:])), values=powheg_sums[run], uncertainties=np.zeros_like(powheg_sums[run]))
 
