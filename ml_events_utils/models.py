@@ -567,7 +567,7 @@ class EdgeConv(nn.Module):
         edge_input = torch.cat([x_i, x_j - x_i], dim=-1)
 
         # Apply now the edgeconv FFNN
-        edge_features = self.mlp(edge_input)
+        edge_features = self.mlp(edge_input)  # [B, N, N, out_feats]
         return edge_features.mean(dim=2)  # [B, N, out_feats]
 
 
