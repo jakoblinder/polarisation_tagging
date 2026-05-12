@@ -518,7 +518,7 @@ class LorentzBaseLayer(nn.Module):
             [angles, norm_p, *torch.moveaxis(dot_mat, -1, 0)], dim=-1
         )  # [B, N, 2 + N] = [B, N, 6] for N = 4
         if self.inv_norm is not None:
-            # Before going throught he MPLs, normalize the input
+            # Before going throught he MLPs, normalize the input
             inv_feats = self.inv_norm(inv_feats)
             vectors = self.eq_norm(vectors)
 
