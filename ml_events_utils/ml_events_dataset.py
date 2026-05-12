@@ -40,6 +40,7 @@ class MLEventsDataset(Dataset):
         eventfiles = []
         for eventfile in self.file_path:
             if '*' in str(eventfile) or '?' in str(eventfile) or '.' in str(eventfile) or '{' in str(eventfile):
+                if eventfile.exists():
                     # If the event file actually exists there's nothing to expand, allowing for a list of absolute file paths to be given as input.
                     eventfiles.append(eventfile.resolve())
                 elif eventfile.is_absolute():
