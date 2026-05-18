@@ -270,7 +270,7 @@ if args.model == 'all':
 
 
 
-    f = open("histograms_rfr_ct_" + args.order+ ".top", "w")
+    f = open("histograms_rfr_ct_" + args.order+ "_updated.top", "w")
     
     fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(11.5, 17))
     ax1 = axes[0, 0]
@@ -473,7 +473,7 @@ if args.model == 'all':
     rll1 = y_test
     rll2 = y2_test
     ax2.set_title("$r_{\\tt LL}$ label "+t_app)
-    hist_vals, bin_edges = np.histogram(rll1, range=(-0.02, 1.0), bins=bins, weights=w_pred)
+    hist_vals, bin_edges = np.histogram(rll1, range=(-0.02, 1.0), bins=bins, weights=z_uu) # w_pred)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(rll1, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
@@ -518,7 +518,7 @@ if args.model == 'all':
         left  = left_edges[i]
         right = right_edges[i]
         val   = values[i]
-        err   = errors[i]
+        err   = 0e+00 # errors[i]
         print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
 
     ax2.text(0.6, 0.50, f"$\\sigma$(LL, MC sim)   = {sigLLsim[0]:.4f}({(sigLLsim[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
