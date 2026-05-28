@@ -2,7 +2,7 @@ parameters:
   batch_size:
     fit: false
     name: batch_size
-    value: 2048
+    value: 5000
   cache_events:
     fit: false
     name: cache_events
@@ -23,6 +23,10 @@ parameters:
     fit: false
     name: epochs
     value: 500
+  fittable:
+    fit: false
+    name: fittable
+    value: false
   gpu:
     fit: false
     name: gpu
@@ -32,7 +36,7 @@ parameters:
     name: histogram_dir
     value:
       __type__: path
-      value: ../../../ML_FILES/UU_LO
+      value: ../../../../ML_FILES/UU_LOwS
   input_choice:
     fit: false
     name: input_choice
@@ -44,13 +48,13 @@ parameters:
   learning_rate:
     fit: false
     name: learning_rate
-    value: 0.0031959142469131104
+    value: 0.0026486444761835326
   mlfiles:
     fit: false
     name: mlfiles
     value:
     - __type__: path
-      value: ../../../ML_FILES/UU_LO/pwgevents-{0001..050}.ml
+      value: ../../../../ML_FILES/UU_LOwS/pwgevents-{0001..0250}.ml
   model:
     fit: false
     name: model
@@ -60,11 +64,11 @@ parameters:
     name: model_dir
     value:
       __type__: path
-      value: /ptmp/mpp/jlinder/ML_Giovanni/polarisation_tagging/test/hypOp_optuna_large/scan_runs/trial_00501
+      value: /scratch/jlinder/polarisation_tagging/full_runs/Autoencoder/LOwS/scan_runs/trial_00000
   n_generated_events:
     fit: false
     name: n_generated_events
-    value: 2000000
+    value: 10000000
   nworkers:
     fit: false
     name: nworkers
@@ -78,7 +82,7 @@ parameters:
     name: outputdir
     value:
       __type__: path
-      value: /ptmp/mpp/jlinder/ML_Giovanni/polarisation_tagging/test/hypOp_optuna_large/scan_runs/trial_00501
+      value: /scratch/jlinder/polarisation_tagging/full_runs/Autoencoder/LOwS/scan_runs/trial_00000
   patience:
     fit: false
     name: patience
@@ -86,7 +90,7 @@ parameters:
   penalties:
     fit: false
     name: penalties
-    value: cross_section
+    value: null
   polarisation:
     fit: false
     name: polarisation

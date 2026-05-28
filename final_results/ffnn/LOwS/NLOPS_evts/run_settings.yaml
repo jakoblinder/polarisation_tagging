@@ -1,0 +1,144 @@
+parameters:
+  batch_size:
+    fit: false
+    name: batch_size
+    value: 4800
+  cache_events:
+    fit: false
+    name: cache_events
+    value: true
+  count_negative_weights:
+    fit: false
+    name: count_negative_weights
+    value: false
+  device:
+    fit: false
+    name: device
+    value: cuda:0
+  do_test:
+    fit: false
+    name: do_test
+    value: true
+  epochs:
+    fit: false
+    name: epochs
+    value: 500
+  fittable:
+    fit: false
+    name: fittable
+    value: false
+  gpu:
+    fit: false
+    name: gpu
+    value: 2
+  histogram_dir:
+    fit: false
+    name: histogram_dir
+    value:
+      __type__: path
+      value: ../../../../../ML_FILES/UU_NLO
+  input_choice:
+    fit: false
+    name: input_choice
+    value: null
+  inputdir:
+    fit: false
+    name: inputdir
+    value:
+      __type__: path
+      value: /scratch/jlinder/polarisation_tagging/full_runs/FFNN_paper_4extra_layers/LOwS/scan_runs/trial_00000
+  labframe:
+    fit: false
+    name: labframe
+    value: true
+  learning_rate:
+    fit: false
+    name: learning_rate
+    value: 0.0005415172684656208
+  mlfiles:
+    fit: false
+    name: mlfiles
+    value:
+    - __type__: path
+      value: ../../../../../ML_FILES/UU_NLO/output_shower_events-{0001..1000}.ml
+  model:
+    fit: false
+    name: model
+    value: FFNN_paper_4extraLayers_BatchNorm
+  model_dir:
+    fit: false
+    name: model_dir
+    value:
+      __type__: path
+      value: /scratch/jlinder/polarisation_tagging/full_runs/FFNN_paper_4extra_layers/LOwS/scan_runs/trial_00000
+  model_weight_file:
+    fit: false
+    name: model_weight_file
+    value:
+      __type__: path
+      value: /scratch/jlinder/polarisation_tagging/full_runs/FFNN_paper_4extra_layers/LOwS/scan_runs/trial_00000/FFNN_paper_4extraLayers_BatchNorm_model_weights_best.pt
+  n_generated_events:
+    fit: false
+    name: n_generated_events
+    value: 10000000
+  nworkers:
+    fit: false
+    name: nworkers
+    value: 0
+  optimizer:
+    fit: false
+    name: optimizer
+    value: AdamW
+  outputdir:
+    fit: false
+    name: outputdir
+    value:
+      __type__: path
+      value: .
+  patience:
+    fit: false
+    name: patience
+    value: 35
+  penalties:
+    fit: false
+    name: penalties
+    value: null
+  polarisation:
+    fit: false
+    name: polarisation
+    value: LL
+  replot_only:
+    fit: false
+    name: replot_only
+    value: false
+  seed:
+    fit: false
+    name: seed
+    value: 42
+  showered:
+    fit: false
+    name: showered
+    value: true
+  split_ratios:
+    fit: false
+    name: split_ratios
+    value:
+    - 0.6
+    - 0.2
+    - 0.2
+  standardise:
+    fit: false
+    name: standardise
+    value: false
+  test_mode:
+    fit: false
+    name: test_mode
+    value: false
+  test_standardisation:
+    fit: false
+    name: test_standardisation
+    value: false
+  use_zjet:
+    fit: false
+    name: use_zjet
+    value: false
