@@ -52,7 +52,6 @@ def _create_parser(parser_type: str = "train") -> argparse.Namespace:
         parser.add_argument("--no-cache-events", dest="cache_events", action="store_false",       help="Disable caching of events in the dataset (default: cache the events).")
 
         # Run settings
-        parser.add_argument("--outputdir", type=Path,      action="store", default=Path().cwd(), help="Specify name of output directory.")
         parser.add_argument("--dont_test", dest="do_test", action="store_false",                 help="Run the test script after training with the best model weights found during training.")
 
         # Simplified running options
@@ -75,6 +74,7 @@ def _create_parser(parser_type: str = "train") -> argparse.Namespace:
         parser.add_argument("-g", "--gpu",        type=int, action="store", default=-1,  help="Specify manually which of the available gpus is supposed to be used.")
         parser.add_argument("-b", "--batch_size", type=int, action="store", default=512, help="Batch size for training.")
         parser.add_argument("-n", "--nworkers",   type=int, action="store", default=0,   help="Number of workers for DataLoader.")
+        parser.add_argument("--outputdir", type=Path,      action="store", default=Path().cwd(), help="Specify name of output directory.")
 
         # Dataloading settings
         parser.add_argument("--standardise",        dest="standardise",           action="store_true",                   help="Enable standardisation of features over the whole dataset (default).")
@@ -160,6 +160,7 @@ def prepare_run_settings(parser_type:str="train") -> Settings:
 
     elif parser_type == "test":
         run_settings.set_default("model_weight_file", f"{run_settings.model.value}_model_weights_best.pt")
+        run_settings.set_default("outputdir", run_settings.inputdir.value)
 
     return run_settings
 

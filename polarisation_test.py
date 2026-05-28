@@ -429,6 +429,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
 # %% Testing loop
 def test_model_ZZ(model,
                   inputdir,
+                  outputdir,
                   histogram_dir,
                   dataloader,
                   dataloader_untransformed,
@@ -447,6 +448,7 @@ def test_model_ZZ(model,
     Args:
         model: PyTorch model to be tested
         inputdir: Directory containing the model files
+        outputdir: Directory where the test results and plots will be saved
         histogram_dir (Path): Directory containing reference histogram files (.top format)
         dataloader: PyTorch DataLoader containing test data with features (X) and targets (y)
         dataloader_untransformed: PyTorch DataLoader containing untransformed test data with features (X_untransformed) and targets (y_untransformed)
@@ -604,9 +606,9 @@ def test_model_ZZ(model,
 
     logger.info(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
 
-    hist_writer = TopFileWriter(basepath = Path(f"{inputdir}"))
+    hist_writer = TopFileWriter(basepath = Path(f"{outputdir}"))
 
-    with PdfPages(f"{inputdir}/test_histograms.pdf") as pdf:
+    with PdfPages(f"{outputdir}/test_histograms.pdf") as pdf:
         d = pdf.infodict()
         d['Title']        = f"Test results for model {model_name}"
         d['Author']       = 'You'
@@ -683,16 +685,19 @@ def test_model_ZZ(model,
 
     hist_writer.save_all()
 
+    logger.info(f"Saved histograms to {outputdir}/test_histograms.pdf")
+
     return test_loss
 
 # %% Define testing function for Z+jet model
-def test_model_Zjet(model, inputdir, histogram_dir, dataloader, dataloader_untransformed, loss_fn, device, model_name="Model"):
+def test_model_Zjet(model, inputdir, outputdir, histogram_dir, dataloader, dataloader_untransformed, loss_fn, device, model_name="Model"):
     """
     Test a trained machine learning model for Z+jet events.
     This function evaluates the model on test data and computes the average test loss.
     Args:
         model: PyTorch model to be tested
         inputdir: Directory containing the model files
+        outputdir: Directory for saving test results
         histogram_dir (Path): Directory containing the total unpolarised cross-section (Events are unweighted in the Z+jet case).
         dataloader: PyTorch DataLoader containing test data with features (X) and targets (y)
         dataloader_untransformed: PyTorch DataLoader containing untransformed test data with features (X_untransformed) and targets (y_untransformed)
@@ -779,7 +784,7 @@ def test_model_Zjet(model, inputdir, histogram_dir, dataloader, dataloader_untra
 
     logger.info(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
 
-    with PdfPages(f"{inputdir}/test_histograms.pdf") as pdf:
+    with PdfPages(f"{outputdir}/test_histograms.pdf") as pdf:
         d = pdf.infodict()
         d['Title']        = f"Test results for model {model_name}"
         d['Author']       = 'You'
@@ -805,6 +810,8 @@ def test_model_Zjet(model, inputdir, histogram_dir, dataloader, dataloader_untra
         fig, _, powheg_label = r_plot(observable_dict["rL_pred"], observable_dict["rL_true"], total_xsec, model_name=model_name)
         pdf.savefig(fig)
         plt.close(fig)
+
+    logger.info(f"Saved histograms to {outputdir}/test_histograms.pdf")
 
     return test_loss
 
@@ -864,6 +871,7 @@ def do_test_run(run_settings: Settings, model, test_dataset):
     if not run_settings.use_zjet.value:
         test_loss = test_model_ZZ(model,
                                   run_settings.inputdir.value,
+                                  run_settings.outputdir.value,
                                   run_settings.histogram_dir.value,
                                   test_dataloader,
                                   test_dataloader_untransformed,
@@ -877,6 +885,7 @@ def do_test_run(run_settings: Settings, model, test_dataset):
     else:
         test_loss = test_model_Zjet(model,
                                     run_settings.inputdir.value,
+                                    run_settings.outputdir.value,
                                     run_settings.histogram_dir.value,
                                     test_dataloader,
                                     test_dataloader_untransformed,
