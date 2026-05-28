@@ -23,14 +23,12 @@ from ml_events_utils.transforms import januar2026_input_choice
 from ml_events_utils import MLEventsDataset, scale_target, boost_into_four_lepton_cm_frame, log_target_transform, exp_target_transform  #, test_loop
 from ml_events_utils import ZJetDataset
 from ml_events_utils import boost_into_Zjet_cm_frame
-from ml_events_utils.models import *  # FFNN_BatchNorm, FFNN_BatchNorm_no_output, FFNN_paper
+from ml_events_utils.models import *
 from ml_events_utils.analysis import costhetastar, get_pt, get_rapidity, cosmujet, getdphi
 from ml_events_utils import log_file, setup_file_logger
-from ml_events_utils import Settings
+from ml_events_utils import prepare_run_settings, Settings, select_device
 from ml_events_utils import stylesheet_default
 from ml_events_utils import color_deep as color_dict
-
-color_dict = {key: hexwithhash for key, (hex, hexwithhash, floats) in color_dict.items()}
 
 # Apply the package default style globally so all plots in this module are consistent.
 plt.style.use(stylesheet_default)
@@ -430,7 +428,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
 
 # %% Testing loop
 def test_model_ZZ(model,
-                  model_dir,
+                  inputdir,
                   histogram_dir,
                   dataloader,
                   dataloader_untransformed,
@@ -448,7 +446,7 @@ def test_model_ZZ(model,
     creates histograms comparing predicted vs. true labels vs. POWHEG results, and saves the plots to a PDF.
     Args:
         model: PyTorch model to be tested
-        model_dir: Directory containing the model files
+        inputdir: Directory containing the model files
         histogram_dir (Path): Directory containing reference histogram files (.top format)
         dataloader: PyTorch DataLoader containing test data with features (X) and targets (y)
         dataloader_untransformed: PyTorch DataLoader containing untransformed test data with features (X_untransformed) and targets (y_untransformed)
@@ -606,9 +604,9 @@ def test_model_ZZ(model,
 
     logger.info(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
 
-    hist_writer = TopFileWriter(basepath = Path(f"{model_dir}"))
+    hist_writer = TopFileWriter(basepath = Path(f"{inputdir}"))
 
-    with PdfPages(f"{model_dir}/test_histograms.pdf") as pdf:
+    with PdfPages(f"{inputdir}/test_histograms.pdf") as pdf:
         d = pdf.infodict()
         d['Title']        = f"Test results for model {model_name}"
         d['Author']       = 'You'
@@ -688,13 +686,13 @@ def test_model_ZZ(model,
     return test_loss
 
 # %% Define testing function for Z+jet model
-def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untransformed, loss_fn, device, model_name="Model"):
+def test_model_Zjet(model, inputdir, histogram_dir, dataloader, dataloader_untransformed, loss_fn, device, model_name="Model"):
     """
     Test a trained machine learning model for Z+jet events.
     This function evaluates the model on test data and computes the average test loss.
     Args:
         model: PyTorch model to be tested
-        model_dir: Directory containing the model files
+        inputdir: Directory containing the model files
         histogram_dir (Path): Directory containing the total unpolarised cross-section (Events are unweighted in the Z+jet case).
         dataloader: PyTorch DataLoader containing test data with features (X) and targets (y)
         dataloader_untransformed: PyTorch DataLoader containing untransformed test data with features (X_untransformed) and targets (y_untransformed)
@@ -781,7 +779,7 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
 
     logger.info(f"Testing Error: \n Avg (per batch) test loss: {test_loss:>8f}\n")
 
-    with PdfPages(f"{model_dir}/test_histograms.pdf") as pdf:
+    with PdfPages(f"{inputdir}/test_histograms.pdf") as pdf:
         d = pdf.infodict()
         d['Title']        = f"Test results for model {model_name}"
         d['Author']       = 'You'
@@ -813,28 +811,15 @@ def test_model_Zjet(model, model_dir, histogram_dir, dataloader, dataloader_untr
 def do_test_run(run_settings: Settings, model, test_dataset):
     start_time = time.time()
 
-    device = run_settings.device.value
-    use_zjet = run_settings.use_zjet.value
-    model_name = run_settings.model.value
-    model_dir = run_settings.model_dir.value
-    histogram_dir = run_settings.histogram_dir.value
-    mlfiles = run_settings.mlfiles.value
     seed = run_settings.seed.value
-    split_ratios = run_settings.split_ratios.value
-    polarisation = run_settings.polarisation.value
-    batch_size = run_settings.batch_size.value
-    n_workers = run_settings.nworkers.value
-    n_generated_events = run_settings.n_generated_events.value
-    input_choice = run_settings.input_choice.value
-    showered = run_settings.showered.value
 
     torch.manual_seed(seed)
     np.random.seed(seed)
 
-    if not use_zjet:
+    if not run_settings.use_zjet.value:
         # ZZ case
-        labels = [f"{polarisation}/UU", "UU"]
-        dataset_untransformed = MLEventsDataset(mlfiles,
+        labels = [f"{run_settings.polarisation.value}/UU", "UU"]
+        dataset_untransformed = MLEventsDataset(run_settings.mlfiles.value,
                                                 # target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
                                                 # inv_target_transform=exp_target_transform,  # Inverse transform to revert log transformation
                                                 labels = labels,
@@ -842,28 +827,28 @@ def do_test_run(run_settings: Settings, model, test_dataset):
                                                 standardise=False)
     else:
         # Z+jet case
-        dataset_untransformed = ZJetDataset(mlfiles[0],
+        dataset_untransformed = ZJetDataset(run_settings.mlfiles.value[0],
                                 max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
                                 standardise=False)
 
     # Identical random number generator for the untransformed dataset to get the same test/ train split as used during training.
     test_generator = torch.Generator().manual_seed(seed)
-    _, _, test_dataset_untransformed = torch.utils.data.random_split(dataset_untransformed, split_ratios, generator=test_generator)
+    _, _, test_dataset_untransformed = torch.utils.data.random_split(dataset_untransformed, run_settings.split_ratios.value, generator=test_generator)
 
     # Get the test dataloaders for the transformed and untransformed datasets
     test_dataloader = DataLoader(
         test_dataset,
-        batch_size=batch_size,  # Larger batch size for efficiency
+        batch_size=run_settings.batch_size.value,  # Larger batch size for efficiency
         shuffle=False,
-        num_workers=n_workers,  # Use multiple workers for large files
-        pin_memory=True  # Faster GPU transfer
+        num_workers=run_settings.nworkers.value,  # Use multiple workers for large files
+        pin_memory=True         # Faster GPU transfer
     )
     test_dataloader_untransformed = DataLoader(
         test_dataset_untransformed,
-        batch_size=batch_size,  # Larger batch size for efficiency
+        batch_size=run_settings.batch_size.value,  # Larger batch size for efficiency
         shuffle=False,
-        num_workers=n_workers,  # Use multiple workers for large files
-        pin_memory=True  # Faster GPU transfer
+        num_workers=run_settings.nworkers.value,  # Use multiple workers for large files
+        pin_memory=True         # Faster GPU transfer
     )
 
     # Test iteration (only first batch to avoid long output)
@@ -876,10 +861,28 @@ def do_test_run(run_settings: Settings, model, test_dataset):
 
     test_loss_fn = torch.nn.MSELoss()
 
-    if not use_zjet:
-        test_loss = test_model_ZZ(model, model_dir, histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, split_ratios[2] * n_generated_events, model_name=model_name, fitted_polarisation=polarisation, input_choice=input_choice, showered=showered)
+    if not run_settings.use_zjet.value:
+        test_loss = test_model_ZZ(model,
+                                  run_settings.inputdir.value,
+                                  run_settings.histogram_dir.value,
+                                  test_dataloader,
+                                  test_dataloader_untransformed,
+                                  test_loss_fn,
+                                  run_settings.device.value,
+                                  run_settings.split_ratios.value[2] * run_settings.n_generated_events.value,
+                                  model_name=run_settings.model.value,
+                                  fitted_polarisation=run_settings.polarisation.value,
+                                  input_choice=run_settings.input_choice.value,
+                                  showered=run_settings.showered.value)
     else:
-        test_loss = test_model_Zjet(model, model_dir, histogram_dir, test_dataloader, test_dataloader_untransformed, test_loss_fn, device, model_name=model_name)
+        test_loss = test_model_Zjet(model,
+                                    run_settings.inputdir.value,
+                                    run_settings.histogram_dir.value,
+                                    test_dataloader,
+                                    test_dataloader_untransformed,
+                                    test_loss_fn,
+                                    run_settings.device.value,
+                                    model_name=run_settings.model.value)
 
     end_time = time.time()
     logger.info(f"Testing completed in {end_time - start_time:.2f} seconds.")
@@ -887,114 +890,34 @@ def do_test_run(run_settings: Settings, model, test_dataset):
     return test_loss
 
 
-def parse_args() -> argparse.Namespace:
-    # %%
-    parser = argparse.ArgumentParser(
-        description='Test the already trained neural network for polarisation tagging.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    parser.add_argument("mlfiles", nargs='+', type=Path,        action="store",               help=".ml files to be used for training.")
-    parser.add_argument("model",              type=str,         action="store",               help=f"Model architecture to use. Options: {list(model_dict.keys())}.")
-    parser.add_argument("model_weight_file",  type=Path,        action="store",               help="Path to the .pt(y) file containing the trained model weights.")
-    parser.add_argument("-g", "--gpu",        type=int,         action="store", default=-1,   help="Specify manually which of the available gpus is supposed to be used.")
-    parser.add_argument("-b", "--batch_size", type=int,         action="store", default=512,  help="Batch size for training.")
-    parser.add_argument("-n", "--nworkers",   type=int,         action="store", default=0,    help="Number of workers for DataLoader.")
-    parser.add_argument("-t", "--test_mode",  dest="test_mode", action="store_true",          help="Run in test mode (only one data point to test implementation of the model).")
-    parser.add_argument("--inputdir",         type=Path,        action="store", default=None, help='Specify name of input directory.')
-    parser.add_argument("--histogram_dir",    type=Path,        action="store", default=None, help='Directory containing the .top histogram files for comparison (They are in the folder where also the events are.).')
-    parser.add_argument("--n_generated_events", type=lambda x: int(float(x)),       action="store", default=int(1e7), help="Number of generated events for comparison (1e7 for LO and LOwS and 5e6 for NLO).")
-    parser.add_argument("--useZjet",          dest="use_zjet",  action="store_true",          help="Use Z+jet dataset instead of default.")
-    parser.add_argument("--standardise",      dest="standardise", action="store_true",        help="Enable standardisation of features over the whole dataset (default).")
-    parser.add_argument("--input_choice",     type=str,         action="store", default=None, help="Choice of input features. Options: Momenta, jan2026.")
-    parser.add_argument("--polarisation",     type=str,         action="store", default="LL", help="Specify which polarisation to train on (Only relevant for ZZ). Options: LL, LT, TL, TT, UL, LU.")
-
-    # Create a mutually exclusive group for specifying the reference frame
-    frame_group = parser.add_mutually_exclusive_group()
-    frame_group.add_argument("--labframe",       dest="labframe", default=True, action="store_true",    help="Use lab frame instead of partonic CMS.")
-    frame_group.add_argument("--cmframe",        dest="labframe", default=True, action="store_false",   help="Use partonic CMS instead of lab frame.")
-
-    args = parser.parse_args()
-
-    return args
-
-
-def namespace_from_settings(run_settings: Settings) -> argparse.Namespace:
-    return argparse.Namespace(**{key: parameter.value for key, parameter in run_settings.items()})
-
-
-def select_device(gpu: int) -> str:
-    # %% Specify the computation device (cpu or gpu).
-    # In torch/pytorch data and models need to be moved in the specific processing unit
-    # this code snippet allows to set the variable "device" according to available resource (cpu or cuda gpu)
-    if torch.cuda.is_available():
-        logger.info(f"Number of devices: {torch.cuda.device_count()}")
-        logger.info(f"Device name: {torch.cuda.get_device_name(0)}")
-
-    if torch.cuda.is_available():
-        if gpu >= 0:
-            device = f"cuda:{gpu}"
-        else:
-            device = "cuda"
-    else:
-        device = "cpu"
-    logger.info(f"Computation device: {device}")
-
-    # Set CUDA device globally
-    if torch.cuda.is_available():
-        if gpu >= 0:
-            torch.cuda.set_device(gpu)
-            logger.info(f"Set CUDA device to: {gpu}")
-        else:
-            torch.cuda.set_device(0)
-            logger.info(f"Set CUDA device to: 0")
-    return device
-
-
 def run_testing(run_settings: Settings):
-    arg = namespace_from_settings(run_settings)
-
     run_settings.log_to_logger(logger, header="Arguments:")
 
-    device = select_device(arg.gpu)
+    device = select_device(run_settings.gpu.value, logger)
     run_settings.set("device", device, overwrite=True)
 
     # %% Model selection
-    model_name = arg.model
+    model_name = run_settings.model.value
     if model_name not in model_dict:
         raise ValueError(f"Model '{model_name}' not recognized. Available models: {list(model_dict.keys())}")
     else:
         logger.info(f"Using model architecture: {model_name}")
 
-    if arg.inputdir is not None:
-        model_dir = arg.inputdir
-    else:
-        model_dir = Path().cwd()
-
-    if arg.histogram_dir is None:
-        arg.histogram_dir = arg.mlfiles[0].parent
-
-    run_settings.set("model_dir", model_dir, overwrite=True)
-    run_settings.set("histogram_dir", arg.histogram_dir, overwrite=True)
-
-    # %% Data Handling
-    # Example usage for large files:
-    # files = Path("event_files/pwgevents-*.ml")
-    files = arg.mlfiles
-
-    if not arg.use_zjet:
-        if arg.labframe:
+    # Data Handling
+    if not run_settings.use_zjet.value:
+        if run_settings.labframe.value:
             trafo = None
         else:
             trafo = boost_into_four_lepton_cm_frame
 
-        if arg.input_choice == "jan2026":
+        if run_settings.input_choice.value == "jan2026":
             if trafo:
                 trafo = lambda x: januar2026_input_choice(trafo(x))
             else:
                 trafo = januar2026_input_choice
 
-        labels = [f"{arg.polarisation}/UU", "UU"]
-        dataset = MLEventsDataset(files,
+        labels = [f"{run_settings.polarisation.value}/UU", "UU"]
+        dataset = MLEventsDataset(run_settings.mlfiles.value,
                                   labels = labels,
                                   transform=trafo,
                                   target_transform=log_target_transform,  # Apply log transform to reduce outlier impact
@@ -1003,18 +926,18 @@ def run_testing(run_settings: Settings):
                                   standardise=False)  # Standardisation is add by now as an additional layer in the model, whose weights are loaded from the state dict of the trained model.
 
     else:
-        if arg.labframe:
+        if run_settings.labframe.value:
             trafo = None
         else:
             trafo = boost_into_Zjet_cm_frame
 
-        if arg.input_choice == "jan2026":
+        if run_settings.input_choice.value == "jan2026":
             if trafo:
                 trafo = lambda x: januar2026_input_choice(trafo(x))
             else:
                 trafo = januar2026_input_choice
 
-        dataset = ZJetDataset(files[0],
+        dataset = ZJetDataset(run_settings.mlfiles.value[0],
                             transform=trafo,
                             target_transform=None,
                             max_events=None,  # Maximum number of events to load (useful for testing). Max = 10^6.
@@ -1024,29 +947,26 @@ def run_testing(run_settings: Settings):
 
     # Set fixed random number seed to get the same test/ train split as used during training
     logger.info(Path.cwd())
-    with open(model_dir / "training_seed.txt", 'r') as f:
+    with open(run_settings.inputdir.value / "training_seed.txt", 'r') as f:
         seed = int(f.readline().strip())
 
     run_settings.set("seed", seed, overwrite=True)
     generator = torch.Generator().manual_seed(seed)
 
-    split_ratios = run_settings.split_ratios.value if hasattr(run_settings, "split_ratios") else [0.6, 0.2, 0.2]
-    run_settings.set("split_ratios", split_ratios, overwrite=True)
-
-    _, _, test_dataset = torch.utils.data.random_split(dataset, split_ratios, generator=generator)
+    _, _, test_dataset = torch.utils.data.random_split(dataset, run_settings.split_ratios.value, generator=generator)
     logger.info(f"Test dataset size:       {len(test_dataset)}")
 
     # Initialize the model and load the trained weights
     input_dim = dataset.input_shape[0]
-    if arg.standardise:
-        model = model_dict[arg.model](input_dim=input_dim, external_stat=True)
+    if run_settings.standardise.value:
+        model = model_dict[run_settings.model.value](input_dim=input_dim, external_stat=True)
     else:
-        model = model_dict[arg.model](input_dim=input_dim)
+        model = model_dict[run_settings.model.value](input_dim=input_dim)
 
-    if arg.model_weight_file.is_absolute():
-        model_weight_file = arg.model_weight_file
+    if run_settings.model_weight_file.value.is_absolute():
+        model_weight_file = run_settings.model_weight_file.value
     else:
-        model_weight_file = model_dir / arg.model_weight_file
+        model_weight_file = run_settings.inputdir.value / run_settings.model_weight_file.value
 
     # if torch.cuda.is_available():
     #     model_summary = str(summary(model.cuda(), input_size=(input_dim,), verbose=0))
@@ -1061,29 +981,22 @@ def run_testing(run_settings: Settings):
     return do_test_run(run_settings, model, test_dataset)
 
 
-def prepare_run_settings(arg: argparse.Namespace) -> Settings:
-    run_settings = Settings(argparse=arg)
-    run_settings.set("split_ratios", [0.6, 0.2, 0.2])
-    run_settings.set("showered", False)
-    return run_settings
-
 # %% Run the test
-if __name__ == "__main__":
-    logger = setup_file_logger(log_file=log_file, level="DEBUG", mode="a", console=False, force=True)
+def main() -> int:
+    run_settings = prepare_run_settings(parser_type="test")
 
-    logger.info(f"numpy:  {np.__version__}")
-    logger.info(f"pandas: {pd.__version__}")
-    logger.info(f"torch:  {torch.__version__}")
-
-    arg          = parse_args()
-    run_settings = prepare_run_settings(arg)
+    logger = setup_file_logger(log_file=log_file, level="DEBUG", mode="a", console=run_settings.verbose.value, force=True)
 
     try:
         run_testing(run_settings)
     except Exception as exc:
         logger.error(f"Testing failed: {exc}")
-        sys.exit(1)
+        return 1
 
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
 else:
     logger = logging.getLogger(__name__)
 
