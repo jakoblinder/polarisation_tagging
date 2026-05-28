@@ -457,6 +457,7 @@ def run_training(run_settings: Settings, logger, trial=None):
         # Save best model separately
         best_model_filename = outputdir / f"{model_name}_model_weights_best.pt"
         torch.save(best_model_state, best_model_filename)
+        run_settings.set("model_weight_file", best_model_filename, overwrite=True)
         logger.info(f"Best model saved as: {best_model_filename}")
 
     hist_loss = np.array(hist_loss)
@@ -489,6 +490,12 @@ def run_training(run_settings: Settings, logger, trial=None):
         else:
             do_test_run(run_settings, model, test_dataset)
 
+    # Dump settings again, containing the path to the best model weight file if it was saved successfully.
+    try:
+        run_settings.dump_yaml(outputdir / "run_settings.yaml")
+    except Exception as exc:
+        logger.warning(f"Could not dump run settings YAML: {exc}")
+
     return {
         "mode": "train",
         "outputdir": outputdir,
@@ -502,13 +509,14 @@ def main() -> int:
     run_settings = prepare_run_settings(parser_type="train")
 
     log_file = run_settings.outputdir.value / "output.log"
-    logger = setup_file_logger(log_file, level="DEBUG", console=run_settings.verbose.value, mode="w", force=True)
+    logger   = setup_file_logger(log_file=log_file, level="DEBUG", console=run_settings.verbose.value, mode="w", force=True)
 
     try:
         run_training(run_settings, logger)
     except Exception as exc:
         logger.error(f"Training failed: {exc}")
         return 1
+
     return 0
 
 

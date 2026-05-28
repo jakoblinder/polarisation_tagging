@@ -11,9 +11,12 @@ from .models import model_dict
 
 def _get_parser_defaults(parser: argparse.ArgumentParser) -> dict:
     """Extract all default values from a parser without parsing arguments."""
-    # Parse empty argv to get all defaults
-    # FIXME: Check whether I'm not getting to much by that.
-    defaults = vars(parser.parse_args([]))
+    defaults = {}
+    for action in parser._actions:
+        # Skip positional arguments and the help action
+        if action.dest != 'help' and action.option_strings:
+            if action.default is not argparse.SUPPRESS:
+                defaults[action.dest] = action.default
     return defaults
 
 def _is_yaml_file(path_str: str) -> bool:
@@ -136,11 +139,12 @@ def prepare_run_settings(parser_type:str="train") -> Settings:
 
         parser_defaults = _get_parser_defaults(parser)
         for key, default_value in parser_defaults.items():
-            if key not in run_settings:
-                run_settings.set_default(key, default_value)
+            run_settings.set_default(key, default_value)
 
     # Set some defaults, which can be set by the yaml file but are not expected to be set by the command line.
     run_settings.set_default("split_ratios",       [0.6, 0.2, 0.2])
+    # The histogram_dir should be set for training and testing, since the testing is often done after training.
+    run_settings.set_default("histogram_dir", run_settings.mlfiles.value[0].parent)
 
     if parser_type == "train":
         run_settings.set_default("test_standardisation",   False)
@@ -149,11 +153,15 @@ def prepare_run_settings(parser_type:str="train") -> Settings:
         if not run_settings.replot_only.value and len(run_settings.mlfiles.value) == 0:
             raise ValueError("mlfiles are required when not using --replot")
 
+        # The inputdir, used for testing and plotting, should be set to the outputdir, where the trained model is going to end up.
+        run_settings.set_default("inputdir", run_settings.outputdir.value)
         # For backward compatibility, set model_dir to outputdir if not already set.
-        run_settings.set_default("model_dir", run_settings.outputdir.value, overwrite=True)  # Should overwrite!
+        run_settings.set_default("model_dir", run_settings.outputdir.value)
 
     elif parser_type == "test":
-        run_settings.set_default("histogram_dir", run_settings.mlfiles.value[0].parent)
+        run_settings.set_default("model_weight_file", f"{run_settings.model.value}_model_weights_best.pt")
+
+    return run_settings
 
 
 

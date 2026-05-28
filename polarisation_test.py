@@ -893,7 +893,7 @@ def do_test_run(run_settings: Settings, model, test_dataset):
 def run_testing(run_settings: Settings):
     run_settings.log_to_logger(logger, header="Arguments:")
 
-    device = select_device(run_settings.gpu.value)
+    device = select_device(run_settings.gpu.value, logger)
     run_settings.set("device", device, overwrite=True)
 
     # %% Model selection
@@ -982,7 +982,7 @@ def run_testing(run_settings: Settings):
 
 
 # %% Run the test
-if __name__ == "__main__":
+def main() -> int:
     run_settings = prepare_run_settings(parser_type="test")
 
     logger = setup_file_logger(log_file=log_file, level="DEBUG", mode="a", console=run_settings.verbose.value, force=True)
@@ -991,8 +991,12 @@ if __name__ == "__main__":
         run_testing(run_settings)
     except Exception as exc:
         logger.error(f"Testing failed: {exc}")
-        sys.exit(1)
+        return 1
 
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
 else:
     logger = logging.getLogger(__name__)
 

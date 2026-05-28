@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable
 
 import yaml
+import torch
 
 
 @dataclass
