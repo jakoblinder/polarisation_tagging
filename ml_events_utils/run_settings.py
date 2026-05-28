@@ -36,7 +36,7 @@ class Parameter:
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
         data["value"] = Settings._encode_yaml_value(data["value"])
-        data["fit"] = Settings._encode_yaml_value(data["fit"])
+        data["fit"]   = Settings._encode_yaml_value(data["fit"])
         return data
 
 
@@ -67,9 +67,23 @@ class Settings:
             value: Any,
             fit: Any = False,
             overwrite: bool = False) -> None:
+        """
+        Set a parameter value, optionally with fit information.
+        By default, existing parameters cannot be overwritten to prevent accidental mistakes.
+        """
         if not overwrite and key in self._parameters:
             raise KeyError(f"Setting '{key}' already exists.")
         self._set_parameter(key, value, fit=fit)
+
+    def set_default(self, key: str, value: Any, fit: Any = False) -> None:
+        """
+        Set a parameter value only if it does not already exist.
+        """
+        if key not in self._parameters:
+            self._set_parameter(key, value, fit=fit)
+        else:
+            if self._parameters[key].value is None:
+                self._set_parameter(key, value, fit=fit)
 
     def update_fit(self, key: str, fit: Any) -> None:
         if key not in self._parameters:
@@ -210,3 +224,30 @@ class Settings:
             raise ValueError("YAML settings content must be a mapping at top level.")
         return cls.from_dict(data)
 
+
+def select_device(gpu: int, logger) -> str:
+    # Specify the computation device (cpu or gpu).
+    # In torch/pytorch data and models need to be moved in the specific processing unit
+    # this code snippet allows to set the variable "device" according to available resource (cpu or cuda gpu)
+    if torch.cuda.is_available():
+        logger.info(f"Number of devices: {torch.cuda.device_count()}")
+        logger.info(f"Device name: {torch.cuda.get_device_name(0)}")
+
+    if torch.cuda.is_available():
+        if gpu >= 0:
+            device = f"cuda:{gpu}"
+        else:
+            device = "cuda"
+    else:
+        device = "cpu"
+    logger.info(f"Computation device: {device}")
+
+    if torch.cuda.is_available():
+        if gpu >= 0:
+            torch.cuda.set_device(gpu)
+            logger.info(f"Set CUDA device to: {gpu}")
+        else:
+            torch.cuda.set_device(0)
+            logger.info("Set CUDA device to: 0")
+
+    return device

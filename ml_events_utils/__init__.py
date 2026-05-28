@@ -6,7 +6,8 @@ from .Zjet_events_dataset import ZJetDataset
 from .transforms import scale_target, boost_into_four_lepton_cm_frame, find_scale_var_ratios, log_target_transform, exp_target_transform, boost_into_Zjet_cm_frame
 from .train_loop import train_loop, valid_loop
 from .logger import setup_file_logger, log_file
-from .run_settings import Parameter, Settings
+from .run_settings import Parameter, Settings, select_device
+from .cli import prepare_run_settings
 
 __version__ = "0.1.0"
 # print(f"Importing {__name__} package, version {__version__}")
@@ -26,7 +27,8 @@ color_gio = {"black":  "000000",  # full
              "blue":   "001EF5",  # TT
              "pink":   "EB46F8",  # sum of pols
             }
-color_gio = {key: [hex, f"#{hex}", [int(hex[:2], 16)/ 255., int(hex[2:4], 16)/ 255., int(hex[4:6], 16)/ 255., ]] for key, hex in color_gio.items()}
+# color_gio = {key: [hex, f"#{hex}", [int(hex[:2], 16)/ 255., int(hex[2:4], 16)/ 255., int(hex[4:6], 16)/ 255., ]] for key, hex in color_gio.items()}
+color_gio = {key: f"#{hex}" for key, hex in color_gio.items()}
 
 # 'deep' palette from Seaborn. Colorblind friendly.
 color_deep = {"blue":   "4c72b0",
@@ -41,8 +43,7 @@ color_deep = {"blue":   "4c72b0",
               "cyan":   "64b5cd",
               "black":  "000000"
             }
-color_deep = {key: [hex, f"#{hex}", [int(hex[:2], 16)/ 255., int(hex[2:4], 16)/ 255., int(hex[4:6], 16)/ 255., ]] for key, hex in color_deep.items()}
-
+color_deep = {key: f"#{hex}" for key, hex in color_deep.items()}
 
 # Add fonts from the fonts directory to Matplotlib's font manager
 try:
