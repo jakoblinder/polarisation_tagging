@@ -74,14 +74,12 @@ def add_uncertainty_bands(ax, bs, ws, sigs_stat, sigs_syst=[], clr: str = 'black
     if bands:
         # axs[0].bar(x=bs[:-1], height=2*sigs_stat, bottom=ws-sigs_stat, width=np.diff(bs), align='edge', linewidth=0, alpha=0.25, zorder=-1, color=color_hist0)
         # Take care of ws having possibly one more element than sigs_stat, due to prehandling of bins and values for step plots.
-        shift = np.diff(bs)/2
         if len(ws) == len(sigs_stat) + 1:
             sigs_stat = np.append(sigs_stat, sigs_stat[-1])
-            shift = np.append(shift, shift[-1])
-            bins = bs + shift
+            bins = bs
         else:
             # len(ws) == len(sigs_stat) == len(bs) - 1
-            bins = bs[:-1] + shift
+            bins = bs[:-1]
 
         up   = ws + sigs_stat
         down = ws - sigs_stat

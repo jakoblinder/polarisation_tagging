@@ -34,23 +34,60 @@ class HistogramData:
         bins[-1]  = self.right_edges[-1]
         return bins
 
+    def __mul__(self, other):
+        if type(self) is type(other):
+            if not np.allclose(self.bins, other.bins):
+                raise ValueError("Cannot multiply histograms with different bins.")
+            new_values = self.values * other.values
+            # Propagate errors assuming they are uncorrelated:
+            new_errors = np.sqrt((self.errors * other.values)**2 + (self.values * other.errors)**2)
+            new_name = f"{self.name} * {other.name}"
+        elif isinstance(other, (int, float)):
+            new_values = self.values * other
+            new_errors = self.errors * other
+            new_name = f"{self.name} * {other}"
+        else:
+            raise ValueError(f"Unsupported type ({type(other)}) for multiplication with HistogramData.")
+
+        return HistogramData(
+            observable  = self.observable,
+            name        = new_name,
+            order       = self.order,
+            left_edges  = self.left_edges,
+            right_edges = self.right_edges,
+            values      = new_values,
+            errors      = new_errors,
+            style       = self.style.copy(),
+        )
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
     def __truediv__(self, other):
         if type(self) is type(other):
             if not np.allclose(self.bins, other.bins):
                 raise ValueError("Cannot divide histograms with different bins.")
             new_values = self.values / other.values
             # Propagate errors assuming they are uncorrelated:
-            new_errors = np.sqrt((self.errors / other.values) ** 2 + (self.values * other.errors / other.values ** 2) ** 2)
-            return HistogramData(
-                observable  = self.observable,
-                name       = f"{self.name} / {other.name}",
-                order       = self.order,
-                left_edges  = self.left_edges,
-                right_edges = self.right_edges,
-                values      = new_values,
-                errors      = new_errors,
-                style       = self.style,
-            )
+            new_errors = np.sqrt((self.errors / other.values)**2 + ( self.values * other.errors / other.values**2 )**2)
+            new_name = f"{self.name} / {other.name}"
+        elif isinstance(other, (int, float, np.ndarray)):
+            new_values = self.values / other
+            new_errors = self.errors / other
+            new_name = f"{self.name} / {other}"
+        else:
+            raise ValueError(f"Unsupported type ({type(other)}) for division with HistogramData.")
+
+        return HistogramData(
+            observable  = self.observable,
+            name        = new_name,
+            order       = self.order,
+            left_edges  = self.left_edges,
+            right_edges = self.right_edges,
+            values      = new_values,
+            errors      = new_errors,
+            style       = self.style.copy(),
+        )
 
     def __add__(self, other):
         if type(self) is type(other):
@@ -59,16 +96,53 @@ class HistogramData:
             new_values = self.values + other.values
             # Propagate errors assuming they are uncorrelated:
             new_errors = np.sqrt(self.errors ** 2 + other.errors ** 2)
-            return HistogramData(
-                observable  = self.observable,
-                name       = f"{self.name} + {other.name}",
-                order       = self.order,
-                left_edges  = self.left_edges,
-                right_edges = self.right_edges,
-                values      = new_values,
-                errors      = new_errors,
-                style       = self.style,
-            )
+            new_name = f"{self.name} + {other.name}"
+        elif isinstance(other, (int, float, np.ndarray)):
+            new_values = self.values + other
+            new_errors = self.errors
+            new_name = f"{self.name} + {other}"
+        else:
+            raise ValueError(f"Unsupported type ({type(other)}) for addition with HistogramData.")
+
+        return HistogramData(
+            observable  = self.observable,
+            name        = new_name,
+            order       = self.order,
+            left_edges  = self.left_edges,
+            right_edges = self.right_edges,
+            values      = new_values,
+            errors      = new_errors,
+            style       = self.style,
+        )
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        if type(self) is type(other):
+            if not np.allclose(self.bins, other.bins):
+                raise ValueError("Cannot subtract histograms with different bins.")
+            new_values = self.values - other.values
+            # Propagate errors assuming they are uncorrelated:
+            new_errors = np.sqrt(self.errors ** 2 + other.errors ** 2)
+            new_name = f"{self.name} - {other.name}"
+        elif isinstance(other, (int, float, np.ndarray)):
+            new_values = self.values - other
+            new_errors = self.errors
+            new_name = f"{self.name} - {other}"
+        else:
+            raise ValueError(f"Unsupported type ({type(other)}) for subtraction with HistogramData.")
+
+        return HistogramData(
+            observable  = self.observable,
+            name        = new_name,
+            order       = self.order,
+            left_edges  = self.left_edges,
+            right_edges = self.right_edges,
+            values      = new_values,
+            errors      = new_errors,
+            style       = self.style.copy(),
+        )
 
     def rebin(self, width_bins: float|list = None):
         """Rebin the data set, by merging all bins which have the same borders.
@@ -87,12 +161,11 @@ class HistogramData:
         else:
             raise AssertionError("width_bins has to be either a float or a list of bin edges.")
 
-        tolerance_fac = 1. + 1e-9
+        tolerance_fac = 1. + 1e-8
         # Make sure the new bins are not smaller than the old ones:
         assert abs(bins[1] - bins[0])*tolerance_fac >= abs(self.bins[1] - self.bins[0]), "The new bins have to be wider than the old."
 
         def add_two_bins(point1, point2):
-            tolerance_fac = 1. + 1e-9
             # Check if the two points have one commmon edge.
             if np.isclose(point1[1], point2[0], rtol=tolerance_fac):
                 # point1 is on the left of point2, so the new bin will be [point1[0], point2[1]]
@@ -102,7 +175,7 @@ class HistogramData:
                 # swap the points to make point1 the left one:
                 point1, point2 = point2, point1
             else:
-                raise ValueError("The two points do not have a common edge, so they cannot be merged into one bin.")
+                raise ValueError(f"The two points, {point1} and {point2}, do not have a common edge, so they cannot be merged into one bin.")
 
             w1      = abs(point1[1] - point1[0])
             h1      = point1[2]
@@ -127,22 +200,27 @@ class HistogramData:
                 break
 
             # Initialize the new point with the first point which is in the bin.
-            # The edges are already set to the new bin edges.
-            new_point = [bins[ibin], bins[ibin + 1], self.values[jpoint], self.errors[jpoint]]
-
+            new_point = [self.left_edges[jpoint], self.right_edges[jpoint], self.values[jpoint], self.errors[jpoint]]
             new_points.append(new_point)
             jpoint += 1
 
-            # Replace the following with something more stable, which takes care of numerical issues and the fact that the new bins might not be perfectly aligned with the old ones, so that some points might be in the new bin but not in the old one.
-
-
             while jpoint < len(self.values):
-                if self.right_edges[jpoint]*tolerance_fac > bins[ibin + 1]:
+                right_edge     = self.right_edges[jpoint]
+                new_right_edge = bins[ibin + 1]
+                # Make sure that a zero edge is not considered to be smaller than the new right edge, which could lead to numerical issues.
+                if right_edge * tolerance_fac > new_right_edge and not (abs(right_edge) < 1e-9 and abs(new_right_edge) < 1e-9):
                     break
                 # Add up all points which are in the bin as well:
-                _, _, new_value, new_error = add_two_bins(new_points[-1], [self.left_edges[jpoint], self.right_edges[jpoint], self.values[jpoint], self.errors[jpoint]])
-                new_points[-1] = [new_points[-1][0], new_points[-1][1], new_value, new_error]
+                combined_point = add_two_bins(new_points[-1], [self.left_edges[jpoint], self.right_edges[jpoint], self.values[jpoint], self.errors[jpoint]])
+                new_points[-1] = combined_point
                 jpoint += 1
+
+        # Set the left and right to the numerical values of the bin array, which has to be numerically compatible with the new left and right edges, but is more robust against numerical issues.
+        for ipoint in range(len(new_points)):
+            assert np.isclose(new_points[ipoint][0], bins[ipoint], rtol=tolerance_fac), f"The left edge of the new point, {new_points[ipoint][0]}, is not close to the left edge of the new bin, {bins[ipoint]}."
+            assert np.isclose(new_points[ipoint][1], bins[ipoint + 1], rtol=tolerance_fac), f"The right edge of the new point, {new_points[ipoint][1]}, is not close to the right edge of the new bin, {bins[ipoint + 1]}."
+            new_points[ipoint][0] = bins[ipoint]
+            new_points[ipoint][1] = bins[ipoint + 1]
 
         new_points = np.array(new_points)
         new_left_edges  = new_points[:, 0]
@@ -169,7 +247,7 @@ def read_histogram(path: Path,
                    name: str,
                    order:str,
                    style: Dict[str, Any] = {}
-                   ) -> Dict[str, Any]:
+                   ) -> Dict[str, HistogramData]:
     """
     Read a histogram file and return a dictionary of histograms.
     Look for lines starting with, for example, `# dphiee` and ignore the possible `index <some number>` which would be there in a proper POWHEG histogram.
