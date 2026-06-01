@@ -2,13 +2,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def get_histograms_for_observable(histograms, observable, order):
-    histograms_for_observable = {}
-    for model, model_histograms in histograms.items():
-        if order in model_histograms and observable in model_histograms[order]:
-            histograms_for_observable[model] = model_histograms[order][observable]
-    return histograms_for_observable
-
 def move_offset_factor(ax, ylabel):
     # Move the y-axis offset text (the "x 1e-3" part) into the y-axis label and hide the original offset text to avoid overlap with the title.
     ax.figure.draw_without_rendering()
