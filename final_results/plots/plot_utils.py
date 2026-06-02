@@ -1,6 +1,19 @@
 # Some function useful for plotting.
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+
+def create_subplots(n_plots, rcParams):
+    mpl.rcParams.update(rcParams)
+    size = mpl.rcParams['figure.figsize']
+    if n_plots == 1:
+        fig, axs = plt.subplots(n_plots, 1, sharex=True, figsize=size)
+        axs = [axs,]
+    else:
+        scale_factor  = 0.5 + 0.5*(n_plots-1)
+        height_ratios = [3.,] + [1,]*(n_plots-1)
+        fig, axs = plt.subplots(n_plots, 1, sharex=True, figsize=(size[0], scale_factor*size[1]), height_ratios=height_ratios)
+    return fig, axs
 
 def move_offset_factor(ax, ylabel):
     # Move the y-axis offset text (the "x 1e-3" part) into the y-axis label and hide the original offset text to avoid overlap with the title.
