@@ -186,7 +186,7 @@ class HistogramData:
 
             new_value = (h1 * w1 + h2 * w2) / (w1 + w2)
             # Combine statistical uncertainties: Add them quadratically.
-            new_error = np.sqrt( ((w1 * h1_stat)**2 + (w2 * h2_stat)**2) / (w1 + w2))
+            new_error = np.sqrt( ((w1 * h1_stat)**2 + (w2 * h2_stat)**2)) / (w1 + w2)
 
             return [point1[0], point2[1], new_value, new_error]
 
