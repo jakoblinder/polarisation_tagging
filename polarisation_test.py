@@ -144,7 +144,7 @@ def print_integration_statistics(observable_dict, histogram_data: dict = {}, mod
         hist_writer.write_histogram(f"{fitted_polarisation}_pred.top", "totxsec", bin_edges=[[0., 1.],], values=[pred_integral,], uncertainties=[0., ])
         hist_writer.write_histogram(f"{fitted_polarisation}_true.top", "totxsec", bin_edges=[[0., 1.],], values=[true_integral,], uncertainties=[0., ])
         for run in powheg_histogram_runs:
-            hist_writer.write_histogram(f"POWHEG_{run}.top", "totxsec", bin_edges=[[0., 1.],], values=[histogram_data['totxsec'][run]['values'][0],], uncertainties=[0., ])
+            hist_writer.write_histogram(f"POWHEG_{run}.top", "totxsec", bin_edges=[[0., 1.],], values=[histogram_data['totxsec'][run]['values'][0],], uncertainties=[histogram_data['totxsec'][run]['uncertainties'][0], ])
 
     # Create a text-only plot for integration results
     fig, ax = plt.subplots(1, 1)
@@ -312,8 +312,10 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
     if powheg_histogram:
         # POWHEG histograms for comparison
         powheg_sums = {}
+        powheg_uncertainties = {}
         for run in powheg_histogram_runs:
             powheg_sums[run] = powheg_histogram[run]['values']
+            powheg_uncertainties[run] = powheg_histogram[run]['uncertainties']
 
     # Plot as step histograms
     bin_centers = (bins[:-1] + bins[1:]) / 2
@@ -347,7 +349,7 @@ def comparison_plots(observable_dict:dict, observable_key:str, powheg_histogram:
         hist_writer.write_histogram(f"{fitted_polarisation}_true.top", save_key_obs, bin_edges=np.column_stack((bins[:-1], bins[1:])), values=true_sums, uncertainties=np.zeros_like(true_sums))
         if powheg_histogram and not kwargs.get("plotrLL", False):
             for run in powheg_histogram_runs:
-                hist_writer.write_histogram(f"POWHEG_{run}.top", f"{observable_key}", bin_edges=np.column_stack((bins[:-1], bins[1:])), values=powheg_sums[run], uncertainties=np.zeros_like(powheg_sums[run]))
+                hist_writer.write_histogram(f"POWHEG_{run}.top", f"{observable_key}", bin_edges=np.column_stack((bins[:-1], bins[1:])), values=powheg_sums[run], uncertainties=powheg_uncertainties[run])
 
     axs[1].step(bin_centers, pred_sums / np.maximum(true_sums, 1e-10), where='mid', color=color_dict['red'], linewidth=2, alpha=1.0, marker='')
     if powheg_histogram:
