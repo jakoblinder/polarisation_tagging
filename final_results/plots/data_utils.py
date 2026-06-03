@@ -5,6 +5,7 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, Any, ClassVar
 from dataclasses import dataclass, field
+from decimal import Decimal, ROUND_HALF_UP
 
 @dataclass
 class HistogramData:
@@ -311,6 +312,39 @@ class HistogramData:
                 style       = self.style.copy(),
             )
 
+    @staticmethod
+    def format_value_uncertainty(value: float, unc: float, unc_sig_digits: int = 1) -> str:
+        """Format a measurement as value(unc), with uncertainty rounded to <unc_sig_digits> significant digits.
+
+        Example: 160.88362999999998 +- 0.15495453 -> 160.9(2)
+        """
+        def round_half_up(value: float, decimals: int = 0) -> float:
+            """
+            Round using decimal ROUND_HALF_UP (0.5 always rounds away from zero - no banker's rounding as e.g. in np.round).
+            decimals: number of decimal places to round to (default: 0, i.e. round to integer).
+                    Example: 24567.98765 with decimals=2 -> 24567.99, with decimals = -3 -> 25000.0.
+            """
+            d = Decimal(str(value))
+            quant = Decimal(f"1e{(-decimals)}")
+            # print(f"Rounding {value} to {decimals} decimal places: {d} quantized to {quant} with ROUND_HALF_UP gives {d.quantize(quant, rounding=ROUND_HALF_UP)}")
+            return float(d.quantize(quant, rounding=ROUND_HALF_UP))
+
+        if unc <= 0:
+            return f"{value}"
+
+        exponent = int(np.floor(np.log10(abs(unc))))
+        decimals = -exponent + (unc_sig_digits - 1)
+
+        unc_rounded   = round_half_up(unc, decimals)
+        value_rounded = round_half_up(value, decimals)
+
+        if decimals > 0:
+            unc_digits = int(round_half_up(unc_rounded * (10 ** decimals), 0))
+            return f"{value_rounded:.{decimals}f}({unc_digits})"
+
+        # decimals <= 0: uncertainty is an integer at this precision
+        unc_digits = int(round_half_up(unc_rounded, 0))
+        return f"{int(round_half_up(value_rounded, 0))}({unc_digits})"
 
 def read_histogram(path: Path,
                    rescaling_factor: float,
