@@ -159,7 +159,7 @@ def prepare_run_settings(parser_type:str="train") -> Settings:
         run_settings.set_default("model_dir", run_settings.outputdir.value)
 
     elif parser_type == "test":
-        run_settings.set_default("model_weight_file", f"{run_settings.model.value}_model_weights_best.pt")
+        run_settings.set_default("model_weight_file", Path(f"{run_settings.model.value}_model_weights_best.pt"))
         run_settings.set_default("outputdir", run_settings.inputdir.value)
 
     return run_settings
