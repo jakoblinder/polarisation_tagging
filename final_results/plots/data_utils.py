@@ -34,6 +34,77 @@ class HistogramData:
         bins[-1]  = self.right_edges[-1]
         return bins
 
+    def __getitem__(self, key):
+        """Get a subset of the data set by slicing the points with a slice object or by giving an index.
+           If key == slice(float,float,(float)), the start and stop values of the slice are interpreted as the borders of
+           the bins to be sliced, and the step is interpreted as the width of the bins for rebinning.
+           In this case, the start and stop values have to be between the borders of the first and last point.
+
+        Args:
+            key (int | slice): _description_
+
+        Returns:
+            DataSet: New data set with the sliced points.
+        """
+        onestep = "onestep"
+        if isinstance(key, slice):
+            # Get the start, stop, and step from the slice
+            start = key.start if (key.start or key.start == 0) else None
+            stop  = key.stop  if key.stop else None
+            if any([isinstance(s, float) for s in [start, stop]]):
+                # assert isinstance(key.step, int) or not key.step, "The step has to be integer."
+
+                n_points = len(self.values)
+
+                start_index = 0
+                stop_index  = n_points
+                for i in range(n_points):
+                    if (start or abs(start) < 1e-10) and (start < self.left_edges[i] or abs(start - self.left_edges[i]) < 1e-10):
+                        break
+                    start_index +=1
+
+                if stop == onestep:
+                    stop_index = start_index + 1
+                else:
+                    for i in range(n_points-1, -1, -1):
+                        if (not stop) or stop >= self.right_edges[i] or abs(stop - self.right_edges[i]) < 1e-10:
+                            break
+                        stop_index -= 1
+
+                start = start_index
+                stop  = stop_index
+
+            partial_histogram =  HistogramData(
+                                    observable  = self.observable,
+                                    name        = self.name,
+                                    order       = self.order,
+                                    left_edges  = self.left_edges[start:stop],
+                                    right_edges = self.right_edges[start:stop],
+                                    values      = self.values[start:stop],
+                                    errors      = self.errors[start:stop],
+                                    style       = self.style.copy(),
+                                )
+
+            if isinstance(key.step, float) or isinstance(key.step, np.ndarray):
+                partial_histogram = partial_histogram.rebin(width_bins=key.step)
+            else:
+                if key.step is not None and key.step != 1:
+                    raise TypeError(f"The step has to be a float, since its used for rebinning, but it is of type {type(key.step)}.")
+
+            return partial_histogram
+
+        elif isinstance(key, int):
+            if key < 0: # Handle negative indices
+                key += len(self.points)
+            if key < 0 or key >= len(self.points):
+                raise IndexError(f"The index {key:d} is out of range.")
+            return self.__getitem__(slice(key,key+1))
+        elif isinstance(key, float):
+            # Find bin which contains the given value.
+            return self.__getitem__(slice(key, onestep))
+        else:
+            raise TypeError(f"Invalid argument type, {type(key)}.")
+
     def __mul__(self, other):
         if type(self) is type(other):
             if not np.allclose(self.bins, other.bins):
@@ -237,7 +308,7 @@ class HistogramData:
                 right_edges = new_right_edges,
                 values      = new_values,
                 errors      = new_errors,
-                style       = self.style
+                style       = self.style.copy(),
             )
 
 
