@@ -18,6 +18,7 @@ class HistogramData:
     errors: np.ndarray
     style: Dict[str, Any] = field(default_factory=dict)
     colors: ClassVar[Dict[str, str]]
+    labels: ClassVar[Dict[str, str]]
 
     def __post_init__(self):
         if not self.style:
