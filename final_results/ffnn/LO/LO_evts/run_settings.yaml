@@ -36,7 +36,7 @@ parameters:
     name: histogram_dir
     value:
       __type__: path
-      value: ../../../../ML_FILES/UU_LO
+      value: ../../../../../../ML_FILES/UU_LO
   input_choice:
     fit: false
     name: input_choice
@@ -54,7 +54,7 @@ parameters:
     name: mlfiles
     value:
     - __type__: path
-      value: ../../../../ML_FILES/UU_LO/pwgevents-{0001..0250}.ml
+      value: ../../../../../../ML_FILES/UU_LO/pwgevents-{0001..0250}.ml
   model:
     fit: false
     name: model
@@ -82,7 +82,7 @@ parameters:
     name: outputdir
     value:
       __type__: path
-      value: /scratch/jlinder/polarisation_tagging/full_runs/FFNN_paper_4extra_layers/LO/scan_runs/trial_00000
+      value: .
   patience:
     fit: false
     name: patience

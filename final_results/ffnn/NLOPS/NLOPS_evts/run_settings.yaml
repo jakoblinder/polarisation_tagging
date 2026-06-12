@@ -2,7 +2,7 @@ parameters:
   batch_size:
     fit: false
     name: batch_size
-    value: 3400
+    value: 1000
   cache_events:
     fit: false
     name: cache_events
@@ -36,7 +36,7 @@ parameters:
     name: histogram_dir
     value:
       __type__: path
-      value: ../../../../ML_FILES/UU_NLO
+      value: ../../../../../../ML_FILES/UU_NLO
   input_choice:
     fit: false
     name: input_choice
@@ -48,23 +48,23 @@ parameters:
   learning_rate:
     fit: false
     name: learning_rate
-    value: 0.00379359279715904
+    value: 0.0015933471616277216
   mlfiles:
     fit: false
     name: mlfiles
     value:
     - __type__: path
-      value: ../../../../ML_FILES/UU_NLO/output_shower_events-{0001..1000}.ml
+      value: ../../../../../../ML_FILES/UU_NLO/output_shower_events-{0001..1000}.ml
   model:
     fit: false
     name: model
-    value: FFNN_EMB_1024_512_256_128_64_BatchNorm
+    value: FFNN_paper_4extraLayers_BatchNorm
   model_dir:
     fit: false
     name: model_dir
     value:
       __type__: path
-      value: /scratch/jlinder/polarisation_tagging/full_runs/Autoencoder/NLOPS/scan_runs/trial_00000
+      value: /scratch/jlinder/polarisation_tagging/full_runs/FFNN_paper_4extra_layers/NLOPS/scan_runs/trial_00000
   n_generated_events:
     fit: false
     name: n_generated_events
@@ -82,7 +82,7 @@ parameters:
     name: outputdir
     value:
       __type__: path
-      value: /scratch/jlinder/polarisation_tagging/full_runs/Autoencoder/NLOPS/scan_runs/trial_00000
+      value: .
   patience:
     fit: false
     name: patience

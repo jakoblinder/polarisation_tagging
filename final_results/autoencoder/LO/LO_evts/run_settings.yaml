@@ -2,7 +2,7 @@ parameters:
   batch_size:
     fit: false
     name: batch_size
-    value: 1000
+    value: 4200
   cache_events:
     fit: false
     name: cache_events
@@ -36,11 +36,17 @@ parameters:
     name: histogram_dir
     value:
       __type__: path
-      value: ../../../../ML_FILES/UU_NLO
+      value: ../../../../../../ML_FILES/UU_LO
   input_choice:
     fit: false
     name: input_choice
     value: null
+  inputdir:
+    fit: false
+    name: inputdir
+    value:
+      __type__: path
+      value: /ptmp/mpp/jlinder/ML_Giovanni/polarisation_tagging/full_runs/Autoencoder/LO/scan_runs/trial_00000
   labframe:
     fit: false
     name: labframe
@@ -48,23 +54,29 @@ parameters:
   learning_rate:
     fit: false
     name: learning_rate
-    value: 0.0015933471616277216
+    value: 0.002628766042079221
   mlfiles:
     fit: false
     name: mlfiles
     value:
     - __type__: path
-      value: ../../../../ML_FILES/UU_NLO/output_shower_events-{0001..1000}.ml
+      value: ../../../../../../ML_FILES/UU_LO/pwgevents-{0001..0250}.ml
   model:
     fit: false
     name: model
-    value: FFNN_paper_4extraLayers_BatchNorm
+    value: FFNN_EMB_1024_512_256_128_64_BatchNorm
   model_dir:
     fit: false
     name: model_dir
     value:
       __type__: path
-      value: /scratch/jlinder/polarisation_tagging/full_runs/FFNN_paper_4extra_layers/NLOPS/scan_runs/trial_00000
+      value: /ptmp/mpp/jlinder/ML_Giovanni/polarisation_tagging/full_runs/Autoencoder/LO/scan_runs/trial_00000
+  model_weight_file:
+    fit: false
+    name: model_weight_file
+    value:
+      __type__: path
+      value: /ptmp/mpp/jlinder/ML_Giovanni/polarisation_tagging/full_runs/Autoencoder/LO/scan_runs/trial_00000/FFNN_EMB_1024_512_256_128_64_BatchNorm_model_weights_best.pt
   n_generated_events:
     fit: false
     name: n_generated_events
@@ -82,7 +94,7 @@ parameters:
     name: outputdir
     value:
       __type__: path
-      value: /scratch/jlinder/polarisation_tagging/full_runs/FFNN_paper_4extra_layers/NLOPS/scan_runs/trial_00000
+      value: .
   patience:
     fit: false
     name: patience
