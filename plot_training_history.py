@@ -7,9 +7,29 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
+from typing import Any, Dict, List
+
+from ml_events_utils import stylesheet_default
+from ml_events_utils import color_gio as color_dict
+# from ml_events_utils import color_deep as color_dict
+
+plt.style.use(stylesheet_default)
+
+def move_offset_factor(ax, ylabel):
+    # Move the y-axis offset text (the "x 1e-3" part) into the y-axis label and hide the original offset text to avoid overlap with the title.
+    ax.figure.draw_without_rendering()
+    offset = ax.yaxis.get_major_formatter().get_offset()
+    offset = r" / $" + offset[7:] if offset else ""
+    ax.yaxis.set_label_text(ylabel + offset)
+    ax.yaxis.offsetText.set_visible(False)
 
 
-def plot_training_history(model_dir, model_name, use_log_scale=True):
+def plot_training_history(model_dir: Path,
+                          model_name: str,
+                          use_log_scale:bool=True,
+                          plot_file: Path = None,
+                          plot_settings: Dict[str, Any] = {},
+                         ) -> tuple:
     """
     Generate and save a training history plot from CSV files.
 
@@ -27,6 +47,7 @@ def plot_training_history(model_dir, model_name, use_log_scale=True):
     tuple : (hist_loss, hist_val_loss, hist_lr)
         Numpy arrays containing the training history
     """
+    model_dir = Path(model_dir)
 
     # Define file paths
     train_loss_file = model_dir / f"{model_name}_train_loss.csv"
@@ -60,42 +81,76 @@ def plot_training_history(model_dir, model_name, use_log_scale=True):
     # Generate plot
     print(f"Generating training history plot...")
     fig, ax1 = plt.subplots(figsize=(10, 7))
+    ax2 = ax1.twinx()
+    axs = [ax1, ax2]
 
     # Primary y-axis for loss
-    ax1.set_xlabel("Epoch")
-    ax1.set_ylabel("Loss", color='black')
-    ax1.plot(epochs_train, hist_loss,     label="Avg training loss", color='blue')
-    ax1.plot(epochs_val,   hist_val_loss, label="Avg validation loss", color='orange')
-    ax1.tick_params(axis='y', labelcolor='black')
+    axs[0].set_xlabel("Epoch")
+    axs[0].set_ylabel("Loss", color='black')
+    axs[0].plot(epochs_train, hist_loss,     label="Avg training loss", color='blue')
+    axs[0].plot(epochs_val,   hist_val_loss, label="Avg validation loss", color='orange')
+    axs[0].tick_params(axis='y', labelcolor='black')
     # ax1.set_ylim(ymin=0)
-    ax1.grid()
-    ax1.legend(loc='upper left')
+    axs[0].grid()
+    axs[0].legend(loc='upper left')
     if use_log_scale:
         # Scale y axis logarithmically
-        ax1.set_yscale('log')
+        axs[0].set_yscale('log')
 
         # Adjust tick s for y-axis. Not that if also the ticks for the x-axis want to be adjusted, a new loglocator needs to be used.
         locmajy1 = LogLocator(base=10, numticks=100)
         locminy1 = LogLocator(base=10, subs=np.arange(2, 10) * 0.1, numticks=1000) # subs=(0.2,0.4,0.6,0.8)
 
-        ax1.yaxis.set_major_locator(locmajy1)
-        ax1.yaxis.set_minor_locator(locminy1)
-        # ax1.set_yscale('log')
+        axs[0].yaxis.set_major_locator(locmajy1)
+        axs[0].yaxis.set_minor_locator(locminy1)
+        # axs[0].set_yscale('log')
 
     # Secondary y-axis for learning rate
-    ax2 = ax1.twinx()
-    ax2.set_ylabel("Learning Rate", color='red')
-    ax2.plot(epochs_lr, hist_lr, label="Learning rate", color='red')
-    ax2.tick_params(axis='y', labelcolor='red')
-    ax2.legend(loc='upper right')
+    axs[1].set_ylabel("Learning Rate", color='red')
+    axs[1].plot(epochs_lr, hist_lr, label="Learning rate", color='red')
+    axs[1].tick_params(axis='y', labelcolor='red')
+    axs[1].legend(loc='upper right')
+
+    for ax in axs:
+        move_offset_factor(ax, ax.get_ylabel())
     # if use_log_scale:
     #     ax2.set_yscale('log')
 
-    plt.title(f"Training History for {model_name}")
+
+    plt.title(plot_settings.get("title", f"Training History for {model_name}"))
     plt.tight_layout()
 
+    yranges = plot_settings.get("yranges", [])
+    for ax, yrange in zip(axs, yranges):
+        if yrange is not None:
+            if isinstance(yrange, (list, tuple)) and len(yrange) == 2:
+                if yrange[0] is not None and yrange[1] is not None:
+                    ax.set_ylim(yrange)
+                elif yrange[0] is not None:
+                    ax.set_ylim(bottom=yrange[0])
+                elif yrange[1] is not None:
+                    ax.set_ylim(top=yrange[1])
+            elif isinstance(yrange, (list, tuple)) and len(yrange) == 1:
+                ax.set_ylim(bottom=yrange[0])
+
+    xrange = plot_settings.get("xrange", [])
+    if xrange is not None:
+        if isinstance(xrange, (list, tuple)) and len(xrange) == 2:
+            if xrange[0] is not None and xrange[1] is not None:
+                ax.set_xlim(xrange)
+            elif xrange[0] is not None:
+                ax.set_xlim(left=xrange[0])
+            elif xrange[1] is not None:
+                ax.set_xlim(right=xrange[1])
+        elif isinstance(xrange, (list, tuple)) and len(xrange) == 1:
+            ax.set_xlim(left=xrange[0])
+
     # Save plot
-    plot_file = model_dir / f"{model_name}_training_history.pdf"
+    if plot_file is None:
+        plot_file = model_dir / f"{model_name}_training_history.pdf"
+    else:
+        plot_file = Path(plot_file)
+
     plt.savefig(plot_file, bbox_inches='tight')
     print(f"Plot saved as: {plot_file}")
     plt.close()
