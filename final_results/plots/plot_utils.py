@@ -3,6 +3,36 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+
+network_labels = {
+    "autoencoder": r"AE",
+    "ffnn":        r"FFNN",
+    "pn":          r"PN",
+    "powheg":      r"POWHEG",
+    "rfr":         r"RFR",
+}
+
+order_latex = {
+    "lo":   r"$\mathrm{LO}$",
+    "lows": r"$\mathrm{LO}+\mathrm{Sud.}$",
+    "lops": r"$\mathrm{LO}+\mathrm{PS}$",
+    "nlo":  r"$\mathrm{NLO}$",
+    "nlows":r"$\mathrm{NLO}+\mathrm{Sud.}$",
+    "nlops":r"$\mathrm{NLO}+\mathrm{PS}$",
+}
+
+observables_latex = {
+    "totxsec": r"$\sigma_{\mathrm{tot}}$",
+    "ptep":    r"$p_{\mathrm{T}, \, e^{+}}$",
+    "yep":     r"$y_{e^{+}}$",
+    "cthep":   r"$\cos \theta^{*}_{e^{+}}$",
+    "mepem":   r"$m_{e^{+} e^{-}}$",
+    "dphiee":  r"$\Delta \phi_{e^{+} e^{-}}$",  # Azimuthal angle difference between e+ e-, coming from one of the Z bosons.
+    "ptee":    r"$p_{\mathrm{T}, \, e^{+} e^{-}}$",
+    "pt4l":    r"$p_{\mathrm{T}, \, 4l}$",
+    "rll":     r"$r_{\mathrm{LL}}$",
+}
+
 def create_subplots(n_plots, rcParams):
     mpl.rcParams.update(rcParams)
     size = mpl.rcParams['figure.figsize']
