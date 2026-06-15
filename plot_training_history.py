@@ -85,10 +85,10 @@ def plot_training_history(model_dir: Path,
     axs = [ax1, ax2]
 
     # Primary y-axis for loss
-    axs[0].set_xlabel("Epoch")
-    axs[0].set_ylabel("Loss", color='black')
-    axs[0].plot(epochs_train, hist_loss,     label="Avg training loss", color='blue')
-    axs[0].plot(epochs_val,   hist_val_loss, label="Avg validation loss", color='orange')
+    axs[0].set_xlabel("epoch")
+    axs[0].set_ylabel("loss", color='black')
+    axs[0].plot(epochs_train, hist_loss,     label="average training loss",   color='blue')
+    axs[0].plot(epochs_val,   hist_val_loss, label="average validation loss", color='orange')
     axs[0].tick_params(axis='y', labelcolor='black')
     # ax1.set_ylim(ymin=0)
     axs[0].grid()
@@ -106,8 +106,8 @@ def plot_training_history(model_dir: Path,
         # axs[0].set_yscale('log')
 
     # Secondary y-axis for learning rate
-    axs[1].set_ylabel("Learning Rate", color='red')
-    axs[1].plot(epochs_lr, hist_lr, label="Learning rate", color='red')
+    axs[1].set_ylabel("learning Rate", color='red')
+    axs[1].plot(epochs_lr, hist_lr, label="learning rate", color='red')
     axs[1].tick_params(axis='y', labelcolor='red')
     axs[1].legend(loc='upper right')
 
