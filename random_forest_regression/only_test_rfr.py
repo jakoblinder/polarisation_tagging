@@ -52,7 +52,8 @@ else:
     print(' You are parsing NLOPS events')
 
 #sigma_uu = np.array([0.15183819E-01,0.71627436E-05])
-sigma_ll = np.array([0.8918E-03, 0.0003E-03])
+#sigma_ll = np.array([0.8918E-03, 0.0003E-03])
+sigma_ll = np.array([0.6656E-03, 0.0003E-03])
 
 data_dir = Path("../../events/ML_FILES/UU_NLO")
 if str(args.is_lo) == 'lo':
