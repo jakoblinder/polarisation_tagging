@@ -6,6 +6,7 @@ from matplotlib.ticker import LogLocator
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -29,6 +30,7 @@ def plot_training_history(model_dir: Path,
                           use_log_scale:bool=True,
                           plot_file: Path = None,
                           plot_settings: Dict[str, Any] = {},
+                          rcParams: Dict[str, Any] = {}
                          ) -> tuple:
     """
     Generate and save a training history plot from CSV files.
@@ -79,6 +81,7 @@ def plot_training_history(model_dir: Path,
     print(f"Loaded {len(hist_loss)} epochs of training data")
 
     with plt.style.context(stylesheet_default):
+        mpl.rcParams.update(rcParams)
         # Generate plot
         print(f"Generating training history plot...")
         fig, ax1 = plt.subplots(figsize=(10, 7))
