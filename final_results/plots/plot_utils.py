@@ -1,8 +1,19 @@
 # Some function useful for plotting.
+import sys
+
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from pathlib import Path
+
+repo_path = Path(__file__).parent.parent.parent.resolve()
+# Add repository to path
+sys.path.insert(0, str(repo_path))
+
+from ml_events_utils import stylesheet_default
+# from ml_events_utils import color_gio as color_dict
+from ml_events_utils import color_deep as color_dict
 
 network_labels = {
     "autoencoder": r"AE",
@@ -10,6 +21,18 @@ network_labels = {
     "pn":          r"PN",
     "powheg":      r"POWHEG",
     "rfr":         r"RFR",
+    "rfrct":       r"RFR$_{\mathrm{ct}}$",  # Used to compare different input features for the RFR. (rfr normally corresponds to rfrct.)
+    "rfrep":       r"RFR$_{\mathrm{ep}}$",  # Used to compare different input features for the RFR.
+}
+
+network_colors = {
+    "Autoencoder": color_dict["green"],
+    "FFNN":        color_dict["red"],
+    "PN":          color_dict["orange"],
+    "POWHEG":      color_dict["black"],
+    "RFR":         color_dict["blue"],
+    "RFRct":       color_dict["blue"],
+    "RFRep":       color_dict["pink"],
 }
 
 order_latex = {
