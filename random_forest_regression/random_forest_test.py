@@ -271,6 +271,7 @@ if args.model == 'all':
 
 
     f = open("histograms_rfr_ct_" + args.order+ "_updated.top", "w")
+    f2 = open("histograms_rfr_ep_" + args.order+ "_updated.top", "w")
     
     fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(11.5, 17))
     ax1 = axes[0, 0]
@@ -293,6 +294,7 @@ if args.model == 'all':
     yep2 = df.loc[X2_test.index, "kin_y_1"]
     ax1.set_title("Positron rapidity "+t_app)
     hist_vals, bin_edges = np.histogram(yep, range=(-2.5,2.5), bins=bins, weights=w_pred)
+    hist_vals2, bin_edges2 = np.histogram(yep2, range=(-2.5,2.5), bins=bins, weights=w_pred2) # add RFR_ep
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.clip(np.digitize(yep, bin_edges) - 1, 0, bins-1)
     bin_var = np.zeros(bins)
@@ -333,17 +335,21 @@ if args.model == 'all':
 
     
     print('\n# yep ', file=f)
+    print('\n# yep ', file=f2) # add RFR_ep
     left_edges  = bin_centers - 0.5 * bin_width
     right_edges = bin_centers + 0.5 * bin_width
     norm = 1e+03 / (N_tot * r_test * bin_width)
     values = hist_vals * norm
+    values2 = hist_vals2 * norm # add RFR_ep
     errors = bin_sigma * norm
     for i in range(len(values)):
         left  = left_edges[i]
         right = right_edges[i]
         val   = values[i]
+        val2   = values2[i] # add RFR_ep
         err   = errors[i]
         print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
+        print(f"{left:.6e} {right:.6e} {val2:.6e} {err:.6e}", file=f2) # add RFR_ep
 
 
 
@@ -352,6 +358,7 @@ if args.model == 'all':
     dphill2 = df.loc[X2_test.index, "dphiZ1"]
     ax7.set_title("Positron-electron azimuthal separation "+t_app)
     hist_vals, bin_edges = np.histogram(dphill, range=(0,180), bins=bins, weights=w_pred)
+    hist_vals2, bin_edges2 = np.histogram(dphill2, range=(0,180), bins=bins, weights=w_pred2)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.clip(np.digitize(dphill, bin_edges) - 1, 0, bins-1)
     bin_var = np.zeros(bins)
@@ -391,17 +398,21 @@ if args.model == 'all':
     ax7.set_ylabel("d$\\sigma/$d$\Delta\phi_{\\tt e^+e^-}$ [fb]")
 
     print('\n# dphiee ', file=f)
+    print('\n# dphiee ', file=f2)
     left_edges  = bin_centers - 0.5 * bin_width
     right_edges = bin_centers + 0.5 * bin_width
     norm = 1e+03 / (N_tot * r_test * bin_width)
     values = hist_vals * norm
+    values2 = hist_vals2 * norm
     errors = bin_sigma * norm
     for i in range(len(values)):
         left  = left_edges[i]
         right = right_edges[i]
         val   = values[i]
+        val2   = values2[i]
         err   = errors[i]
         print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
+        print(f"{left:.6e} {right:.6e} {val2:.6e} {err:.6e}", file=f2)
 
 
 
@@ -414,6 +425,7 @@ if args.model == 'all':
     cth2 = df.loc[X2_test.index, "cos_theta_p1_p12"]
     ax3.set_title("Positron decay angle "+t_app)
     hist_vals, bin_edges = np.histogram(cth, range=(-1.0,1.0), bins=bins, weights=w_pred)
+    hist_vals2, bin_edges2 = np.histogram(cth2, range=(-1.0,1.0), bins=bins, weights=w_pred2)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(cth, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
@@ -455,17 +467,21 @@ if args.model == 'all':
     ax3.set_ylabel("d$\\sigma/$dcos$\\theta^*_{\\tt e^+}$ [fb]")
 
     print('\n# cthep ', file=f)
+    print('\n# cthep ', file=f2)
     left_edges  = bin_centers - 0.5 * bin_width
     right_edges = bin_centers + 0.5 * bin_width
     norm = 1e+03 / (N_tot * r_test * bin_width)
     values = hist_vals * norm
+    values2 = hist_vals2 * norm
     errors = bin_sigma * norm
     for i in range(len(values)):
         left  = left_edges[i]
         right = right_edges[i]
         val   = values[i]
+        val2   = values2[i]
         err   = errors[i]
         print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
+        print(f"{left:.6e} {right:.6e} {val2:.6e} {err:.6e}", file=f2)
 
 
     
@@ -474,6 +490,7 @@ if args.model == 'all':
     rll2 = y2_test
     ax2.set_title("$r_{\\tt LL}$ label "+t_app)
     hist_vals, bin_edges = np.histogram(rll1, range=(-0.02, 1.0), bins=bins, weights=z_uu) # w_pred)
+    hist_vals2, bin_edges2 = np.histogram(rll2, range=(-0.02, 1.0), bins=bins, weights=z_uu) # w_pred)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(rll1, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
@@ -509,17 +526,21 @@ if args.model == 'all':
     ax2.set_ylabel("Normalised distribution")
     
     print('\n# rll ', file=f)
+    print('\n# rll ', file=f2)
     left_edges  = bin_centers - 0.5 * bin_width
     right_edges = bin_centers + 0.5 * bin_width
     norm = 1e+03 / (N_tot * r_test * bin_width)
     values = hist_vals * norm
+    values2 = hist_vals2 * norm
     errors = bin_sigma * norm
     for i in range(len(values)):
         left  = left_edges[i]
         right = right_edges[i]
         val   = values[i]
+        val2   = values2[i]
         err   = 0e+00 # errors[i]
         print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
+        print(f"{left:.6e} {right:.6e} {val2:.6e} {err:.6e}", file=f2)
 
     ax2.text(0.6, 0.50, f"$\\sigma$(LL, MC sim)   = {sigLLsim[0]:.4f}({(sigLLsim[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
     ax2.text(0.6, 0.46, f"$\\sigma$(LL, true rLL) = {sigLLtrue[0]:.4f}({(sigLLtrue[1]*1e+04):.0f}) fb",transform=ax2.transAxes,ha="center")
@@ -568,6 +589,7 @@ if args.model == 'all':
     pt4lep2 = df.loc[X2_test.index, "pt4l"]
     ax4.set_title("Four-lepton transverse momentum "+t_app)
     hist_vals, bin_edges = np.histogram(pt4lep, range=(0.0,300.0), bins=bins, weights=w_pred)
+    hist_vals2, bin_edges2 = np.histogram(pt4lep2, range=(0.0,300.0), bins=bins, weights=w_pred2)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(pt4lep, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
@@ -606,17 +628,21 @@ if args.model == 'all':
     ax4.set_yscale("log")
 
     print('\n# pt4l ', file=f)
+    print('\n# pt4l ', file=f2)
     left_edges  = bin_centers - 0.5 * bin_width
     right_edges = bin_centers + 0.5 * bin_width
     norm = 1e+03 / (N_tot * r_test * bin_width)
     values = hist_vals * norm
+    values2 = hist_vals2 * norm
     errors = bin_sigma * norm
     for i in range(len(values)):
         left  = left_edges[i]
         right = right_edges[i]
         val   = values[i]
+        val2   = values2[i]
         err   = errors[i]
         print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
+        print(f"{left:.6e} {right:.6e} {val2:.6e} {err:.6e}", file=f2)
 
 
 
@@ -626,6 +652,7 @@ if args.model == 'all':
     ptep2 = df.loc[X2_test.index, "kin_pt_1"]
     ax8.set_title("Positron transverse momentum "+t_app)
     hist_vals, bin_edges = np.histogram(ptep, range=(0.0,400.0), bins=bins, weights=w_pred)
+    hist_vals2, bin_edges2 = np.histogram(ptep2, range=(0.0,400.0), bins=bins, weights=w_pred2)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(ptep, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
@@ -664,17 +691,21 @@ if args.model == 'all':
     ax8.set_yscale("log")
 
     print('\n# ptep ', file=f)
+    print('\n# ptep ', file=f2)
     left_edges  = bin_centers - 0.5 * bin_width
     right_edges = bin_centers + 0.5 * bin_width
     norm = 1e+03 / (N_tot * r_test * bin_width)
     values = hist_vals * norm
+    values2 = hist_vals2 * norm
     errors = bin_sigma * norm
     for i in range(len(values)):
         left  = left_edges[i]
         right = right_edges[i]
         val   = values[i]
+        val2   = values2[i]
         err   = errors[i]
         print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
+        print(f"{left:.6e} {right:.6e} {val2:.6e} {err:.6e}", file=f2)
 
 
     bins = 40 # for physical observables
@@ -682,6 +713,7 @@ if args.model == 'all':
     mee2 = df.loc[X2_test.index, "MZ1"]
     ax9.set_title("Positron-electron invariant mass "+t_app)
     hist_vals, bin_edges = np.histogram(mee, range=(81,101), bins=bins, weights=w_pred)
+    hist_vals2, bin_edges2 = np.histogram(mee2, range=(81,101), bins=bins, weights=w_pred2)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(mee, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
@@ -720,17 +752,21 @@ if args.model == 'all':
     ax9.set_yscale("log")
 
     print('\n# mepem ', file=f)
+    print('\n# mepem ', file=f2)
     left_edges  = bin_centers - 0.5 * bin_width
     right_edges = bin_centers + 0.5 * bin_width
     norm = 1e+03 / (N_tot * r_test * bin_width)
+    values2 = hist_vals2 * norm
     values = hist_vals * norm
     errors = bin_sigma * norm
     for i in range(len(values)):
         left  = left_edges[i]
         right = right_edges[i]
         val   = values[i]
+        val2   = values2[i]
         err   = errors[i]
         print(f"{left:.6e} {right:.6e} {val:.6e} {err:.6e}", file=f)
+        print(f"{left:.6e} {right:.6e} {val2:.6e} {err:.6e}", file=f2)
 
 
     
@@ -767,6 +803,7 @@ if args.model == 'all':
     ptep2 = df.loc[X2_test.index, "pt4l"]
     ax4.set_title("Four-lepton transverse momentum "+t_app)
     hist_vals, bin_edges = np.histogram(ptep, range=(0.0,300.0), bins=bins, weights=w_pred)
+    hist_vals2, bin_edges2 = np.histogram(ptep2, range=(0.0,300.0), bins=bins, weights=w_pred2)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(ptep, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
@@ -810,12 +847,6 @@ if args.model == 'all':
     ax4.set_xlabel("$p_{\\tt T, 4\ell}$ [GeV]")
     ax4.set_ylabel("d$\\sigma/$d$p_{\\tt T, 4\ell}$ [fb/GeV]")
     ax4.set_yscale("log")
-
-
-
-
-
-
 
     
     

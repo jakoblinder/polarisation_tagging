@@ -1,7 +1,60 @@
 # Some function useful for plotting.
+import sys
+
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+
+from pathlib import Path
+
+repo_path = Path(__file__).parent.parent.parent.resolve()
+# Add repository to path
+sys.path.insert(0, str(repo_path))
+
+from ml_events_utils import stylesheet_default
+# from ml_events_utils import color_gio as color_dict
+from ml_events_utils import color_deep as color_dict
+
+network_labels = {
+    "autoencoder": r"AE",
+    "ffnn":        r"FFNN",
+    "pn":          r"PN",
+    "powheg":      r"POWHEG",
+    "rfr":         r"RFR",
+    "rfrct":       r"RFR$_{\mathrm{ct}}$",  # Used to compare different input features for the RFR. (rfr normally corresponds to rfrct.)
+    "rfrep":       r"RFR$_{\mathrm{ep}}$",  # Used to compare different input features for the RFR.
+}
+
+network_colors = {
+    "Autoencoder": color_dict["green"],
+    "FFNN":        color_dict["red"],
+    "PN":          color_dict["orange"],
+    "POWHEG":      color_dict["black"],
+    "RFR":         color_dict["blue"],
+    "RFRct":       color_dict["blue"],
+    "RFRep":       color_dict["pink"],
+}
+
+order_latex = {
+    "lo":   r"$\mathrm{LO}$",
+    "lows": r"$\mathrm{LO}+\mathrm{Sud.}$",
+    "lops": r"$\mathrm{LO}+\mathrm{PS}$",
+    "nlo":  r"$\mathrm{NLO}$",
+    "nlows":r"$\mathrm{NLO}+\mathrm{Sud.}$",
+    "nlops":r"$\mathrm{NLO}+\mathrm{PS}$",
+}
+
+observables_latex = {
+    "totxsec": r"$\sigma_{\mathrm{tot}}$",
+    "ptep":    r"$p_{\mathrm{T}, \, e^{+}}$",
+    "yep":     r"$y_{e^{+}}$",
+    "cthep":   r"$\cos \theta^{*}_{e^{+}}$",
+    "mepem":   r"$m_{e^{+} e^{-}}$",
+    "dphiee":  r"$\Delta \phi_{e^{+} e^{-}}$",  # Azimuthal angle difference between e+ e-, coming from one of the Z bosons.
+    "ptee":    r"$p_{\mathrm{T}, \, e^{+} e^{-}}$",
+    "pt4l":    r"$p_{\mathrm{T}, \, 4l}$",
+    "rll":     r"$r_{\mathrm{LL}}$",
+}
 
 def create_subplots(n_plots, rcParams):
     mpl.rcParams.update(rcParams)
