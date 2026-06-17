@@ -301,7 +301,6 @@ class HistogramData:
         assert abs(bins[1] - bins[0])*tolerance_fac >= abs(self.bins[1] - self.bins[0]), "The new bins have to be wider than the old."
 
         new_points = []
-
         jpoint = 0
         for ibin in range(len(bins) - 1):
             # Set new point to the first point which is in the bin:
