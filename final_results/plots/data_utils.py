@@ -242,7 +242,7 @@ class HistogramData:
 
         new_value = (h1 * w1 + h2 * w2) / (w1 + w2)
         # Combine statistical uncertainties: Add them quadratically.
-        new_error = np.sqrt( ((w1 * h1_stat)**2 + (w2 * h2_stat)**2)) / (w1 + w2)
+        new_error = np.sqrt( ((w1 * h1_stat)**2 + (w2 * h2_stat)**2) ) / (w1 + w2)
 
         return [point1[0], point2[1], new_value, new_error]
 
@@ -255,7 +255,7 @@ class HistogramData:
 
         new_points = []
         for i in range(0, len(self.values), n_bins):
-            new_point = [self.left_edges[i], self.right_edges[min(i + n_bins - 1, len(self.values) - 1)], self.values[i], self.errors[i]]
+            new_point = [self.left_edges[i], self.right_edges[i], self.values[i], self.errors[i]]
 
             for j in range(i + 1, min(i + n_bins, len(self.values))):
                 new_point = self.add_two_bins(new_point, [self.left_edges[j], self.right_edges[j], self.values[j], self.errors[j]])
