@@ -62,7 +62,13 @@ def train_loop(
             - :math:`\text{threshold}` is the allowed deviation (default: 0.01).
             - :math:`\text{importance}` is the weight of the penalty term (default: 1.0).
             - :math:`\epsilon` is a small constant to avoid division by zero (default: 1e-9).
-
+    :param eps: float, optional (default=1e-12)
+        A small constant used to prevent division by zero in penalty calculations.
+    :param target_col: int, optional (default=0)
+        The column index in the labels (y) that contains the target values used for loss computation (for example the LL/ UU cross section ratio).
+    :param weight_col: int, optional (default=1)
+        The column index in the labels (y) that contains the denominator of the target_col (for example the UU cross section) used for weighted loss computation.
+        If the specified column does not exist, the loss will be computed as an unweighted mean over the batch.
     :param args: tuple
         Additional positional arguments (not used in this implementation).
     :param kwargs: dict
