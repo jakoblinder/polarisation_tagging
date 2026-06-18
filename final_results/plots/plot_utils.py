@@ -23,6 +23,7 @@ network_labels = {
     "rfr":         r"RFR",
     "rfrct":       r"RFR$_{\mathrm{ct}}$",  # Used to compare different input features for the RFR. (rfr normally corresponds to rfrct.)
     "rfrep":       r"RFR$_{\mathrm{ep}}$",  # Used to compare different input features for the RFR.
+    "dsim":        r"direct sim.",          # Direct simulation of the process with POWHEG, used for comparison with the reweighting approach.
 }
 
 network_colors = {
@@ -33,6 +34,7 @@ network_colors = {
     "RFR":         color_dict["blue"],
     "RFRct":       color_dict["blue"],
     "RFRep":       color_dict["pink"],
+    "dsim":        color_dict["gray"],
 }
 
 order_latex = {
