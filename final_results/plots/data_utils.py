@@ -89,6 +89,8 @@ class HistogramData:
 
             if isinstance(key.step, float) or isinstance(key.step, np.ndarray):
                 partial_histogram = partial_histogram.rebin(width_bins=key.step)
+            elif isinstance(key.step, int) and key.step != 1:
+                partial_histogram = partial_histogram.rebin_int(n_bins=key.step)
             else:
                 if key.step is not None and key.step != 1:
                     raise TypeError(f"The step has to be a float, since its used for rebinning, but it is of type {type(key.step)}.")
@@ -217,6 +219,66 @@ class HistogramData:
             style       = self.style.copy(),
         )
 
+    @staticmethod
+    def add_two_bins(point1, point2):
+        tolerance_fac = 1. + 1e-8
+        # Check if the two points have one commmon edge.
+        if np.isclose(point1[1], point2[0], rtol=tolerance_fac):
+            # point1 is on the left of point2, so the new bin will be [point1[0], point2[1]]
+            pass
+        elif np.isclose(point1[0], point2[1], rtol=tolerance_fac):
+            # point2 is on the left of point1, so the new bin will be [point2[0], point1[1]]
+            # swap the points to make point1 the left one:
+            point1, point2 = point2, point1
+        else:
+            raise ValueError(f"The two points, {point1} and {point2}, do not have a common edge, so they cannot be merged into one bin.")
+
+        w1      = abs(point1[1] - point1[0])
+        h1      = point1[2]
+        h1_stat = point1[3]
+        w2      = abs(point2[1] - point2[0])
+        h2      = point2[2]
+        h2_stat = point2[3]
+
+        new_value = (h1 * w1 + h2 * w2) / (w1 + w2)
+        # Combine statistical uncertainties: Add them quadratically.
+        new_error = np.sqrt( ((w1 * h1_stat)**2 + (w2 * h2_stat)**2) ) / (w1 + w2)
+
+        return [point1[0], point2[1], new_value, new_error]
+
+    def rebin_int(self, n_bins: int):
+        """Rebin the data set, by merging, starting from the left, n_bins old bins into one new bin.
+           Doing this avoid any numerical issues which could arise from merging bins with different borders, but it is less flexible than the rebin function, since it does not allow to specify the new bin borders directly.
+        """
+        if n_bins <= 0:
+            raise ValueError("n_bins has to be a positive integer.")
+
+        new_points = []
+        for i in range(0, len(self.values), n_bins):
+            new_point = [self.left_edges[i], self.right_edges[i], self.values[i], self.errors[i]]
+
+            for j in range(i + 1, min(i + n_bins, len(self.values))):
+                new_point = self.add_two_bins(new_point, [self.left_edges[j], self.right_edges[j], self.values[j], self.errors[j]])
+
+            new_points.append(new_point)
+
+        new_points = np.array(new_points)
+        new_left_edges  = new_points[:, 0]
+        new_right_edges = new_points[:, 1]
+        new_values      = new_points[:, 2]
+        new_errors      = new_points[:, 3]
+
+        return HistogramData(
+                observable  = self.observable,
+                name        = self.name,
+                order       = self.order,
+                left_edges  = new_left_edges,
+                right_edges = new_right_edges,
+                values      = new_values,
+                errors      = new_errors,
+                style       = self.style.copy(),
+            )
+
     def rebin(self, width_bins: float|list = None):
         """Rebin the data set, by merging all bins which have the same borders.
            This is useful for example to integrate a histogram.
@@ -225,7 +287,7 @@ class HistogramData:
             # Get the bins:
             width_bins = float(width_bins)
             bins = [self.left_edges[0], ]
-            while bins[-1] < self.right_edges[-1]:
+            while bins[-1] < self.right_edges[-1] and abs(bins[-1] - self.right_edges[-1]) > 1e-10:
                 bins.append(bins[-1] + width_bins)
         elif isinstance(width_bins, list):
             bins = np.array(width_bins)
@@ -238,34 +300,7 @@ class HistogramData:
         # Make sure the new bins are not smaller than the old ones:
         assert abs(bins[1] - bins[0])*tolerance_fac >= abs(self.bins[1] - self.bins[0]), "The new bins have to be wider than the old."
 
-        def add_two_bins(point1, point2):
-            # Check if the two points have one commmon edge.
-            if np.isclose(point1[1], point2[0], rtol=tolerance_fac):
-                # point1 is on the left of point2, so the new bin will be [point1[0], point2[1]]
-                pass
-            elif np.isclose(point1[0], point2[1], rtol=tolerance_fac):
-                # point2 is on the left of point1, so the new bin will be [point2[0], point1[1]]
-                # swap the points to make point1 the left one:
-                point1, point2 = point2, point1
-            else:
-                raise ValueError(f"The two points, {point1} and {point2}, do not have a common edge, so they cannot be merged into one bin.")
-
-            w1      = abs(point1[1] - point1[0])
-            h1      = point1[2]
-            h1_stat = point1[3]
-            w2      = abs(point2[1] - point2[0])
-            h2      = point2[2]
-            h2_stat = point2[3]
-
-            new_value = (h1 * w1 + h2 * w2) / (w1 + w2)
-            # Combine statistical uncertainties: Add them quadratically.
-            new_error = np.sqrt( ((w1 * h1_stat)**2 + (w2 * h2_stat)**2)) / (w1 + w2)
-
-            return [point1[0], point2[1], new_value, new_error]
-
-
         new_points = []
-
         jpoint = 0
         for ibin in range(len(bins) - 1):
             # Set new point to the first point which is in the bin:
@@ -284,7 +319,7 @@ class HistogramData:
                 if right_edge * tolerance_fac > new_right_edge and not (abs(right_edge) < 1e-9 and abs(new_right_edge) < 1e-9):
                     break
                 # Add up all points which are in the bin as well:
-                combined_point = add_two_bins(new_points[-1], [self.left_edges[jpoint], self.right_edges[jpoint], self.values[jpoint], self.errors[jpoint]])
+                combined_point = self.add_two_bins(new_points[-1], [self.left_edges[jpoint], self.right_edges[jpoint], self.values[jpoint], self.errors[jpoint]])
                 new_points[-1] = combined_point
                 jpoint += 1
 
@@ -304,7 +339,7 @@ class HistogramData:
 
         return HistogramData(
                 observable  = self.observable,
-                name       = self.name,
+                name        = self.name,
                 order       = self.order,
                 left_edges  = new_left_edges,
                 right_edges = new_right_edges,
