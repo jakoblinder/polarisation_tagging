@@ -192,6 +192,11 @@ if args.model == 'all':
     model = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=99, n_jobs=40, oob_score=True, bootstrap=True) # parallelise over 40 workers (~12 trees per worker)
     model.fit(X_train, y_train)
     model2 = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=99, n_jobs=40, oob_score=True, bootstrap=True) # parallelise over 40 workers (~12 trees per worker)
+
+
+    print(sum(est.tree_.node_count for est in model.estimators_))
+
+    
     model2.fit(X2_train, y2_train)    
     print(' now save models ... ')
     joblib.dump({"model": model, "features": X.columns.tolist()},"trained_RFR_"+ str(args.order) +"_train_events_"+ str(len(X_train)) +"_basis_ct.joblib")
