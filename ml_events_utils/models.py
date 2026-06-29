@@ -731,6 +731,6 @@ model_dict = {
     "ParticleNet": ParticleNet,
     "ParticleNet_big": lambda input_dim, *args, **kwargs: ParticleNet(input_dim, *args, **kwargs),
     "ParticleNet_best": lambda input_dim, *args, **kwargs: ParticleNet(input_dim, *args, embed_dim=80, num_layers=2), # Best model found by the LO scan
-    "ParticleNet_best_NLO": lambda input_dim, *args, **kwargs: ParticleNet(input_dim, *args, growing_edge=True, embed_dim=64, num_layers=2), # Best model found by the NLO scan
+    "ParticleNet_best_NLO": lambda input_dim, *args, **kwargs: ParticleNet(input_dim, *args, growing_edge=False, embed_dim=128, num_layers=4), # Best model found by the NLO scan
     "ParticleNet_growing": lambda input_dim, *args, **kwargs: ParticleNet(input_dim, embed_dim=64, growing_edge=True, *args, **kwargs),
 }
