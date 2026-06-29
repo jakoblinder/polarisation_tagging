@@ -349,10 +349,16 @@ class HistogramData:
             )
 
     @staticmethod
-    def format_value_uncertainty(value: float, unc: float, unc_sig_digits: int = 1) -> str:
+    def format_value_uncertainty(value: float, unc: float = -1, unc_sig_digits: int = 1, get_digits: bool = False, set_digits: int=-1) -> str:
         """Format a measurement as value(unc), with uncertainty rounded to <unc_sig_digits> significant digits.
 
         Example: 160.88362999999998 +- 0.15495453 -> 160.9(2)
+
+        value: The value to be formatted.
+        unc: The uncertainty to be formatted.
+        unc_sig_digits: The number of significant digits to which the uncertainty should be rounded.
+        get_digits: If True and an unc is given, the number of significant digits is return as a second argument.
+        set_digits: If an integer is given and no unc is given, the number of significant digits is set to this value.
         """
         def round_half_up(value: float, decimals: int = 0) -> float:
             """
@@ -365,22 +371,56 @@ class HistogramData:
             # print(f"Rounding {value} to {decimals} decimal places: {d} quantized to {quant} with ROUND_HALF_UP gives {d.quantize(quant, rounding=ROUND_HALF_UP)}")
             return float(d.quantize(quant, rounding=ROUND_HALF_UP))
 
+        if set_digits is True:
+            assert unc <= 0, f"Cannot set the number of significant digits and an uncertainty."
+        elif set_digits is False and get_digits is True:
+            assert unc > 0, f"Cannot get the number of significant digits for an uncertainty ({unc}) which is not positive."
+
         if unc <= 0:
-            return f"{value}"
+            if set_digits > 0:
+                decimals = set_digits
+                unc_rounded = -1
+            else:
+                return f"{value}"
+        else:
+            exponent = int(np.floor(np.log10(abs(unc))))
+            decimals = -exponent + (unc_sig_digits - 1)
+            # Example 1:
+            # unc = 0.15495453 = 1.5495453e-1 & unc_sig_digits = 1
+            # -> exponent = -1,
+            #    decimals = -(-1) - (1 - 1) = +1,
+            # so we round to 1 decimal places: 0.2
+            # Example 2: 24567.98765 with decimals=2 -> 24567.99, with decimals = -3 -> 25000.0.
 
-        exponent = int(np.floor(np.log10(abs(unc))))
-        decimals = -exponent + (unc_sig_digits - 1)
+            unc_rounded   = round_half_up(unc, decimals)
 
-        unc_rounded   = round_half_up(unc, decimals)
         value_rounded = round_half_up(value, decimals)
 
         if decimals > 0:
-            unc_digits = int(round_half_up(unc_rounded * (10 ** decimals), 0))
-            return f"{value_rounded:.{decimals}f}({unc_digits})"
-
-        # decimals <= 0: uncertainty is an integer at this precision
-        unc_digits = int(round_half_up(unc_rounded, 0))
-        return f"{int(round_half_up(value_rounded, 0))}({unc_digits})"
+            if unc_rounded > 0:
+                unc_digits = int(round_half_up(unc_rounded * (10 ** decimals), 0))
+                if get_digits:
+                    return f"{value_rounded:.{decimals}f}({unc_digits})", decimals
+                else:
+                    return f"{value_rounded:.{decimals}f}({unc_digits})"
+            else:
+                if get_digits:
+                    return f"{value_rounded:.{decimals}f}", decimals
+                else:
+                    return f"{value_rounded:.{decimals}f}"
+        else:
+            # decimals <= 0: uncertainty is an integer at this precision
+            if unc_rounded > 0:
+                unc_digits = int(round_half_up(unc_rounded, 0))
+                if get_digits:
+                    return f"{int(round_half_up(value_rounded, 0))}({unc_digits})", decimals
+                else:
+                    return f"{int(round_half_up(value_rounded, 0))}({unc_digits})"
+            else:
+                if get_digits:
+                    return f"{int(round_half_up(value_rounded, 0))}", decimals
+                else:
+                    return f"{int(round_half_up(value_rounded, 0))}"
 
 def read_histogram(path: Path,
                    rescaling_factor: float,
