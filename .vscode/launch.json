@@ -1,0 +1,28 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Train",
+            "type": "python",
+            "python": "/Users/linder/polarisation_tagging/.ml/bin/python",
+            "cwd": "${workspaceFolder}/test",
+            "request": "launch",
+            "program": "../polarisation_train.py",
+            "console": "integratedTerminal",
+            "args": ["../examplary_eventfiles/pwgevents-{0001..0005}.ml",
+                    "-m", "FFNN_paper_4extraLayers",
+                    "-o", "AdamW",
+                    "-p", "5",
+                //  "-g", "4",
+                    "--n_generated_events", "2e7",
+                    "--polarisation", "LL",
+                    "--penalties", "cross_section",
+                    "--standardise"
+                // ]
+            ]
+        }
+    ]
+}
