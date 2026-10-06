@@ -88,7 +88,7 @@ def _create_parser(parser_type: str = "train") -> argparse.Namespace:
         parser.add_argument("-g", "--gpu",        type=int, action="store", default=-1,  help="Specify manually which of the available gpus is supposed to be used.")
         parser.add_argument("-b", "--batch_size", type=int, action="store", default=512, help="Batch size for training.")
         parser.add_argument("-n", "--nworkers",   type=int, action="store", default=0,   help="Number of workers for DataLoader.")
-        parser.add_argument("--outputdir", type=Path,      action="store", default=Path().cwd(), help="Specify name of output directory.")
+        parser.add_argument("--outputdir", type=Path,      action="store", default=None, help="Specify name of output directory (default: current directory for training, --inputdir for testing). Created if it does not exist.")
 
         # Dataloading settings
         parser.add_argument("--standardise",        dest="standardise",           action="store_true",                   help="Enable standardisation of features over the whole dataset (default).")
@@ -162,6 +162,7 @@ def prepare_run_settings(parser_type:str="train") -> Settings:
     if parser_type == "train":
         run_settings.set_default("test_standardisation",   False)
         run_settings.set_default("count_negative_weights", False)
+        run_settings.set_default("outputdir",              Path.cwd())
 
         # The inputdir, used for testing and plotting, should be set to the outputdir, where the trained model is going to end up.
         # Overwrite them, so that they follow the outputdir also when rerunning an earlier run_settings.yaml with a new --outputdir.
@@ -171,6 +172,7 @@ def prepare_run_settings(parser_type:str="train") -> Settings:
 
     elif parser_type == "test":
         run_settings.set_default("model_weight_file", Path(f"{run_settings.model.value}_model_weights_best.pt"))
+        # The test results are written next to the trained model, unless specified otherwise.
         run_settings.set_default("outputdir", run_settings.inputdir.value)
 
     return run_settings
