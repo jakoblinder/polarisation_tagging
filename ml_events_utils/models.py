@@ -301,9 +301,12 @@ class FFNN_EMB_Selection(nn.Module):
 class FFNN_EMB_Selection_BatchNorm(FFNN_EMB_Selection):
     """
     Same as FFNN_EMB_Selection but with BatchNorm in input block.
+    The BatchNorm replaces the standardisation of the input, so stat_norm and external_stat are ignored.
     """
     def __init__(self, input_dim, output_dim = 1, emb_dim = [1000] * 3, *args, **kwargs):
-        super().__init__(input_dim, output_dim, emb_dim, stat_norm = None, external_stat = False, *args, **kwargs)
+        kwargs.pop("stat_norm", None)
+        kwargs.pop("external_stat", None)
+        super().__init__(input_dim, output_dim, emb_dim, stat_norm = None, external_stat = False, **kwargs)
         # Override input block to include BatchNorm
         self.input_block = nn.Sequential(
             nn.BatchNorm1d(self.input_dim),
@@ -314,9 +317,12 @@ class FFNN_EMB_Selection_BatchNorm(FFNN_EMB_Selection):
 class FFNN_EMB_Selection_LayerNorm(FFNN_EMB_Selection):
     """
     Same as FFNN_EMB_Selection but with LayerNorm in input block.
+    The LayerNorm replaces the standardisation of the input, so stat_norm and external_stat are ignored.
     """
     def __init__(self, input_dim, output_dim = 1, emb_dim = [1000] * 3, *args, **kwargs):
-        super().__init__(input_dim, output_dim, emb_dim, stat_norm = None, external_stat = False, *args, **kwargs)
+        kwargs.pop("stat_norm", None)
+        kwargs.pop("external_stat", None)
+        super().__init__(input_dim, output_dim, emb_dim, stat_norm = None, external_stat = False, **kwargs)
         # Override input block to include LayerNorm
         self.input_block = nn.Sequential(
             nn.LayerNorm(self.input_dim),
