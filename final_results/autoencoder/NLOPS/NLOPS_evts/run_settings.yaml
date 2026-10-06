@@ -106,7 +106,7 @@ parameters:
   showered:
     fit: false
     name: showered
-    value: false
+    value: true
   split_ratios:
     fit: false
     name: split_ratios
