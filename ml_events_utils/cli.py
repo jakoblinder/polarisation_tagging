@@ -19,6 +19,20 @@ def _get_parser_defaults(parser: argparse.ArgumentParser) -> dict:
                 defaults[action.dest] = action.default
     return defaults
 
+def _parse_cli_overrides(parser_type: str, args: list) -> dict:
+    """Parse command-line arguments given in addition to a YAML file.
+
+    The regular parser is used, so types, short options and switches behave exactly as without a YAML file.
+    All defaults are suppressed, such that only the explicitly given options are returned and override the YAML settings.
+    Positional arguments become optional, since they are expected to be set in the YAML file.
+    """
+    parser = _create_parser(parser_type)
+    for action in parser._actions:
+        action.default = argparse.SUPPRESS
+        if not action.option_strings:
+            action.nargs = "*" if action.nargs in ["+", "*"] else "?"
+    return vars(parser.parse_args(args))
+
 def _is_yaml_file(path_str: str) -> bool:
     """Check if a string refers to an existing YAML file."""
     if not isinstance(path_str, str):
@@ -127,15 +141,9 @@ def prepare_run_settings(parser_type:str="train") -> Settings:
     else:
         # YAML file provided, use it to create Settings instance
         run_settings = yaml_settings
-        if sys.argv[1:]:
-            # If there are additional command-line arguments, they are expected to be in an "--key value" format and override YAML settings.
-            assert len(sys.argv[1:]) % 2 == 0, "Additional command-line arguments must be in '--key value' pairs."
-            cli_settings = {}
-            for i in range(1, len(sys.argv), 2):
-                key = sys.argv[i].lstrip("--")
-                value = sys.argv[i + 1]
-                cli_settings[key] = value
-            run_settings.update(cli_settings)  # Override YAML settings with CLI settings
+        # Additional command-line arguments override the YAML settings.
+        for key, value in _parse_cli_overrides(parser_type, sys.argv[1:]).items():
+            run_settings.set(key, value, overwrite=True)
 
         parser_defaults = _get_parser_defaults(parser)
         for key, default_value in parser_defaults.items():
@@ -154,9 +162,10 @@ def prepare_run_settings(parser_type:str="train") -> Settings:
             raise ValueError("mlfiles are required when not using --replot")
 
         # The inputdir, used for testing and plotting, should be set to the outputdir, where the trained model is going to end up.
-        run_settings.set_default("inputdir", run_settings.outputdir.value)
-        # For backward compatibility, set model_dir to outputdir if not already set.
-        run_settings.set_default("model_dir", run_settings.outputdir.value)
+        # Overwrite them, so that they follow the outputdir also when rerunning an earlier run_settings.yaml with a new --outputdir.
+        run_settings.set("inputdir", run_settings.outputdir.value, overwrite=True)
+        # For backward compatibility, set model_dir to outputdir as well.
+        run_settings.set("model_dir", run_settings.outputdir.value, overwrite=True)
 
     elif parser_type == "test":
         run_settings.set_default("model_weight_file", Path(f"{run_settings.model.value}_model_weights_best.pt"))
