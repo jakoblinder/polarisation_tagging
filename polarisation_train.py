@@ -287,7 +287,7 @@ def run_training(run_settings: Settings, logger, trial=None):
     logger.info(f"\n{model_summary}")
 
     outputdir = run_settings.outputdir.value
-    outputdir.mkdir(exist_ok=True)
+    outputdir.mkdir(parents=True, exist_ok=True)
 
     run_settings.set("device",    device,    overwrite=True)
 
@@ -508,7 +508,15 @@ def run_training(run_settings: Settings, logger, trial=None):
 def main() -> int:
     run_settings = prepare_run_settings(parser_type="train")
 
-    log_file = run_settings.outputdir.value / "output.log"
+    outputdir = run_settings.outputdir.value
+    if run_settings.replot_only.value:
+        if not outputdir.is_dir():
+            print(f"Replot failed: directory {outputdir} does not exist.", file=sys.stderr)
+            return 1
+    else:
+        outputdir.mkdir(parents=True, exist_ok=True)
+
+    log_file = outputdir / "output.log"
     logger   = setup_file_logger(log_file=log_file, level="DEBUG", console=run_settings.verbose.value, mode="w", force=True)
 
     try:

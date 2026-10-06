@@ -999,6 +999,7 @@ def main() -> int:
     logger = setup_file_logger(log_file=log_file, level="DEBUG", mode="a", console=run_settings.verbose.value, force=True)
 
     try:
+        run_settings.outputdir.value.mkdir(parents=True, exist_ok=True)
         run_testing(run_settings)
     except Exception as exc:
         logger.error(f"Testing failed: {exc}")
