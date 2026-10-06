@@ -51,7 +51,7 @@ def _create_parser(parser_type: str = "train") -> argparse.Namespace:
             description="Train a neural network for polarisation tagging.",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
-        parser.add_argument("mlfiles", nargs='+', type=Path,        action="store",               help=".ml files to be used for training.")
+        parser.add_argument("mlfiles", nargs='*', type=Path,        action="store",               help=".ml files to be used for training. Not required when using --replot.")
         parser.add_argument("-m", "--model", type=str, action="store", default="FFNN_paper_BatchNorm", help=f"Model architecture to use. Options: {list(model_dict.keys())}.")
 
         # Training hyperparameters
@@ -149,17 +149,19 @@ def prepare_run_settings(parser_type:str="train") -> Settings:
         for key, default_value in parser_defaults.items():
             run_settings.set_default(key, default_value)
 
+    replot_only = parser_type == "train" and run_settings.replot_only.value
+    if not replot_only and not run_settings.mlfiles.value:
+        parser.error("the following arguments are required: mlfiles (only --replot works without them)")
+
     # Set some defaults, which can be set by the yaml file but are not expected to be set by the command line.
     run_settings.set_default("split_ratios",       [0.6, 0.2, 0.2])
     # The histogram_dir should be set for training and testing, since the testing is often done after training.
-    run_settings.set_default("histogram_dir", run_settings.mlfiles.value[0].parent)
+    if run_settings.mlfiles.value:
+        run_settings.set_default("histogram_dir", Path(run_settings.mlfiles.value[0]).parent)
 
     if parser_type == "train":
         run_settings.set_default("test_standardisation",   False)
         run_settings.set_default("count_negative_weights", False)
-
-        if not run_settings.replot_only.value and len(run_settings.mlfiles.value) == 0:
-            raise ValueError("mlfiles are required when not using --replot")
 
         # The inputdir, used for testing and plotting, should be set to the outputdir, where the trained model is going to end up.
         # Overwrite them, so that they follow the outputdir also when rerunning an earlier run_settings.yaml with a new --outputdir.
