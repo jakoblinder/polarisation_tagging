@@ -95,6 +95,10 @@ def add_legend(ax, legloc:str="", **kwargs):
             Set to a higher value to arrange labels horizontally next to each other.
     """
     handles, labels = ax.get_legend_handles_labels()
+    if not handles:
+        # Nothing labelled on this axis (e.g. ratio panels); newer Matplotlib raises on an empty legend.
+        return
+
     try:
         new_handles = [plt.Line2D([], [], ls=h.get_linestyle(), c=h.get_edgecolor(), linewidth=h.get_linewidth()) for h in handles]
     except AttributeError:
