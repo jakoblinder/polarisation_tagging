@@ -1002,7 +1002,10 @@ def main() -> int:
         run_settings.outputdir.value.mkdir(parents=True, exist_ok=True)
         run_testing(run_settings)
     except Exception as exc:
-        logger.error(f"Testing failed: {exc}")
+        # Log the full traceback and make sure the error is visible on the console also without --verbose.
+        logger.exception(f"Testing failed: {exc}")
+        if not run_settings.verbose.value:
+            print(f"Testing failed: {exc!r}\nSee {Path(log_file).resolve()} for the full traceback.", file=sys.stderr)
         return 1
 
     return 0

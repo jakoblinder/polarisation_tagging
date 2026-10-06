@@ -522,7 +522,10 @@ def main() -> int:
     try:
         run_training(run_settings, logger)
     except Exception as exc:
-        logger.error(f"Training failed: {exc}")
+        # Log the full traceback and make sure the error is visible on the console also without --verbose.
+        logger.exception(f"Training failed: {exc}")
+        if not run_settings.verbose.value:
+            print(f"Training failed: {exc!r}\nSee {log_file} for the full traceback.", file=sys.stderr)
         return 1
 
     return 0
