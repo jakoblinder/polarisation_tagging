@@ -423,9 +423,7 @@ def compute_and_save_dataset_statistics(base_settings: Settings, output_root: Pa
         Path to saved statistics JSON file
     """
     import torch
-    from polarisation_train import (
-        prepare_run_settings, namespace_from_settings, select_device
-    )
+    from ml_events_utils.cli import namespace_from_settings
     from ml_events_utils import (
         MLEventsDataset, ZJetDataset, get_statistics_from_dataset,
         boost_into_four_lepton_cm_frame,

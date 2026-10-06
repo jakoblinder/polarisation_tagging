@@ -6,8 +6,8 @@ from .run_settings import Settings
 from .models import model_dict
 
 
-# def namespace_from_settings(run_settings: Settings) -> argparse.Namespace:
-#     return argparse.Namespace(**{key: parameter.value for key, parameter in run_settings.items()})
+def namespace_from_settings(run_settings: Settings) -> argparse.Namespace:
+    return argparse.Namespace(**{key: parameter.value for key, parameter in run_settings.items()})
 
 def _get_parser_defaults(parser: argparse.ArgumentParser) -> dict:
     """Extract all default values from a parser without parsing arguments."""
