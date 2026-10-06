@@ -140,6 +140,20 @@ def run_training(run_settings: Settings, logger, trial=None):
     n_workers     = run_settings.nworkers.value
     split_ratios  = run_settings.split_ratios.value
 
+    # Penalty terms of the loss function
+    penalty_names = run_settings.penalties.value or []
+    # A single penalty may be given as a plain string (e.g. sampled from the choices in a hyperparameter scan YAML file).
+    if isinstance(penalty_names, str):
+        penalty_names = [penalty_names]
+    unknown_penalties = set(penalty_names) - {"cross_section", "ZdecayAngles"}
+    if unknown_penalties:
+        raise ValueError(f"Unknown penalties {sorted(unknown_penalties)}. Options: cross_section, ZdecayAngles.")
+    penalties = {penalty: True for penalty in penalty_names}
+    if penalties:
+        # Ensure that Z decay angle penalty is disabled when using Z+jet dataset or the januar2026 input choice, as the relevant features are not included in these cases.
+        if run_settings.use_zjet.value or (run_settings.input_choice.value in ["jan2026"]):
+            penalties["ZdecayAngles"] = False
+
     # Split the dataset into training, validation and test sets
     generator = torch.Generator().manual_seed(seed)
     train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(
@@ -366,14 +380,7 @@ def run_training(run_settings: Settings, logger, trial=None):
 
     logger.info(f"Starting training for {epochs} epochs...")
     logger.info(f"Early stopping patience: {patience}")
-
-    if not run_settings.penalties.value:
-        penalties = {}
-    else:
-        penalties = {penalty: True for penalty in run_settings.penalties.value}
-        # Ensure that Z decay angle penalty is disabled when using Z+jet dataset or the januar2026 input choice, as the relevant features are not included in these cases.
-        if run_settings.use_zjet.value or (run_settings.input_choice.value in ["jan2026"]):
-            penalties["ZdecayAngles"] = False
+    logger.info(f"Penalties: {penalties}")
 
     for epoch in range(epochs):
         epoch_start_time = time.time()
