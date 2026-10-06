@@ -260,14 +260,9 @@ def run_training(run_settings: Settings, logger, trial=None):
     input_dim = dataset.input_shape[0]
     model_name = run_settings.model.value
     if run_settings.standardise.value:
-        model = model_dict[model_name](input_dim=input_dim, stat_norm=stat_norm)
-    elif model_name == "FFNN_general":
-        model = model_dict[model_name](input_dim=input_dim, width=run_settings.width.value, n_hidden=run_settings.n_hidden.value)
-    elif model_name == "ParticleNet" and run_settings.fittable:
-        model = model_dict[model_name](input_dim=input_dim, embed_dim=run_settings.width.value, num_layers=run_settings.n_hidden.value, growing_edge=run_settings.growing_edge.value)
+        model = build_model(run_settings, input_dim, stat_norm=stat_norm)
     else:
-        model = model_dict[model_name](input_dim=input_dim)
-
+        model = build_model(run_settings, input_dim)
 
     model.to(device)
     logger.info(f"Model {model_name} device: {next(model.parameters()).device}")

@@ -970,9 +970,9 @@ def run_testing(run_settings: Settings):
     # Initialize the model and load the trained weights
     input_dim = dataset.input_shape[0]
     if run_settings.standardise.value:
-        model = model_dict[run_settings.model.value](input_dim=input_dim, external_stat=True)
+        model = build_model(run_settings, input_dim, external_stat=True)
     else:
-        model = model_dict[run_settings.model.value](input_dim=input_dim)
+        model = build_model(run_settings, input_dim)
 
     if run_settings.model_weight_file.value.is_absolute():
         model_weight_file = run_settings.model_weight_file.value

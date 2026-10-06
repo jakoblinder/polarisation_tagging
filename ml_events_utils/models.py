@@ -734,3 +734,26 @@ model_dict = {
     "ParticleNet_best_NLO": lambda input_dim, *args, **kwargs: ParticleNet(input_dim, *args, growing_edge=False, embed_dim=128, num_layers=4), # Best model found by the NLO scan
     "ParticleNet_growing": lambda input_dim, *args, **kwargs: ParticleNet(input_dim, embed_dim=64, growing_edge=True, *args, **kwargs),
 }
+
+
+def build_model(run_settings, input_dim: int, **kwargs) -> nn.Module:
+    """Create the model given by run_settings.model.
+
+    The architecture hyperparameters width, n_hidden and growing_edge (e.g. set by a hyperparameter scan) are passed on
+    to FFNN_general (required) and ParticleNet (optional, otherwise its defaults are used).
+    Additional keyword arguments (e.g. stat_norm) are passed on to the model.
+    """
+    model_name = run_settings.model.value
+    if model_name not in model_dict:
+        raise ValueError(f"Model '{model_name}' not recognized. Available models: {list(model_dict.keys())}")
+
+    if model_name == "FFNN_general":
+        if "width" not in run_settings.keys() or "n_hidden" not in run_settings.keys():
+            raise ValueError("FFNN_general requires the settings 'width' and 'n_hidden' (given in a YAML settings file).")
+        kwargs.update(width=run_settings.width.value, n_hidden=run_settings.n_hidden.value)
+    elif model_name == "ParticleNet":
+        for setting, argument in [("width", "embed_dim"), ("n_hidden", "num_layers"), ("growing_edge", "growing_edge")]:
+            if setting in run_settings.keys():
+                kwargs[argument] = run_settings[setting].value
+
+    return model_dict[model_name](input_dim=input_dim, **kwargs)
