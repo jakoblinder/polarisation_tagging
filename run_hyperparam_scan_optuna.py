@@ -192,6 +192,9 @@ def build_trial_settings(base_settings: Settings, trial: Trial, output_root: Pat
     trial_dir.mkdir(parents=True, exist_ok=True)
 
     overrides["outputdir"]   = trial_dir
+    # Used by the test step and for later testing of the trial, as in prepare_run_settings.
+    overrides["inputdir"]    = trial_dir
+    overrides["model_dir"]   = trial_dir
     overrides["replot_only"] = False
     overrides["do_test"]     = bool(run_test)
 
@@ -518,6 +521,8 @@ def run_worker(arg: argparse.Namespace) -> int:
 
     base_settings = Settings.load_yaml(arg.settings_file)
     base_settings.set("gpu", 0, overwrite=True)
+    # The test step (--run-test) needs the directory with the POWHEG histograms, by default the one of the event files.
+    base_settings.set_default("histogram_dir", Path(base_settings.mlfiles.value[0]).parent)
 
     output_root = arg.output_root
     output_root.mkdir(parents=True, exist_ok=True)
