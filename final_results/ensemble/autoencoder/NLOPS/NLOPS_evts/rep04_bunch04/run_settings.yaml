@@ -1,0 +1,2146 @@
+parameters:
+  batch_size:
+    fit: false
+    name: batch_size
+    value: 3400
+  cache_events:
+    fit: false
+    name: cache_events
+    value: true
+  count_negative_weights:
+    fit: false
+    name: count_negative_weights
+    value: false
+  device:
+    fit: false
+    name: device
+    value: cuda:0
+  do_test:
+    fit: false
+    name: do_test
+    value: true
+  epochs:
+    fit: false
+    name: epochs
+    value: 500
+  fittable:
+    fit: false
+    name: fittable
+    value: false
+  gpu:
+    fit: false
+    name: gpu
+    value: 0
+  histogram_dir:
+    fit: false
+    name: histogram_dir
+    value:
+      __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO
+  input_choice:
+    fit: false
+    name: input_choice
+    value: null
+  inputdir:
+    fit: false
+    name: inputdir
+    value:
+      __type__: path
+      value: /scratch/jlinder/ML_Giovanni/polarisation_tagging/final_results/ensemble/autoencoder/NLOPS/NLOPS_evts/rep04_bunch04
+  labframe:
+    fit: false
+    name: labframe
+    value: true
+  learning_rate:
+    fit: false
+    name: learning_rate
+    value: 0.00379359279715904
+  mlfiles:
+    fit: false
+    name: mlfiles
+    value:
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0001.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0002.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0003.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0004.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0005.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0006.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0007.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0008.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0009.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0010.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0011.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0012.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0013.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0014.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0015.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0016.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0017.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0018.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0019.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0020.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0021.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0022.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0023.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0024.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0025.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0026.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0027.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0028.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0029.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0030.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0031.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0032.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0033.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0034.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0035.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0036.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0037.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0038.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0039.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0040.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0041.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0042.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0043.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0044.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0045.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0046.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0047.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0048.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0049.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0050.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0051.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0052.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0053.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0054.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0055.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0056.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0057.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0058.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0059.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0060.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0061.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0062.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0063.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0064.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0065.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0066.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0067.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0068.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0069.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0070.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0071.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0072.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0073.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0074.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0075.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0076.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0077.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0078.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0079.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0080.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0081.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0082.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0083.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0084.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0085.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0086.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0087.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0088.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0089.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0090.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0091.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0092.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0093.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0094.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0095.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0096.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0097.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0098.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0099.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0100.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0101.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0102.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0103.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0104.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0105.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0106.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0107.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0108.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0109.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0110.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0111.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0112.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0113.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0114.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0115.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0116.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0117.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0118.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0119.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0120.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0121.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0122.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0123.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0124.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0125.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0126.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0127.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0128.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0129.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0130.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0131.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0132.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0133.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0134.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0135.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0136.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0137.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0138.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0139.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0140.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0141.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0142.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0143.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0144.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0145.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0146.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0147.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0148.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0149.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0150.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0151.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0152.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0153.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0154.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0155.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0156.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0157.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0158.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0159.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0160.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0161.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0162.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0163.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0164.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0165.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0166.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0167.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0168.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0169.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0170.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0171.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0172.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0173.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0174.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0175.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0176.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0177.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0178.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0179.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0180.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0181.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0182.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0183.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0184.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0185.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0186.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0187.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0188.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0189.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0190.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0191.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0192.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0193.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0194.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0195.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0196.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0197.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0198.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0199.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0200.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0201.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0202.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0203.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0204.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0205.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0206.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0207.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0208.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0209.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0210.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0211.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0212.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0213.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0214.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0215.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0216.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0217.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0218.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0219.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0220.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0221.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0222.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0223.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0224.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0225.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0226.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0227.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0228.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0229.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0230.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0231.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0232.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0233.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0234.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0235.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0236.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0237.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0238.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0239.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0240.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0241.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0242.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0243.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0244.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0245.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0246.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0247.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0248.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0249.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0250.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0251.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0252.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0253.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0254.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0255.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0256.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0257.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0258.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0259.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0260.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0261.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0262.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0263.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0264.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0265.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0266.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0267.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0268.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0269.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0270.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0271.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0272.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0273.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0274.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0275.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0276.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0277.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0278.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0279.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0280.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0281.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0282.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0283.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0284.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0285.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0286.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0287.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0288.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0289.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0290.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0291.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0292.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0293.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0294.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0295.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0296.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0297.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0298.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0299.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0300.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0301.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0302.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0303.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0304.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0305.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0306.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0307.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0308.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0309.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0310.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0311.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0312.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0313.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0314.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0315.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0316.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0317.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0318.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0319.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0320.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0321.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0322.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0323.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0324.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0325.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0326.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0327.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0328.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0329.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0330.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0331.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0332.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0333.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0334.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0335.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0336.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0337.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0338.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0339.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0340.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0341.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0342.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0343.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0344.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0345.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0346.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0347.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0348.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0349.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0350.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0351.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0352.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0353.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0354.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0355.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0356.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0357.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0358.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0359.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0360.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0361.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0362.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0363.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0364.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0365.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0366.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0367.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0368.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0369.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0370.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0371.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0372.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0373.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0374.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0375.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0376.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0377.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0378.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0379.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0380.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0381.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0382.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0383.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0384.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0385.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0386.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0387.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0388.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0389.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0390.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0391.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0392.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0393.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0394.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0395.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0396.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0397.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0398.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0399.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0400.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0401.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0402.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0403.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0404.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0405.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0406.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0407.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0408.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0409.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0410.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0411.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0412.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0413.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0414.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0415.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0416.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0417.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0418.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0419.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0420.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0421.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0422.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0423.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0424.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0425.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0426.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0427.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0428.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0429.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0430.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0431.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0432.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0433.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0434.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0435.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0436.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0437.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0438.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0439.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0440.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0441.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0442.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0443.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0444.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0445.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0446.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0447.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0448.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0449.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0450.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0451.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0452.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0453.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0454.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0455.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0456.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0457.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0458.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0459.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0460.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0461.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0462.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0463.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0464.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0465.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0466.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0467.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0468.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0469.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0470.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0471.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0472.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0473.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0474.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0475.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0476.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0477.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0478.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0479.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0480.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0481.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0482.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0483.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0484.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0485.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0486.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0487.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0488.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0489.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0490.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0491.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0492.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0493.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0494.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0495.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0496.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0497.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0498.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0499.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0500.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0501.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0502.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0503.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0504.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0505.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0506.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0507.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0508.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0509.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0510.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0511.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0512.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0513.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0514.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0515.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0516.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0517.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0518.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0519.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0520.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0521.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0522.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0523.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0524.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0525.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0526.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0527.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0528.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0529.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0530.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0531.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0532.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0533.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0534.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0535.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0536.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0537.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0538.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0539.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0540.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0541.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0542.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0543.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0544.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0545.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0546.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0547.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0548.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0549.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0550.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0551.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0552.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0553.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0554.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0555.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0556.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0557.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0558.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0559.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0560.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0561.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0562.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0563.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0564.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0565.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0566.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0567.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0568.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0569.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0570.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0571.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0572.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0573.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0574.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0575.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0576.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0577.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0578.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0579.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0580.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0581.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0582.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0583.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0584.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0585.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0586.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0587.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0588.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0589.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0590.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0591.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0592.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0593.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0594.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0595.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0596.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0597.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0598.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0599.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0600.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0601.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0602.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0603.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0604.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0605.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0606.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0607.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0608.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0609.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0610.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0611.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0612.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0613.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0614.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0615.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0616.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0617.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0618.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0619.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0620.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0621.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0622.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0623.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0624.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0625.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0626.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0627.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0628.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0629.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0630.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0631.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0632.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0633.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0634.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0635.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0636.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0637.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0638.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0639.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0640.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0641.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0642.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0643.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0644.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0645.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0646.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0647.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0648.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0649.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0650.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0651.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0652.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0653.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0654.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0655.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0656.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0657.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0658.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0659.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0660.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0661.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0662.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0663.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0664.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0665.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0666.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0667.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0668.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0669.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0670.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0671.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0672.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0673.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0674.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0675.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0676.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0677.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0678.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0679.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0680.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0681.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0682.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0683.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0684.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0685.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0686.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0687.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0688.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0689.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0690.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0691.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0692.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0693.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0694.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0695.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0696.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0697.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0698.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0699.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0700.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0701.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0702.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0703.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0704.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0705.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0706.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0707.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0708.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0709.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0710.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0711.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0712.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0713.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0714.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0715.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0716.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0717.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0718.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0719.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0720.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0721.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0722.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0723.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0724.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0725.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0726.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0727.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0728.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0729.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0730.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0731.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0732.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0733.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0734.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0735.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0736.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0737.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0738.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0739.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0740.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0741.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0742.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0743.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0744.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0745.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0746.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0747.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0748.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0749.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0750.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0751.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0752.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0753.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0754.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0755.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0756.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0757.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0758.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0759.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0760.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0761.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0762.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0763.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0764.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0765.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0766.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0767.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0768.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0769.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0770.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0771.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0772.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0773.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0774.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0775.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0776.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0777.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0778.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0779.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0780.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0781.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0782.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0783.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0784.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0785.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0786.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0787.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0788.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0789.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0790.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0791.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0792.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0793.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0794.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0795.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0796.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0797.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0798.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0799.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0800.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0801.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0802.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0803.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0804.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0805.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0806.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0807.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0808.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0809.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0810.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0811.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0812.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0813.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0814.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0815.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0816.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0817.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0818.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0819.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0820.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0821.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0822.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0823.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0824.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0825.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0826.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0827.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0828.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0829.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0830.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0831.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0832.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0833.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0834.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0835.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0836.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0837.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0838.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0839.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0840.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0841.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0842.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0843.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0844.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0845.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0846.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0847.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0848.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0849.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0850.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0851.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0852.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0853.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0854.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0855.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0856.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0857.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0858.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0859.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0860.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0861.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0862.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0863.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0864.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0865.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0866.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0867.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0868.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0869.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0870.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0871.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0872.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0873.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0874.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0875.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0876.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0877.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0878.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0879.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0880.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0881.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0882.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0883.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0884.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0885.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0886.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0887.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0888.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0889.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0890.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0891.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0892.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0893.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0894.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0895.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0896.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0897.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0898.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0899.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0900.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0901.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0902.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0903.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0904.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0905.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0906.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0907.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0908.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0909.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0910.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0911.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0912.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0913.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0914.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0915.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0916.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0917.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0918.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0919.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0920.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0921.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0922.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0923.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0924.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0925.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0926.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0927.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0928.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0929.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0930.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0931.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0932.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0933.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0934.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0935.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0936.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0937.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0938.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0939.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0940.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0941.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0942.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0943.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0944.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0945.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0946.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0947.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0948.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0949.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0950.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0951.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0952.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0953.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0954.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0955.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0956.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0957.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0958.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0959.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0960.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0961.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0962.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0963.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0964.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0965.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0966.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0967.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0968.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0969.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0970.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0971.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0972.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0973.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0974.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0975.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0976.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0977.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0978.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0979.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0980.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0981.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0982.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0983.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0984.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0985.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0986.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0987.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0988.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0989.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0990.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0991.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0992.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0993.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0994.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0995.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0996.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0997.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0998.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-0999.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_NLO/output_shower_events-1000.ml
+  model:
+    fit: false
+    name: model
+    value: FFNN_EMB_1024_512_256_128_64_BatchNorm
+  model_dir:
+    fit: false
+    name: model_dir
+    value:
+      __type__: path
+      value: /scratch/jlinder/ML_Giovanni/polarisation_tagging/ensemble_runs/autoencoder/NLOPS/rep04_bunch04
+  model_weight_file:
+    fit: false
+    name: model_weight_file
+    value:
+      __type__: path
+      value: /scratch/jlinder/ML_Giovanni/polarisation_tagging/ensemble_runs/autoencoder/NLOPS/rep04_bunch04/FFNN_EMB_1024_512_256_128_64_BatchNorm_model_weights_best.pt
+  n_generated_events:
+    fit: false
+    name: n_generated_events
+    value: 10000000
+  nworkers:
+    fit: false
+    name: nworkers
+    value: 0
+  optimizer:
+    fit: false
+    name: optimizer
+    value: AdamW
+  outputdir:
+    fit: false
+    name: outputdir
+    value:
+      __type__: path
+      value: /scratch/jlinder/ML_Giovanni/polarisation_tagging/final_results/ensemble/autoencoder/NLOPS/NLOPS_evts/rep04_bunch04
+  patience:
+    fit: false
+    name: patience
+    value: 35
+  penalties:
+    fit: false
+    name: penalties
+    value: []
+  polarisation:
+    fit: false
+    name: polarisation
+    value: LL
+  replot_only:
+    fit: false
+    name: replot_only
+    value: false
+  seed:
+    fit: false
+    name: seed
+    value: 42
+  showered:
+    fit: false
+    name: showered
+    value: true
+  split_ratios:
+    fit: false
+    name: split_ratios
+    value:
+    - 0.6
+    - 0.2
+    - 0.2
+  standardise:
+    fit: false
+    name: standardise
+    value: false
+  test_mode:
+    fit: false
+    name: test_mode
+    value: false
+  test_standardisation:
+    fit: false
+    name: test_standardisation
+    value: false
+  use_zjet:
+    fit: false
+    name: use_zjet
+    value: false
+  verbose:
+    fit: false
+    name: verbose
+    value: false

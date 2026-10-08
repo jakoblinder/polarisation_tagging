@@ -1,0 +1,646 @@
+parameters:
+  batch_size:
+    fit: false
+    name: batch_size
+    value: 4800
+  cache_events:
+    fit: false
+    name: cache_events
+    value: true
+  count_negative_weights:
+    fit: false
+    name: count_negative_weights
+    value: false
+  device:
+    fit: false
+    name: device
+    value: cuda:0
+  do_test:
+    fit: false
+    name: do_test
+    value: true
+  epochs:
+    fit: false
+    name: epochs
+    value: 500
+  fittable:
+    fit: false
+    name: fittable
+    value: false
+  gpu:
+    fit: false
+    name: gpu
+    value: 0
+  histogram_dir:
+    fit: false
+    name: histogram_dir
+    value:
+      __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS
+  input_choice:
+    fit: false
+    name: input_choice
+    value: null
+  inputdir:
+    fit: false
+    name: inputdir
+    value:
+      __type__: path
+      value: /scratch/jlinder/ML_Giovanni/polarisation_tagging/final_results/ensemble/ffnn/LOwS/LOwS_evts/rep00_bunch00
+  labframe:
+    fit: false
+    name: labframe
+    value: true
+  learning_rate:
+    fit: false
+    name: learning_rate
+    value: 0.0005415172684656208
+  mlfiles:
+    fit: false
+    name: mlfiles
+    value:
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0001.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0002.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0003.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0004.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0005.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0006.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0007.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0008.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0009.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0010.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0011.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0012.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0013.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0014.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0015.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0016.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0017.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0018.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0019.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0020.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0021.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0022.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0023.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0024.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0025.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0026.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0027.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0028.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0029.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0030.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0031.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0032.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0033.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0034.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0035.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0036.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0037.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0038.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0039.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0040.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0041.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0042.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0043.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0044.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0045.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0046.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0047.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0048.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0049.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0050.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0051.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0052.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0053.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0054.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0055.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0056.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0057.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0058.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0059.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0060.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0061.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0062.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0063.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0064.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0065.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0066.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0067.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0068.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0069.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0070.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0071.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0072.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0073.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0074.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0075.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0076.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0077.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0078.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0079.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0080.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0081.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0082.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0083.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0084.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0085.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0086.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0087.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0088.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0089.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0090.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0091.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0092.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0093.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0094.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0095.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0096.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0097.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0098.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0099.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0100.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0101.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0102.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0103.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0104.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0105.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0106.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0107.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0108.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0109.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0110.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0111.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0112.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0113.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0114.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0115.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0116.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0117.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0118.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0119.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0120.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0121.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0122.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0123.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0124.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0125.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0126.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0127.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0128.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0129.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0130.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0131.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0132.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0133.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0134.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0135.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0136.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0137.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0138.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0139.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0140.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0141.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0142.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0143.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0144.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0145.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0146.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0147.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0148.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0149.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0150.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0151.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0152.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0153.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0154.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0155.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0156.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0157.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0158.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0159.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0160.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0161.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0162.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0163.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0164.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0165.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0166.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0167.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0168.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0169.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0170.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0171.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0172.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0173.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0174.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0175.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0176.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0177.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0178.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0179.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0180.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0181.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0182.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0183.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0184.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0185.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0186.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0187.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0188.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0189.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0190.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0191.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0192.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0193.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0194.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0195.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0196.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0197.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0198.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0199.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0200.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0201.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0202.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0203.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0204.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0205.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0206.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0207.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0208.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0209.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0210.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0211.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0212.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0213.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0214.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0215.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0216.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0217.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0218.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0219.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0220.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0221.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0222.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0223.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0224.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0225.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0226.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0227.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0228.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0229.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0230.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0231.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0232.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0233.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0234.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0235.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0236.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0237.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0238.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0239.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0240.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0241.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0242.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0243.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0244.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0245.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0246.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0247.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0248.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0249.ml
+    - __type__: path
+      value: /scratch/jlinder/ML_Giovanni/ML_FILES/UU_LOwS/pwgevents-0250.ml
+  model:
+    fit: false
+    name: model
+    value: FFNN_paper_4extraLayers_BatchNorm
+  model_dir:
+    fit: false
+    name: model_dir
+    value:
+      __type__: path
+      value: /scratch/jlinder/ML_Giovanni/polarisation_tagging/ensemble_runs/ffnn/LOwS/rep00_bunch00
+  model_weight_file:
+    fit: false
+    name: model_weight_file
+    value:
+      __type__: path
+      value: /scratch/jlinder/ML_Giovanni/polarisation_tagging/ensemble_runs/ffnn/LOwS/rep00_bunch00/FFNN_paper_4extraLayers_BatchNorm_model_weights_best.pt
+  n_generated_events:
+    fit: false
+    name: n_generated_events
+    value: 10000000
+  nworkers:
+    fit: false
+    name: nworkers
+    value: 0
+  optimizer:
+    fit: false
+    name: optimizer
+    value: AdamW
+  outputdir:
+    fit: false
+    name: outputdir
+    value:
+      __type__: path
+      value: /scratch/jlinder/ML_Giovanni/polarisation_tagging/final_results/ensemble/ffnn/LOwS/LOwS_evts/rep00_bunch00
+  patience:
+    fit: false
+    name: patience
+    value: 35
+  penalties:
+    fit: false
+    name: penalties
+    value: []
+  polarisation:
+    fit: false
+    name: polarisation
+    value: LL
+  replot_only:
+    fit: false
+    name: replot_only
+    value: false
+  seed:
+    fit: false
+    name: seed
+    value: 42
+  showered:
+    fit: false
+    name: showered
+    value: false
+  split_ratios:
+    fit: false
+    name: split_ratios
+    value:
+    - 0.6
+    - 0.2
+    - 0.2
+  standardise:
+    fit: false
+    name: standardise
+    value: false
+  test_mode:
+    fit: false
+    name: test_mode
+    value: false
+  test_standardisation:
+    fit: false
+    name: test_standardisation
+    value: false
+  use_zjet:
+    fit: false
+    name: use_zjet
+    value: false
+  verbose:
+    fit: false
+    name: verbose
+    value: false
