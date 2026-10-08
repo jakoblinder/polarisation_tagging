@@ -212,3 +212,12 @@ __marimo__/
 
 # Claude Code: personal, machine-specific settings
 .claude/settings.local.json
+
+# Ensemble (see ensemble/README.md): trainings incl. network weights, and the test outputs that are not input of the
+# notebooks. Of the replica tests only LL_pred.top (input of network_comparison.ipynb) and run_settings.yaml are kept.
+ensemble_runs/
+final_results/ensemble/queue_*
+final_results/ensemble/*/*/*_evts/control/
+final_results/ensemble/*/*/*_evts/rep*_bunch*/*
+!final_results/ensemble/*/*/*_evts/rep*_bunch*/LL_pred.top
+!final_results/ensemble/*/*/*_evts/rep*_bunch*/run_settings.yaml
