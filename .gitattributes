@@ -1,1 +1,4 @@
-*.py linguist-language=Python
+# Event files use the .ml extension but are data, not OCaml source
+*.ml linguist-detectable=false
+# Notebooks (with embedded outputs) would otherwise outweigh the .py files
+*.ipynb linguist-detectable=false
