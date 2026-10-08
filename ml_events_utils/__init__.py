@@ -1,3 +1,4 @@
+import dataclasses
 from pathlib import Path
 from matplotlib import font_manager
 
@@ -58,4 +59,12 @@ for font_path in font_files:
     font_manager.fontManager.addfont(font_path)
     prop = font_manager.FontProperties(fname=font_path)
     # print(f"Added font {font_path.name}: {prop.get_name()}")
+
+# Matplotlib infers weight 500 (medium) for the regular CMU faces, which triggers
+# "findfont: Failed to find font weight normal" warnings. Register them as 400 (normal).
+font_manager.fontManager.ttflist = [
+    dataclasses.replace(f, weight=400) if f.name.startswith("CMU") and f.weight == 500 else f
+    for f in font_manager.fontManager.ttflist
+]
+font_manager.fontManager._findfont_cached.cache_clear()
 

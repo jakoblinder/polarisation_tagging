@@ -37,7 +37,7 @@ font.size: 13
 # Specify possible serif fonts
 font.serif : CMU Serif Roman, CMU Serif, CMU Classical Serif, Times New Roman, Times, DejaVu Serif, Bitstream Vera Serif, New Century Schoolbook, Century Schoolbook L, Utopia, ITC Bookman, Bookman, Nimbus Roman No9 L, Palatino, Charter, serif
 font.family: serif
-font.weight: 200  # normal = 400
+font.weight: normal  # = 400; CMU has no lighter Serif face (200 only triggered findfont warnings)
 
 # Set x axis
 xtick.direction : in
