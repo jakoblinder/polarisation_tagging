@@ -1,14 +1,15 @@
 """Create the run settings of the ensemble replicas used for the (conservative) uncertainty band.
 
-Every replica is a copy of the production run settings in final_results/<arch>/<order>/<order>_evts/run_settings.yaml,
-in which only the event files (one bunch of the so far unused second half of the sample), the seed (initialisation,
-batch shuffling and train/validation/test split), n_generated_events and the output directory are changed.
+Every replica is a copy of the production run settings in final_results/<arch>/<order>/<order>_evts/run_settings.yaml
+(final_results/pn/<order>/run_settings.yaml for ParticleNet), in which only the event files (one bunch of the so far
+unused second half of the sample), the seed (initialisation, batch shuffling and train/validation/test split),
+n_generated_events and the output paths are changed.
 
 Replica r is trained on bunch r with seed SEED_OFFSET + r, for every architecture, such that the replicas of different
 architectures are paired.
 
 Usage (from polarisation_tagging/):
-    python ensemble/make_ensemble_configs.py [--archs ffnn autoencoder] [--orders LO LOwS NLOPS] [--check-init]
+    python ensemble/make_ensemble_configs.py [--archs ffnn autoencoder pn] [--orders LO LOwS NLOPS] [--check-init]
 """
 # %% Imports
 import argparse
@@ -35,7 +36,7 @@ N_REPLICAS  = 10
 SEED_OFFSET = 1000
 
 # Production results directory per architecture.
-ARCHS = ["ffnn", "autoencoder"]
+ARCHS = ["ffnn", "autoencoder", "pn"]
 
 # Event file directory, file prefix, first unused file, files per bunch and generated events per file for each order.
 # showered: compare with the showered POWHEG histograms (pwgoutput_py8_histos-*) instead of the LHE level ones. It only
@@ -48,11 +49,21 @@ ORDERS = {
     "NLOPS": {"dir": "UU_NLO",  "prefix": "output_shower_events", "first_file": 1001, "files_per_bunch": 100, "generated_per_file": 1e4, "showered": True},
 }
 
-# The only settings that differ between a replica and its production run.
-OVERRIDDEN_KEYS = {"mlfiles", "seed", "outputdir", "n_generated_events", "histogram_dir", "model_dir", "gpu", "showered"}
+# Architecture-specific changes with respect to the production settings.
+# ParticleNet: the production runs used standardise: true, which has no effect on the ParticleNet_best(_NLO) models
+# (models.py drops the stat_norm argument). It only makes the training compute the feature statistics in an extra pass
+# over the training set and consumes one random number before the initialisation, so it is switched off.
+ARCH_OVERRIDES = {"pn": {"standardise": False}}
+
+# The only settings that differ between a replica and its production run (inputdir and model_weight_file only exist in
+# the ParticleNet settings, where they point to the production run directory).
+OVERRIDDEN_KEYS = {"mlfiles", "seed", "outputdir", "n_generated_events", "histogram_dir", "model_dir", "gpu", "showered",
+                   "inputdir", "model_weight_file"} | {key for overrides in ARCH_OVERRIDES.values() for key in overrides}
 
 
 def production_settings_file(arch: str, order: str) -> Path:
+    if arch == "pn":
+        return FINAL_RESULTS_DIR / arch / order / "run_settings.yaml"
     return FINAL_RESULTS_DIR / arch / order / f"{order}_evts" / "run_settings.yaml"
 
 
@@ -83,14 +94,18 @@ def count_events(eventfile: Path) -> int:
 def initial_weights_hash(settings: Settings, n_train: int) -> str:
     """Replay the random number generation of polarisation_train.run_training up to build_model and hash the initial weights.
 
-    Before the model is built, the global torch RNG is seeded and consumed only by iterating once over the shuffled
-    training DataLoader (the random_split uses its own generator), which does not depend on the event content.
+    Before the model is built, the global torch RNG is seeded and consumed only by creating DataLoader iterators (the
+    random_split uses its own generator): with standardise, once for the feature statistics of the training set
+    (get_statistics_from_dataset, unshuffled), then once for the probe batch of the shuffled training DataLoader.
+    Neither depends on the event content.
     """
     import torch
     from torch.utils.data import DataLoader
     from ml_events_utils.models import build_model
 
     torch.manual_seed(settings.seed.value)
+    if settings.standardise.value:
+        next(iter(DataLoader(torch.zeros(n_train, 1), batch_size=n_train, shuffle=False)))
     probe_loader = DataLoader(torch.zeros(n_train, 1), batch_size=settings.batch_size.value, shuffle=True)
     next(iter(probe_loader))
     model = build_model(settings, 16)
@@ -130,6 +145,12 @@ def make_configs(arch: str, order: str, check_init: bool, events_per_file: dict)
         settings.set("n_generated_events", int(len(files) * ORDERS[order]["generated_per_file"]), overwrite=True)
         settings.set("gpu",                0,                                                     overwrite=True)
         settings.set("showered",           ORDERS[order]["showered"],                             overwrite=True)
+        if "inputdir" in prod.keys():
+            settings.set("inputdir",          outputdir,                                          overwrite=True)
+        if "model_weight_file" in prod.keys():
+            settings.set("model_weight_file", outputdir / f"{prod.model.value}_model_weights_best.pt", overwrite=True)
+        for key, value in ARCH_OVERRIDES.get(arch, {}).items():
+            settings.set(key, value, overwrite=True)
 
         # Everything apart from the overridden keys has to be identical to the production run.
         changed = {key for key in set(prod.keys()) | set(settings.keys())

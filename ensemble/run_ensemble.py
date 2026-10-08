@@ -49,7 +49,7 @@ def write_status(jobs: list[dict]) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--archs",           nargs="+", default=["ffnn", "autoencoder"])
+    parser.add_argument("--archs",           nargs="+", default=["ffnn", "autoencoder", "pn"])
     parser.add_argument("--orders",          nargs="+", default=["LO", "LOwS", "NLOPS"],
                         help="LOwS (LO+Sud.) is always added, every run has to come with its LO+Sud. counterpart.")
     parser.add_argument("--replicas",        nargs="+", type=int, default=list(range(10)))
