@@ -2,6 +2,25 @@
 
 PyTorch framework to learn, event by event, the polarisation fractions of ZZ (and Z+jet) events, i.e. the ratio of a polarised to the unpolarised weight (e.g. $w_{\mathrm{LL}}/w_{\mathrm{UU}}$), from the lepton momenta in POWHEG `.ml` event files. The predicted distributions are compared with the POWHEG reference histograms, and the network hyperparameters can be optimised with Optuna.
 
+## Reference
+
+This code was developed for
+
+> J. M. Cruz-Martinez, J. Linder, M. Pellen, G. Pelliccioli, E. Re, *Higher-order effects in amplitude-assisted polarisation extraction with machine-learning techniques*, [arXiv:2607.00962](https://arxiv.org/abs/2607.00962) [hep-ph].
+
+```bibtex
+@article{Cruz-Martinez:2026uud,
+    author = "Cruz-Martinez, Juan M. and Linder, Jakob and Pellen, Mathieu and Pelliccioli, Giovanni and Re, Emanuele",
+    title = "{Higher-order effects in amplitude-assisted polarisation extraction with machine-learning techniques}",
+    eprint = "2607.00962",
+    archivePrefix = "arXiv",
+    primaryClass = "hep-ph",
+    reportNumber = "COMETA-2026-20, FR-PHENO-2026-010, LAPTH-036/26, MPP-2026-122",
+    month = "7",
+    year = "2026"
+}
+```
+
 ## Installation
 
 ```bash
@@ -133,7 +152,7 @@ The event files are on Nextcloud: [Download ZIP (updated 24.02.2026)](https://ne
 - `pwgLHEF_analysis-mean-W*.top` / `pwgoutput_py8_histos-mean-W*.top`: the POWHEG histograms at LHE level / after the shower,
 - `powheg.input-save`: the POWHEG settings, including the weight definitions.
 
-The events already passed the fiducial cuts [TODO: Add reference]. Cross sections are therefore the sum of the event weights divided by the number of *generated* events:
+The events already passed the fiducial cuts of the ATLAS analysis [JHEP 12 (2023) 107](https://doi.org/10.1007/JHEP12(2023)107) ([arXiv:2310.04350](https://arxiv.org/abs/2310.04350)). Cross sections are therefore the sum of the event weights divided by the number of *generated* events:
 
 | Run       | #seeds | `numevts` per seed | generated events |
 |:----------|-------:|-------------------:|-----------------:|
