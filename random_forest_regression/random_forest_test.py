@@ -8,6 +8,7 @@ import re
 import lightgbm as lgb
 import matplotlib.colors as colors
 import joblib
+import torch
 from pathlib import Path
 from datetime import datetime
 from sklearn.model_selection import train_test_split
@@ -170,10 +171,12 @@ X = df[["ptZ1", "ptZ2", "yZ1", "yZ2", "cos_theta_p1_p12", "cos_theta_p3_p34"]]
 X2 = df[["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15"]]
 y = df["rLL"]
 
-r_test = 1.0/3.0
+split_ratios = [0.6, 0.2, 0.2] # train/validation/test split and seed of the networks (polarisation_train.py), so that the RFR is tested on their common test set; the validation part is not used (the forest has its out-of-bag estimate)
+train_idx, _, test_idx = (np.asarray(subset.indices) for subset in torch.utils.data.random_split(range(len(df)), split_ratios, generator=torch.Generator().manual_seed(42)))
+r_test = split_ratios[2]
 test_xsec_norm = 1e+03/(N_tot*r_test) # sum of test-event weights [pb] -> cross section [fb]: sigma = sum(w)/N over the N_tot*r_test test events
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=r_test, random_state=99)
-X2_train, X2_test, y2_train, y2_test = train_test_split(X2, y, test_size=r_test, random_state=99)
+X_train, X_test, y_train, y_test = X.iloc[train_idx], X.iloc[test_idx], y.iloc[train_idx], y.iloc[test_idx]
+X2_train, X2_test, y2_train, y2_test = X2.iloc[train_idx], X2.iloc[test_idx], y.iloc[train_idx], y.iloc[test_idx]
 
 end2 = time.time()
 print("Elapsed (2nd step):", end2 - end1, "seconds. Now start training and testing steps...")
