@@ -112,7 +112,7 @@ df["kin_pt_3"] = (df["x8"]**2+df["x9"]**2)**0.5
 df["kin_pt_4"] = (df["x12"]**2+df["x13"]**2)**0.5
 df["kin_phi_1"] = np.arctan2(df["x1"],df["x0"])
 df["kin_phi_2"] = np.arctan2(df["x5"],df["x4"])
-df["kin_phi_3"] = np.arctan2(df["x8"],df["x8"])
+df["kin_phi_3"] = np.arctan2(df["x9"],df["x8"])
 df["kin_phi_4"] = np.arctan2(df["x13"],df["x12"])
 df["kin_y_1"] = 0.5*np.log((df["x3"]+df["x2"]) / (df["x3"]-df["x2"]))
 df["kin_y_2"] = 0.5*np.log((df["x7"]+df["x6"]) / (df["x7"]-df["x6"]))
@@ -516,6 +516,8 @@ if args.model == 'all':
 
     
     bins = 102
+    rll1 = y_test
+    rll2 = y2_test
     rll_pred = y_pred    # binned in the predicted r_LL with the unpolarised weights, like the r_LL histograms of POWHEG and the networks
     rll2_pred = y2_pred
     ax2.set_title("$r_{\\tt LL}$ label "+t_app)
