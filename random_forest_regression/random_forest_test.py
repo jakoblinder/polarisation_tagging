@@ -32,10 +32,26 @@ parser = argparse.ArgumentParser(description="Which events do you want?")
 parser.add_argument('--order',  '-p', type=str, choices=['lo', 'lows', 'nlo', 'nlops'])
 parser.add_argument('--data',   '-d', type=str, choices=['reduced', 'full'])
 parser.add_argument('--model',  '-m', type=str, choices=['all'])
+parser.add_argument('--test',   '-t', type=str, choices=['lo', 'lows', 'nlo', 'nlops'], help='test the forests trained on --order (from their .joblib files) on the test set of this sample, which may also be --order itself')
 #parser.add_argument('--features',  '-f', type=str, choices=['ep', 'ct'])
 args = parser.parse_args()
 
 n_jobs = len(os.sched_getaffinity(0)) # CPUs allocated to this job (slurm --cpus-per-task)
+sample = args.test if args.test else args.order # sample whose events are read: the training sample, or the test sample of a cross-evaluation
+cross = sample != args.order
+
+
+def trained_model_file(order, basis, n_train="*"):
+    """Forest trained on `order` (with `n_train` training events) by a previous run without --test; exactly one file must match."""
+    files = list(Path(".").glob(f"trained_RFR_{order}_train_events_{n_train}_basis_{basis}.joblib"))
+    if len(files) != 1:
+        raise FileNotFoundError(f"expected one trained {basis} forest for {order}, found {[str(f) for f in files]}")
+    return files[0]
+
+
+def tree_spread(per_tree):
+    """Standard deviation of the mean over the trees of a forest (one row per tree), as in only_test_rfr.py."""
+    return per_tree.std(axis=0, ddof=1)/np.sqrt(len(per_tree))
 
 N_lhe = 40000
 sigma_uu = np.array([0.11245290E-01, 0.37648619E-05])
@@ -45,7 +61,7 @@ t_app = str("(LO, fiducial)")
 nr_lhef = 251 # files 0001-0250, as for the networks
 if str(args.data) == 'reduced':
     nr_lhef = 3
-if str(args.order) == 'lows':
+if sample == 'lows':
     print(' You are parsing LOwS events')
     N_lhe = 40000
     sigma_uu = np.array([0.11348889e-01, 0.37664237e-05])
@@ -55,7 +71,7 @@ if str(args.order) == 'lows':
     t_app = str("(NLO QCD, LHE, fiducial)")
     if str(args.data) == 'reduced':
         nr_lhef = 3
-elif str(args.order) == 'nlo':
+elif sample == 'nlo':
     print(' You are parsing NLO LHE events')
     N_lhe = 10000
     sigma_uu = np.array([15.183819E-03, 0.0071627436E-03])
@@ -65,7 +81,7 @@ elif str(args.order) == 'nlo':
     t_app = str("(NLO QCD, LHE, fiducial)")
     if str(args.data) == 'reduced':
         nr_lhef = 6
-elif str(args.order) == 'nlops':
+elif sample == 'nlops':
     print(' You are parsing NLO+PS events')
     N_lhe = 10000
     sigma_uu = np.array([0.15184142e-01, 0.71627344e-05])
@@ -81,7 +97,7 @@ else:
 N_tot = N_lhe * (nr_lhef-1)
 
 used_weights = {"UU", "LL", "LT", "TL", "TT"}
-filename = "output_shower_events" if str(args.order) == 'nlops' else "pwgevents"
+filename = "output_shower_events" if sample == 'nlops' else "pwgevents"
 filepaths = [data_dir/f"{filename}-{i:04d}.ml" for i in range(1, nr_lhef)]
 start = time.time()
 print('parsing', len(filepaths), 'files', filepaths[0], '...', filepaths[-1], 'on', n_jobs, 'CPUs')
@@ -173,19 +189,29 @@ if args.model == 'all':
     #############################################################################
     #   # Random-Forest Regressor
     #############################################################################
-    model = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=99, n_jobs=n_jobs, oob_score=True, bootstrap=True) # parallelise the trees over the allocated CPUs
-    model.fit(X_train, y_train)
-    model2 = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=99, n_jobs=n_jobs, oob_score=True, bootstrap=True) # parallelise the trees over the allocated CPUs
+    if not args.test:
+        model = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=99, n_jobs=n_jobs, oob_score=True, bootstrap=True) # parallelise the trees over the allocated CPUs
+        model.fit(X_train, y_train)
+        model2 = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=99, n_jobs=n_jobs, oob_score=True, bootstrap=True) # parallelise the trees over the allocated CPUs
 
 
-    print(sum(est.tree_.node_count for est in model.estimators_))
+        print(sum(est.tree_.node_count for est in model.estimators_))
 
-    
-    model2.fit(X2_train, y2_train)    
-    print(' now save models ... ')
-    joblib.dump({"model": model, "features": X.columns.tolist()},"trained_RFR_"+ str(args.order) +"_train_events_"+ str(len(X_train)) +"_basis_ct.joblib")
-    joblib.dump({"model2": model2, "features": X2.columns.tolist()},"trained_RFR_"+ str(args.order) +"_train_events_"+ str(len(X2_train)) +"_basis_ep.joblib")
-    print(' ... saved')
+
+        model2.fit(X2_train, y2_train)
+        print(' now save models ... ')
+        joblib.dump({"model": model, "features": X.columns.tolist()},"trained_RFR_"+ str(args.order) +"_train_events_"+ str(len(X_train)) +"_basis_ct.joblib")
+        joblib.dump({"model2": model2, "features": X2.columns.tolist()},"trained_RFR_"+ str(args.order) +"_train_events_"+ str(len(X2_train)) +"_basis_ep.joblib")
+        print(' ... saved')
+    else:
+        print(' now load the models trained on', args.order, '... ')
+        n_train = "*" if cross else len(X_train) # tested on the training sample: the forests of exactly this training set (their out-of-bag predictions enter the LightGBM uncertainty)
+        bundle, bundle2 = joblib.load(trained_model_file(args.order, "ct", n_train)), joblib.load(trained_model_file(args.order, "ep", n_train))
+        assert bundle["features"] == X.columns.tolist() and bundle2["features"] == X2.columns.tolist()
+        model, model2 = bundle["model"], bundle2["model2"]
+        model.set_params(n_jobs=n_jobs)
+        model2.set_params(n_jobs=n_jobs)
+        print(' ... loaded')
     end3 = time.time()
     print("Training step:", end3 - end2, "seconds. Now start testing...")
     
@@ -194,36 +220,54 @@ if args.model == 'all':
     mse = mean_squared_error(y_test, y_pred)
     corr = np.corrcoef(y_test, y_pred)[0,1]
     
-    resid = y_train - model.oob_prediction_ # resid = y_train - model.predict(X_train) would bias the training residuals
-    var_model = lgb.LGBMRegressor(objective="mse", force_row_wise=True, verbose=-1)
-    var_model.fit(X_train, resid**2)
-    var_events = np.clip(var_model.predict(X_test), 0, None)
-
-    resid2 = y2_train - model2.oob_prediction_ # resid = y_train - model.predict(X_train) would bias the training residuals
-    var_model2 = lgb.LGBMRegressor(objective="mse", force_row_wise=True, verbose=-1)
-    var_model2.fit(X2_train, resid2**2)
-    var_events2 = np.clip(var_model2.predict(X2_test), 0, None)
-
     z_uu = (df.loc[X_test.index, "UU"]).to_numpy()
     z_uu2 = (df.loc[X2_test.index, "UU"]).to_numpy()
     z_ll = (df.loc[X_test.index, "LL"]).to_numpy()
     w_pred = np.array([z_uu[i] * y_pred[i] for i in range(0,len(z_uu))])
     w_pred2 = np.array([z_uu2[i] * y2_pred[i] for i in range(0,len(z_uu2))])
-    w_err  = np.array([z_uu[i]**2 * var_events[i] for i in range(0,len(z_uu))])
-    w_err2  = np.array([z_uu2[i]**2 * var_events2[i] for i in range(0,len(z_uu2))])
-    
+
+    if not cross:
+        resid = y_train - model.oob_prediction_ # resid = y_train - model.predict(X_train) would bias the training residuals
+        var_model = lgb.LGBMRegressor(objective="mse", force_row_wise=True, verbose=-1)
+        var_model.fit(X_train, resid**2)
+        var_events = np.clip(var_model.predict(X_test), 0, None)
+
+        resid2 = y2_train - model2.oob_prediction_ # resid = y_train - model.predict(X_train) would bias the training residuals
+        var_model2 = lgb.LGBMRegressor(objective="mse", force_row_wise=True, verbose=-1)
+        var_model2.fit(X2_train, resid2**2)
+        var_events2 = np.clip(var_model2.predict(X2_test), 0, None)
+
+        w_err  = np.array([z_uu[i]**2 * var_events[i] for i in range(0,len(z_uu))])
+        w_err2  = np.array([z_uu2[i]**2 * var_events2[i] for i in range(0,len(z_uu2))])
+        sigLLpred = np.array([(test_xsec_norm*w_pred.sum()), (test_xsec_norm*np.sqrt(w_err.sum()))])
+        sigLLpred2 = np.array([(test_xsec_norm*w_pred2.sum()), (test_xsec_norm*np.sqrt(w_err2.sum()))])
+    else:
+        # the out-of-bag residuals of the training sample do not describe the forest on another sample: tree-to-tree spread instead, as in only_test_rfr.py
+        tree_preds  = np.clip(np.array([tree.predict(X_test.to_numpy()) for tree in model.estimators_]), 0, 1)
+        tree_preds2 = np.clip(np.array([tree.predict(X2_test.to_numpy()) for tree in model2.estimators_]), 0, 1)
+        sigLLpred = np.array([(test_xsec_norm*w_pred.sum()), (test_xsec_norm*tree_spread(tree_preds @ z_uu))])
+        sigLLpred2 = np.array([(test_xsec_norm*w_pred2.sum()), (test_xsec_norm*tree_spread(tree_preds2 @ z_uu2))])
+    unc_name = "trees" if cross else "model"
+
+    def bin_errors(bin_indices, bins):
+        """Uncertainty of the ct prediction per bin: LightGBM variances of the events added in quadrature, or, for forests trained on another sample, the tree-to-tree spread of the per-tree histograms."""
+        if not cross:
+            return np.sqrt(np.bincount(bin_indices, weights=w_err, minlength=bins))
+        return tree_spread(np.array([np.bincount(bin_indices, weights=z_uu*p, minlength=bins) for p in tree_preds]))
+
     sigLLsim = np.array([(1e+3*sigma_ll[0]),(1e+3*sigma_ll[1])])
     sigLLtrue = np.array([(test_xsec_norm*z_ll.sum()),(1e+03*sigma_uu[1]*(y_test.sum()/len(y_test)))])
-    sigLLpred = np.array([(test_xsec_norm*w_pred.sum()), (test_xsec_norm*np.sqrt(w_err.sum()))])
-    sigLLpred2 = np.array([(test_xsec_norm*w_pred2.sum()), (test_xsec_norm*np.sqrt(w_err2.sum()))])
 
     # RFR
-    print(' total number of train events ............................ ', len(y_train))
+    if cross:
+        print(' forests trained on ...................................... ', args.order)
+    else:
+        print(' total number of train events ............................ ', len(y_train))
     print(' total number of test events ............................. ', len(y_test))
     print(' expected LL xsec (polarised simulation) ................. %.4f ' % (sigLLsim[0]), ' +- %.4f (MC) fb' % (sigLLsim[1]) )
     print(' estimated LL xsec (true-rLL reweighting, test) .......... %.4f ' % (sigLLtrue[0]), ' +- %.4f (MC) fb' % (sigLLtrue[1]) )
-    print(' estimated LL xsec (pred-rLL reweighting, test, ct) ...... %.4f ' % (sigLLpred[0]), ' +- %.4f (model) fb' % (sigLLpred[1]) )
-    print(' estimated LL xsec (pred-rLL reweighting, test, ep) ...... %.4f ' % (sigLLpred2[0]), ' +- %.4f (model) fb' % (sigLLpred2[1]) )
+    print(' estimated LL xsec (pred-rLL reweighting, test, ct) ...... %.4f ' % (sigLLpred[0]), ' +- %.4f (%s) fb' % (sigLLpred[1], unc_name) )
+    print(' estimated LL xsec (pred-rLL reweighting, test, ep) ...... %.4f ' % (sigLLpred2[0]), ' +- %.4f (%s) fb' % (sigLLpred2[1], unc_name) )
     print("\nmse, correlation (ct):", mse, corr, " \n")
 
     with parallel_config(backend="threading"): # threads share the forests; worker processes (the default) each get a copy (~6 GB), which exceeded 200 GB at LO
@@ -260,8 +304,9 @@ if args.model == 'all':
 
 
 
-    f = open("histograms_rfr_ct_" + args.order+ "_updated.top", "w")
-    f2 = open("histograms_rfr_ep_" + args.order+ "_updated.top", "w")
+    run_name = f"{args.order}_on_{sample}" if cross else args.order
+    f = open("histograms_rfr_ct_" + run_name+ "_updated.top", "w")
+    f2 = open("histograms_rfr_ep_" + run_name+ "_updated.top", "w")
     print('# totxsec', file=f) # in pb, unlike the histograms below (fb): network_comparison.ipynb rescales it
     print('# totxsec', file=f2)
     print(f"{0.0:.6e} {1.0:.6e} {1e-03*sigLLpred[0]:.6e} {1e-03*sigLLpred[1]:.6e}", file=f)
@@ -291,11 +336,8 @@ if args.model == 'all':
     hist_vals2, bin_edges2 = np.histogram(yep2, range=(-2.5,2.5), bins=bins, weights=w_pred2) # add RFR_ep
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.clip(np.digitize(yep, bin_edges) - 1, 0, bins-1)
-    bin_var = np.zeros(bins)
     bin_width = bin_edges[1] - bin_edges[0]
-    for i, b in enumerate(bin_indices):
-        bin_var[b] += w_err[i]
-    bin_sigma = np.sqrt(bin_var)
+    bin_sigma = bin_errors(bin_indices, bins)
     ax1.hist(
         yep,
         weights=true_weights/bin_width,
@@ -355,11 +397,8 @@ if args.model == 'all':
     hist_vals2, bin_edges2 = np.histogram(dphill2, range=(0,180), bins=bins, weights=w_pred2)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.clip(np.digitize(dphill, bin_edges) - 1, 0, bins-1)
-    bin_var = np.zeros(bins)
     bin_width = bin_edges[1] - bin_edges[0]
-    for i, b in enumerate(bin_indices):
-        bin_var[b] += w_err[i]
-    bin_sigma = np.sqrt(bin_var)
+    bin_sigma = bin_errors(bin_indices, bins)
     ax7.hist(
         dphill,
         weights=true_weights/bin_width,
@@ -423,10 +462,7 @@ if args.model == 'all':
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(cth, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
-    bin_var = np.zeros(bins)
-    for i, b in enumerate(bin_indices):
-        bin_var[b] += w_err[i]
-    bin_sigma = np.sqrt(bin_var)
+    bin_sigma = bin_errors(bin_indices, bins)
     bin_width = bin_edges[1] - bin_edges[0]
     ax3.hist(
         cth,
@@ -488,10 +524,7 @@ if args.model == 'all':
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(rll_pred, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
-    bin_var = np.zeros(bins)
-    for i, b in enumerate(bin_indices):
-        bin_var[b] += w_err[i]
-    bin_sigma = np.sqrt(bin_var)
+    bin_sigma = bin_errors(bin_indices, bins)
     bin_width = bin_edges[1] - bin_edges[0]
     ax2.hist(y_test, weights=z_uu*test_xsec_norm/bin_width, range=(-0.02, 1.0), bins=bins, histtype="step", linewidth=1, color="blue", label="true")
     ax2.hist(
@@ -587,11 +620,8 @@ if args.model == 'all':
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(pt4lep, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
-    bin_var = np.zeros(bins)
     bin_width = bin_edges[1] - bin_edges[0]
-    for i, b in enumerate(bin_indices):
-        bin_var[b] += w_err[i]
-    bin_sigma = np.sqrt(bin_var)
+    bin_sigma = bin_errors(bin_indices, bins)
     ax4.hist(pt4lep, range=(0.0,300.0),  weights=true_weights/bin_width, bins=bins, histtype="step", linewidth=1, color="blue", label="true")
     ax4.hist(
         pt4lep2,
@@ -650,11 +680,8 @@ if args.model == 'all':
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(ptep, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
-    bin_var = np.zeros(bins)
     bin_width = bin_edges[1] - bin_edges[0]
-    for i, b in enumerate(bin_indices):
-        bin_var[b] += w_err[i]
-    bin_sigma = np.sqrt(bin_var)
+    bin_sigma = bin_errors(bin_indices, bins)
     ax8.hist(ptep, range=(0.0,400.0),  weights=true_weights/bin_width, bins=bins, histtype="step", linewidth=1, color="blue", label="true")
     ax8.hist(
         ptep2,
@@ -711,11 +738,8 @@ if args.model == 'all':
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(mee, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
-    bin_var = np.zeros(bins)
     bin_width = bin_edges[1] - bin_edges[0]
-    for i, b in enumerate(bin_indices):
-        bin_var[b] += w_err[i]
-    bin_sigma = np.sqrt(bin_var)
+    bin_sigma = bin_errors(bin_indices, bins)
     ax9.hist(mee, range=(81,101),  weights=true_weights/bin_width, bins=bins, histtype="step", linewidth=1, color="blue", label="true")
     ax9.hist(
         mee2,
@@ -801,11 +825,8 @@ if args.model == 'all':
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_indices = np.digitize(ptep, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
-    bin_var = np.zeros(bins)
     bin_width = bin_edges[1] - bin_edges[0]
-    for i, b in enumerate(bin_indices):
-        bin_var[b] += w_err[i]
-    bin_sigma = np.sqrt(bin_var)
+    bin_sigma = bin_errors(bin_indices, bins)
 
     ax4.hist(
         ptep,
@@ -845,7 +866,7 @@ if args.model == 'all':
     
     
     plt.tight_layout()
-    fig.savefig("test_random_forest_regressor_"+ str(args.order) +"_test_events_" + str(len(y_pred)) + "_basis_both.pdf")
+    fig.savefig("test_random_forest_regressor_"+ run_name +"_test_events_" + str(len(y_pred)) + "_basis_both.pdf")
     plt.close()
 
     end6 = time.time()
