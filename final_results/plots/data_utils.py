@@ -432,6 +432,7 @@ def read_histogram(path: Path,
     """
     Read a histogram file and return a dictionary of histograms.
     Look for lines starting with, for example, `# dphiee` and ignore the possible `index <some number>` which would be there in a proper POWHEG histogram.
+    The rescaling_factor is applied to the values and errors of all histograms except the event counts (`*_count`).
     """
     histograms = {}
     aligned_observable_name = None
@@ -478,7 +479,8 @@ def read_histogram(path: Path,
                     )
                     continue
 
-                values[2:4] *= rescaling_factor
+                if not aligned_observable_name.endswith("_count"):   # event counts (r_LL_count) are not cross sections
+                    values[2:4] *= rescaling_factor
                 histograms[aligned_observable_name].append(values)
 
 
