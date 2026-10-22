@@ -275,6 +275,10 @@ if args.model == 'all':
 
     f = open("histograms_rfr_ct_" + args.order+ "_updated.top", "w")
     f2 = open("histograms_rfr_ep_" + args.order+ "_updated.top", "w")
+    print('# totxsec', file=f) # in pb, unlike the histograms below (fb): network_comparison.ipynb rescales it
+    print('# totxsec', file=f2)
+    print(f"{0.0:.6e} {1.0:.6e} {1e-03*sigLLpred[0]:.6e} {1e-03*sigLLpred[1]:.6e}", file=f)
+    print(f"{0.0:.6e} {1.0:.6e} {1e-03*sigLLpred2[0]:.6e} {1e-03*sigLLpred2[1]:.6e}", file=f2)
     
     fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(11.5, 17))
     ax1 = axes[0, 0]
