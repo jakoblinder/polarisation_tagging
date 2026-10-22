@@ -176,7 +176,8 @@ X = df[["ptZ1", "ptZ2", "yZ1", "yZ2", "cos_theta_p1_p12", "cos_theta_p3_p34"]]
 X2 = df[["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15"]]
 y = df["rLL"]
 
-r_test = 1.0/3.0 
+r_test = 1.0/3.0
+test_xsec_norm = 1e+03/(N_tot*r_test) # sum of test-event weights [pb] -> cross section [fb]: sigma = sum(w)/N over the N_tot*r_test test events
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=r_test, random_state=99)
 X2_train, X2_test, y2_train, y2_test = train_test_split(X2, y, test_size=r_test, random_state=99)
 
@@ -229,9 +230,9 @@ if args.model == 'all':
     w_err2  = np.array([z_uu2[i]**2 * var_events2[i] for i in range(0,len(z_uu2))])
     
     sigLLsim = np.array([(1e+3*sigma_ll[0]),(1e+3*sigma_ll[1])])
-    sigLLtrue = np.array([(1e+03*z_ll.sum() /(N_tot*r_test)),(1e+03*sigma_uu[1]*(y_test.sum()/len(y_test)))])
-    sigLLpred = np.array([(1e+03*w_pred.sum() /(N_tot*r_test)), (1e+03*np.sqrt(w_err.sum()))/(N_tot*r_test)])
-    sigLLpred2 = np.array([(1e+03*w_pred2.sum() /(N_tot*r_test)), (1e+03*np.sqrt(w_err2.sum()))/(N_tot*r_test)])
+    sigLLtrue = np.array([(test_xsec_norm*z_ll.sum()),(1e+03*sigma_uu[1]*(y_test.sum()/len(y_test)))])
+    sigLLpred = np.array([(test_xsec_norm*w_pred.sum()), (test_xsec_norm*np.sqrt(w_err.sum()))])
+    sigLLpred2 = np.array([(test_xsec_norm*w_pred2.sum()), (test_xsec_norm*np.sqrt(w_err2.sum()))])
 
     # RFR
     print(' total number of train events ............................ ', len(y_train))
@@ -290,7 +291,7 @@ if args.model == 'all':
     ax9 = axes[4, 0]
     ax10= axes[4, 1]
 
-    true_weights = z_ll*1e+03/(N_tot*r_test)
+    true_weights = z_ll*test_xsec_norm
     
     norm_factor = 1e+03*sigma_uu[0]/float(len(y_pred))
     
@@ -317,7 +318,7 @@ if args.model == 'all':
     )
     ax1.hist(
         yep2,
-        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        weights=w_pred2*test_xsec_norm/bin_width,
         range=(-2.5,2.5), bins=bins, histtype="step",
         linewidth=1.2,
         color="green",
@@ -325,8 +326,8 @@ if args.model == 'all':
     )
     ax1.fill_between(
         bin_centers,
-        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
-        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals - bin_sigma)*(test_xsec_norm/bin_width),#_density,
+        (hist_vals + bin_sigma)*(test_xsec_norm/bin_width),#_density,
         alpha=0.3,
         color='red',
         label="RFR$_{\\tt ct}$",
@@ -343,7 +344,7 @@ if args.model == 'all':
     print('\n# yep ', file=f2) # add RFR_ep
     left_edges  = bin_centers - 0.5 * bin_width
     right_edges = bin_centers + 0.5 * bin_width
-    norm = 1e+03 / (N_tot * r_test * bin_width)
+    norm = test_xsec_norm / bin_width
     values = hist_vals * norm
     values2 = hist_vals2 * norm # add RFR_ep
     errors = bin_sigma * norm
@@ -381,7 +382,7 @@ if args.model == 'all':
     )
     ax7.hist(
         dphill2,
-        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        weights=w_pred2*test_xsec_norm/bin_width,
         range=(0,180), bins=bins, histtype="step",
         linewidth=1.2,
         color="green",
@@ -389,8 +390,8 @@ if args.model == 'all':
     )
     ax7.fill_between(
         bin_centers,
-        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
-        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals - bin_sigma)*(test_xsec_norm/bin_width),#_density,
+        (hist_vals + bin_sigma)*(test_xsec_norm/bin_width),#_density,
         alpha=0.3,
         color='red',
         label="RFR$_{\\tt ct}$",
@@ -406,7 +407,7 @@ if args.model == 'all':
     print('\n# dphiee ', file=f2)
     left_edges  = bin_centers - 0.5 * bin_width
     right_edges = bin_centers + 0.5 * bin_width
-    norm = 1e+03 / (N_tot * r_test * bin_width)
+    norm = test_xsec_norm / bin_width
     values = hist_vals * norm
     values2 = hist_vals2 * norm
     errors = bin_sigma * norm
@@ -449,7 +450,7 @@ if args.model == 'all':
     )
     ax3.hist(
         cth2,
-        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        weights=w_pred2*test_xsec_norm/bin_width,
         range=(-1.0,1.0), bins=bins, histtype="step",
         linewidth=1.2,
         color="green",
@@ -457,8 +458,8 @@ if args.model == 'all':
     )
     ax3.fill_between(
         bin_centers,
-        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
-        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals - bin_sigma)*(test_xsec_norm/bin_width),#_density,
+        (hist_vals + bin_sigma)*(test_xsec_norm/bin_width),#_density,
         alpha=0.3,
         color='red',
         label="RFR$_{\\tt ct}$",
@@ -475,7 +476,7 @@ if args.model == 'all':
     print('\n# cthep ', file=f2)
     left_edges  = bin_centers - 0.5 * bin_width
     right_edges = bin_centers + 0.5 * bin_width
-    norm = 1e+03 / (N_tot * r_test * bin_width)
+    norm = test_xsec_norm / bin_width
     values = hist_vals * norm
     values2 = hist_vals2 * norm
     errors = bin_sigma * norm
@@ -491,23 +492,23 @@ if args.model == 'all':
 
     
     bins = 102
-    rll1 = y_test
-    rll2 = y2_test
+    rll_pred = y_pred    # binned in the predicted r_LL with the unpolarised weights, like the r_LL histograms of POWHEG and the networks
+    rll2_pred = y2_pred
     ax2.set_title("$r_{\\tt LL}$ label "+t_app)
-    hist_vals, bin_edges = np.histogram(rll1, range=(-0.02, 1.0), bins=bins, weights=z_uu) # w_pred)
-    hist_vals2, bin_edges2 = np.histogram(rll2, range=(-0.02, 1.0), bins=bins, weights=z_uu) # w_pred)
+    hist_vals, bin_edges = np.histogram(rll_pred, range=(-0.02, 1.0), bins=bins, weights=z_uu) # w_pred)
+    hist_vals2, bin_edges2 = np.histogram(rll2_pred, range=(-0.02, 1.0), bins=bins, weights=z_uu) # w_pred)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
-    bin_indices = np.digitize(rll1, bin_edges) - 1
+    bin_indices = np.digitize(rll_pred, bin_edges) - 1
     bin_indices = np.clip(bin_indices, 0, bins-1)
     bin_var = np.zeros(bins)
     for i, b in enumerate(bin_indices):
         bin_var[b] += w_err[i]
     bin_sigma = np.sqrt(bin_var)
     bin_width = bin_edges[1] - bin_edges[0]
-    ax2.hist(rll1, weights=true_weights/bin_width, range=(-0.02, 1.0), bins=bins, histtype="step", linewidth=1, color="blue", label="true")
+    ax2.hist(y_test, weights=z_uu*test_xsec_norm/bin_width, range=(-0.02, 1.0), bins=bins, histtype="step", linewidth=1, color="blue", label="true")
     ax2.hist(
-        rll2,
-        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        rll2_pred,
+        weights=z_uu*test_xsec_norm/bin_width,
         range=(-0.02, 1.0),
         bins=bins, histtype="step",
         linewidth=1.2,
@@ -516,8 +517,8 @@ if args.model == 'all':
     )
     ax2.fill_between(
         bin_centers,
-        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
-        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals - bin_sigma)*(test_xsec_norm/bin_width),#_density,
+        (hist_vals + bin_sigma)*(test_xsec_norm/bin_width),#_density,
         alpha=0.3,
         color='red',
         label="RFR$_{\\tt ct}$",
@@ -528,13 +529,13 @@ if args.model == 'all':
     ax2.set_xlim(-0.02, 1.0)
     ax2.legend(loc='best', borderpad=0.5, framealpha=0.9, frameon=False, ncol = 1)
     ax2.set_xlabel("r$_{\\tt LL}$")
-    ax2.set_ylabel("Normalised distribution")
+    ax2.set_ylabel("d$\\sigma^{\\tt UU}/$d$r_{\\tt LL}$ [fb]")
     
     print('\n# rll ', file=f)
     print('\n# rll ', file=f2)
     left_edges  = bin_centers - 0.5 * bin_width
     right_edges = bin_centers + 0.5 * bin_width
-    norm = 1e+03 / (N_tot * r_test * bin_width)
+    norm = test_xsec_norm / bin_width
     values = hist_vals * norm
     values2 = hist_vals2 * norm
     errors = bin_sigma * norm
@@ -607,7 +608,7 @@ if args.model == 'all':
     ax4.hist(
         pt4lep2,
         range=(0.0,300.0), 
-        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        weights=w_pred2*test_xsec_norm/bin_width,
         bins=bins, histtype="step",
         linewidth=1.2,
         color="green",
@@ -616,8 +617,8 @@ if args.model == 'all':
     
     ax4.fill_between(
         bin_centers,
-        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
-        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals - bin_sigma)*(test_xsec_norm/bin_width),#_density,
+        (hist_vals + bin_sigma)*(test_xsec_norm/bin_width),#_density,
         alpha=0.3,
         color='red',
         label="RFR$_{\\tt ct}$",
@@ -636,7 +637,7 @@ if args.model == 'all':
     print('\n# pt4l ', file=f2)
     left_edges  = bin_centers - 0.5 * bin_width
     right_edges = bin_centers + 0.5 * bin_width
-    norm = 1e+03 / (N_tot * r_test * bin_width)
+    norm = test_xsec_norm / bin_width
     values = hist_vals * norm
     values2 = hist_vals2 * norm
     errors = bin_sigma * norm
@@ -670,7 +671,7 @@ if args.model == 'all':
     ax8.hist(
         ptep2,
         range=(0.0,400.0), 
-        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        weights=w_pred2*test_xsec_norm/bin_width,
         bins=bins, histtype="step",
         linewidth=1.2,
         color="green",
@@ -679,8 +680,8 @@ if args.model == 'all':
     
     ax8.fill_between(
         bin_centers,
-        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
-        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals - bin_sigma)*(test_xsec_norm/bin_width),#_density,
+        (hist_vals + bin_sigma)*(test_xsec_norm/bin_width),#_density,
         alpha=0.3,
         color='red',
         label="RFR$_{\\tt ct}$",
@@ -699,7 +700,7 @@ if args.model == 'all':
     print('\n# ptep ', file=f2)
     left_edges  = bin_centers - 0.5 * bin_width
     right_edges = bin_centers + 0.5 * bin_width
-    norm = 1e+03 / (N_tot * r_test * bin_width)
+    norm = test_xsec_norm / bin_width
     values = hist_vals * norm
     values2 = hist_vals2 * norm
     errors = bin_sigma * norm
@@ -731,7 +732,7 @@ if args.model == 'all':
     ax9.hist(
         mee2,
         range=(81,101), 
-        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        weights=w_pred2*test_xsec_norm/bin_width,
         bins=bins, histtype="step",
         linewidth=1.2,
         color="green",
@@ -740,8 +741,8 @@ if args.model == 'all':
     
     ax9.fill_between(
         bin_centers,
-        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
-        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals - bin_sigma)*(test_xsec_norm/bin_width),#_density,
+        (hist_vals + bin_sigma)*(test_xsec_norm/bin_width),#_density,
         alpha=0.3,
         color='red',
         label="RFR$_{\\tt ct}$",
@@ -760,7 +761,7 @@ if args.model == 'all':
     print('\n# mepem ', file=f2)
     left_edges  = bin_centers - 0.5 * bin_width
     right_edges = bin_centers + 0.5 * bin_width
-    norm = 1e+03 / (N_tot * r_test * bin_width)
+    norm = test_xsec_norm / bin_width
     values2 = hist_vals2 * norm
     values = hist_vals * norm
     errors = bin_sigma * norm
@@ -829,7 +830,7 @@ if args.model == 'all':
     ax4.hist(
         ptep2,
         range=(0.0,300.0), 
-        weights=w_pred2*1e+03/(N_tot*r_test)/bin_width,
+        weights=w_pred2*test_xsec_norm/bin_width,
         bins=bins, histtype="step",
         linewidth=1.2,
         color="green",
@@ -837,8 +838,8 @@ if args.model == 'all':
     )
     ax4.fill_between(
         bin_centers,
-        (hist_vals - bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
-        (hist_vals + bin_sigma)*(1e+03/(N_tot*r_test)/bin_width),#_density,
+        (hist_vals - bin_sigma)*(test_xsec_norm/bin_width),#_density,
+        (hist_vals + bin_sigma)*(test_xsec_norm/bin_width),#_density,
         alpha=0.3,
         color='red',
         label="RFR$_{\\tt ct}$",
