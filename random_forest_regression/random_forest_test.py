@@ -11,6 +11,7 @@ import lightgbm as lgb
 import matplotlib.colors as colors
 import joblib
 import torch
+from joblib import parallel_config
 from pathlib import Path
 from itertools import repeat
 from concurrent.futures import ProcessPoolExecutor
@@ -225,26 +226,27 @@ if args.model == 'all':
     print(' estimated LL xsec (pred-rLL reweighting, test, ep) ...... %.4f ' % (sigLLpred2[0]), ' +- %.4f (model) fb' % (sigLLpred2[1]) )
     print("\nmse, correlation (ct):", mse, corr, " \n")
 
-    result = permutation_importance(
-        model,
-        X_test,
-        y_test,
-        n_repeats=10,
-        random_state=99,
-        n_jobs=n_jobs
-    )
+    with parallel_config(backend="threading"): # threads share the forests; worker processes (the default) each get a copy (~6 GB), which exceeded 200 GB at LO
+        result = permutation_importance(
+            model,
+            X_test,
+            y_test,
+            n_repeats=10,
+            random_state=99,
+            n_jobs=n_jobs
+        )
+        result2 = permutation_importance(
+            model2,
+            X2_test,
+            y2_test,
+            n_repeats=10,
+            random_state=99,
+            n_jobs=n_jobs
+        )
     importances = result.importances_mean
     std = result.importances_std
     indices = np.argsort(importances)[::-1]
 
-    result2 = permutation_importance(
-        model2,
-        X2_test,
-        y2_test,
-        n_repeats=10,
-        random_state=99,
-        n_jobs=n_jobs
-    )
     importances2 = result2.importances_mean
     std2 = result2.importances_std
     indices2 = np.argsort(importances2)[::-1]
