@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import re
 
 # parsing routine for .ml files
@@ -37,19 +38,17 @@ def parse_ml_events(filepath, useful_weights):
                         weights[wid] = float(val)
     return events
 
-# boost qx written in some frame to the rest frame of px
+# events of one .ml file as a DataFrame (cheap to send back from a worker process when files are parsed in parallel)
+def parse_ml_events_frame(filepath, useful_weights):
+    return pd.DataFrame(parse_ml_events(filepath, useful_weights))
+
+# boost qx written in some frame to the rest frame of px, four-momenta as (px, py, pz, E) in the last axis:
+# a single four-momentum or arrays of shape (n, 4) for n events at once
 def boostinv(qx, px):
-    q      = np.array([qx[3],qx[0],qx[1],qx[2]])
-    pboost = np.array([px[3],px[0],px[1],px[2]])
-    qprime = np.array([0.0,0.0,0.0,0.0])
-    rmboost=(max((pboost[0]**2-pboost[1]**2-pboost[2]**2-pboost[3]**2),0.0))**0.5
-    aux=(q[0]*pboost[0]-q[1]*pboost[1]-q[2]*pboost[2]-q[3]*pboost[3])/rmboost
-    aaux=(aux+q[0])/(pboost[0]+rmboost)
-    qprime[3]=aux
-    qprime[0]=q[1]-aaux*pboost[1]
-    qprime[1]=q[2]-aaux*pboost[2]
-    qprime[2]=q[3]-aaux*pboost[3]
-    return qprime
+    rmboost = np.maximum(px[...,3]**2-px[...,0]**2-px[...,1]**2-px[...,2]**2, 0.0)**0.5
+    aux  = (qx[...,3]*px[...,3]-qx[...,0]*px[...,0]-qx[...,1]*px[...,1]-qx[...,2]*px[...,2])/rmboost
+    aaux = (aux+qx[...,3])/(px[...,3]+rmboost)
+    return np.stack([qx[...,0]-aaux*px[...,0], qx[...,1]-aaux*px[...,1], qx[...,2]-aaux*px[...,2], aux], axis=-1)
 
 # test fitting function
 def fitting_pdf(pT, C, n, T, pto):

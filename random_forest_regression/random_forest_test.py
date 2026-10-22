@@ -1,5 +1,7 @@
+import os
 import time
 import argparse
+import multiprocessing
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -10,6 +12,8 @@ import matplotlib.colors as colors
 import joblib
 import torch
 from pathlib import Path
+from itertools import repeat
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
@@ -20,7 +24,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.base import clone
 from sklearn.inspection import permutation_importance
 from scipy.optimize import curve_fit
-from routines import parse_ml_events, boostinv
+from routines import parse_ml_events_frame, boostinv
 
 
 parser = argparse.ArgumentParser(description="Which events do you want?")
@@ -29,6 +33,8 @@ parser.add_argument('--data',   '-d', type=str, choices=['reduced', 'full'])
 parser.add_argument('--model',  '-m', type=str, choices=['all'])
 #parser.add_argument('--features',  '-f', type=str, choices=['ep', 'ct'])
 args = parser.parse_args()
+
+n_jobs = len(os.sched_getaffinity(0)) # CPUs allocated to this job (slurm --cpus-per-task)
 
 N_lhe = 40000
 sigma_uu = np.array([0.11245290E-01, 0.37648619E-05])
@@ -74,18 +80,14 @@ else:
 N_tot = N_lhe * (nr_lhef-1)
 
 used_weights = {"UU", "LL", "LT", "TL", "TT"}
-all_events = []
+filename = "output_shower_events" if str(args.order) == 'nlops' else "pwgevents"
+filepaths = [data_dir/f"{filename}-{i:04d}.ml" for i in range(1, nr_lhef)]
 start = time.time()
-for i in range(1, nr_lhef):
-    filepath = data_dir/f"pwgevents-{i:04d}.ml"
-    if str(args.order) == 'nlops':
-        filepath = data_dir/f"output_shower_events-{i:04d}.ml"
-    print('parsing file ', filepath)
-    all_events.extend(parse_ml_events(filepath,used_weights))
+print('parsing', len(filepaths), 'files', filepaths[0], '...', filepaths[-1], 'on', n_jobs, 'CPUs')
+with ProcessPoolExecutor(max_workers=n_jobs, mp_context=multiprocessing.get_context("fork")) as pool: # fork: the default start method of Python 3.14 (forkserver) would re-run this script, which has no __main__ guard, in every worker
+    df = pd.concat(pool.map(parse_ml_events_frame, filepaths, repeat(used_weights)), ignore_index=True) # map keeps the file order, so the events are in the order of the networks' split
 end1 = time.time()
 print("Elapsed (1st step):", end1 - start, "seconds")
-
-df = pd.DataFrame(all_events)
 
 df["kin_pt_1"] = (df["x0"]**2+df["x1"]**2)**0.5
 df["kin_pt_2"] = (df["x4"]**2+df["x5"]**2)**0.5
@@ -107,47 +109,30 @@ p4 = df[["x12","x13","x14","x15"]].to_numpy()
 p12 = p1 + p2
 p34 = p3 + p4
 ptot = p1 + p2 + p3 + p4
-p12_cm = np.zeros_like(p12)
-p1_cm = np.zeros_like(p1)
-p34_cm = np.zeros_like(p34)
-p3_cm = np.zeros_like(p3)
-p1_in_p12_rest = np.zeros_like(p1)
-p3_in_p34_rest = np.zeros_like(p3)
-cos_theta = np.zeros(len(df))
-cos_thetab= np.zeros(len(df))
-Mv1 = np.zeros(len(df))
-dphiee = np.zeros(len(df))
-ptv1 = np.zeros(len(df))
-ptv2 = np.zeros(len(df))
-ptvv = np.zeros(len(df))
-yv1 = np.zeros(len(df))
-yv2 = np.zeros(len(df))
-phiv1 = np.zeros(len(df))
-phiv2 = np.zeros(len(df))
-for i in range(len(df)):
-    p12_cm[i] = boostinv(p12[i], ptot[i])
-    p1_cm[i]  = boostinv(p1[i], ptot[i])
-    p34_cm[i] = boostinv(p34[i], ptot[i])
-    p3_cm[i]  = boostinv(p3[i], ptot[i])
-    p1_in_p12_rest[i] = boostinv(p1_cm[i], p12_cm[i])
-    p3_in_p34_rest[i] = boostinv(p3_cm[i], p34_cm[i])
-    p12_dir_cm = p12_cm[i, :3]
-    p34_dir_cm = p34_cm[i, :3]
-    p1_dir_rest = p1_in_p12_rest[i, :3]
-    p3_dir_rest = p3_in_p34_rest[i, :3]
-    cos_theta[i]  = np.dot(p12_dir_cm, p1_dir_rest) / (np.linalg.norm(p12_dir_cm) * np.linalg.norm(p1_dir_rest))
-    cos_thetab[i] = np.dot(p34_dir_cm, p3_dir_rest) / (np.linalg.norm(p34_dir_cm) * np.linalg.norm(p3_dir_rest))
-    Mv1[i] = (p12[i,3]**2-p12[i,0]**2-p12[i,1]**2-p12[i,2]**2)**0.5
-    ptv1[i] = (p12[i,0]**2+p12[i,1]**2)**0.5
-    ptv2[i] = (p34[i,0]**2+p34[i,1]**2)**0.5
-    ptvv[i] = ((p12[i,0]+p34[i,0])**2+(p12[i,1]+p34[i,1])**2)**0.5
-    yv1[i]  = 0.5*np.log(( p12[i,3] + p12[i,2] ) / ( p12[i,3] - p12[i,2] ))
-    yv2[i]  = 0.5*np.log(( p34[i,3] + p34[i,2] ) / ( p34[i,3] - p34[i,2] ))
-    phiv1[i] = np.arctan2(p12[i,1],p12[i,0])
-    phiv2[i] = np.arctan2(p34[i,1],p34[i,0])
-    dphiee[i] = (180.0/np.pi)*min(abs(np.arctan2(p1[i,1],p1[i,0]) - np.arctan2(p2[i,1],p2[i,0])), 2.0*np.pi-abs(np.arctan2(p1[i,1],p1[i,0]) - np.arctan2(p2[i,1],p2[i,0])))
+p12_cm = boostinv(p12, ptot) # all events at once: arrays of shape (n_events, 4)
+p1_cm  = boostinv(p1, ptot)
+p34_cm = boostinv(p34, ptot)
+p3_cm  = boostinv(p3, ptot)
+p1_in_p12_rest = boostinv(p1_cm, p12_cm)
+p3_in_p34_rest = boostinv(p3_cm, p34_cm)
+p12_dir_cm = p12_cm[:, :3]
+p34_dir_cm = p34_cm[:, :3]
+p1_dir_rest = p1_in_p12_rest[:, :3]
+p3_dir_rest = p3_in_p34_rest[:, :3]
+cos_theta  = np.sum(p12_dir_cm*p1_dir_rest, axis=1) / (np.linalg.norm(p12_dir_cm, axis=1) * np.linalg.norm(p1_dir_rest, axis=1))
+cos_thetab = np.sum(p34_dir_cm*p3_dir_rest, axis=1) / (np.linalg.norm(p34_dir_cm, axis=1) * np.linalg.norm(p3_dir_rest, axis=1))
+Mv1 = (p12[:,3]**2-p12[:,0]**2-p12[:,1]**2-p12[:,2]**2)**0.5
+ptv1 = (p12[:,0]**2+p12[:,1]**2)**0.5
+ptv2 = (p34[:,0]**2+p34[:,1]**2)**0.5
+ptvv = ((p12[:,0]+p34[:,0])**2+(p12[:,1]+p34[:,1])**2)**0.5
+yv1  = 0.5*np.log(( p12[:,3] + p12[:,2] ) / ( p12[:,3] - p12[:,2] ))
+yv2  = 0.5*np.log(( p34[:,3] + p34[:,2] ) / ( p34[:,3] - p34[:,2] ))
+phiv1 = np.arctan2(p12[:,1],p12[:,0])
+phiv2 = np.arctan2(p34[:,1],p34[:,0])
+dphi12 = abs(np.arctan2(p1[:,1],p1[:,0]) - np.arctan2(p2[:,1],p2[:,0]))
+dphiee = (180.0/np.pi)*np.minimum(dphi12, 2.0*np.pi-dphi12)
 
-    
+
 df["cos_theta_p1_p12"] = cos_theta
 df["cos_theta_p3_p34"] = cos_thetab
 df["ptZ1"] = ptv1
@@ -187,9 +172,9 @@ if args.model == 'all':
     #############################################################################
     #   # Random-Forest Regressor
     #############################################################################
-    model = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=99, n_jobs=40, oob_score=True, bootstrap=True) # parallelise over 40 workers (~12 trees per worker)
+    model = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=99, n_jobs=n_jobs, oob_score=True, bootstrap=True) # parallelise the trees over the allocated CPUs
     model.fit(X_train, y_train)
-    model2 = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=99, n_jobs=40, oob_score=True, bootstrap=True) # parallelise over 40 workers (~12 trees per worker)
+    model2 = RandomForestRegressor(n_estimators=500, max_depth=None, min_samples_leaf=20, random_state=99, n_jobs=n_jobs, oob_score=True, bootstrap=True) # parallelise the trees over the allocated CPUs
 
 
     print(sum(est.tree_.node_count for est in model.estimators_))
@@ -246,7 +231,7 @@ if args.model == 'all':
         y_test,
         n_repeats=10,
         random_state=99,
-        n_jobs=40
+        n_jobs=n_jobs
     )
     importances = result.importances_mean
     std = result.importances_std
@@ -258,7 +243,7 @@ if args.model == 'all':
         y2_test,
         n_repeats=10,
         random_state=99,
-        n_jobs=40
+        n_jobs=n_jobs
     )
     importances2 = result2.importances_mean
     std2 = result2.importances_std
