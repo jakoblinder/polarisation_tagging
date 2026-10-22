@@ -492,13 +492,10 @@ if args.model == 'all':
 
     
     bins = 102
-<<<<<<< HEAD
-    rll1 = y_pred # y_test
-    rll2 = y2_pred# y2_test
-=======
+    rll1 = y_test
+    rll2 = y2_test
     rll_pred = y_pred    # binned in the predicted r_LL with the unpolarised weights, like the r_LL histograms of POWHEG and the networks
     rll2_pred = y2_pred
->>>>>>> d442379042e7f1c806761b8b1636bff6dd0337e4
     ax2.set_title("$r_{\\tt LL}$ label "+t_app)
     hist_vals, bin_edges = np.histogram(rll_pred, range=(-0.02, 1.0), bins=bins, weights=z_uu) # w_pred)
     hist_vals2, bin_edges2 = np.histogram(rll2_pred, range=(-0.02, 1.0), bins=bins, weights=z_uu) # w_pred)
