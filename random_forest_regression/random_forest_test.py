@@ -29,41 +29,41 @@ parser.add_argument('--model',  '-m', type=str, choices=['all'])
 #parser.add_argument('--features',  '-f', type=str, choices=['ep', 'ct'])
 args = parser.parse_args()
 
-N_lhe = 100000
+N_lhe = 40000
 sigma_uu = np.array([0.11245290E-01, 0.37648619E-05])
 sigma_ll = np.array([0.6574E-03, 0.0002E-03])
 data_dir = Path("../../events/ML_FILES/UU_LO")
 t_app = str("(LO, fiducial)")
-nr_lhef = 26
+nr_lhef = 251 # files 0001-0250, as for the networks
 if str(args.data) == 'reduced':
     nr_lhef = 3
 if str(args.order) == 'lows':
     print(' You are parsing LOwS events')
-    N_lhe = 100000
+    N_lhe = 40000
     sigma_uu = np.array([0.11348889e-01, 0.37664237e-05])
     sigma_ll = np.array([0.66608205e-03, 0.50535066e-06])
     data_dir = Path("../../events/ML_FILES/UU_LOwS")
-    nr_lhef = 26 # 51
+    nr_lhef = 251 # files 0001-0250, as for the networks
     t_app = str("(NLO QCD, LHE, fiducial)")
     if str(args.data) == 'reduced':
         nr_lhef = 3
 elif str(args.order) == 'nlo':
     print(' You are parsing NLO LHE events')
-    N_lhe = 50000
+    N_lhe = 10000
     sigma_uu = np.array([15.183819E-03, 0.0071627436E-03])
     sigma_ll = np.array([0.8918E-03, 0.0003E-03])
     data_dir = Path("../../events/ML_FILES/UU_NLO")
-    nr_lhef = 51 # 51
+    nr_lhef = 1001 # files 0001-1000, as for the networks
     t_app = str("(NLO QCD, LHE, fiducial)")
     if str(args.data) == 'reduced':
         nr_lhef = 6
 elif str(args.order) == 'nlops':
     print(' You are parsing NLO+PS events')
-    N_lhe = 50000
+    N_lhe = 10000
     sigma_uu = np.array([0.15184142e-01, 0.71627344e-05])
     sigma_ll = np.array([0.8918E-03, 0.0003E-04])
     data_dir = Path("../../events/ML_FILES/UU_NLO")
-    nr_lhef = 51 # 51
+    nr_lhef = 1001 # files 0001-1000, as for the networks
     t_app = str("(NLOPS fiducial)")
     if str(args.data) == 'reduced':
         nr_lhef = 6
@@ -75,16 +75,10 @@ N_tot = N_lhe * (nr_lhef-1)
 used_weights = {"UU", "LL", "LT", "TL", "TT"}
 all_events = []
 start = time.time()
-for i in range(1, min(10,nr_lhef)):
-    filepath = data_dir/f"pwgevents-000{i}.ml"
+for i in range(1, nr_lhef):
+    filepath = data_dir/f"pwgevents-{i:04d}.ml"
     if str(args.order) == 'nlops':
-        filepath = data_dir/f"output_shower_events-000{i}.ml"
-    print('parsing file ', filepath)
-    all_events.extend(parse_ml_events(filepath,used_weights))
-for i in range(10, max(10,nr_lhef)):
-    filepath = data_dir/f"pwgevents-00{i}.ml"
-    if str(args.order) == 'nlops':
-        filepath = data_dir/f"output_shower_events-00{i}.ml"
+        filepath = data_dir/f"output_shower_events-{i:04d}.ml"
     print('parsing file ', filepath)
     all_events.extend(parse_ml_events(filepath,used_weights))
 end1 = time.time()
